@@ -35,7 +35,7 @@ import java.util.TreeSet;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class AbstractTabularDataReader extends AbstractDataReader {
+public abstract class AbstractTabularDataReader extends AbstractDataReader {
 
     protected boolean hasHeader;
 
@@ -43,7 +43,7 @@ public class AbstractTabularDataReader extends AbstractDataReader {
         super(dataFile, delimiter);
     }
 
-    public int[] getVariableColumnNumbers(Set<String> variableNames) throws IOException {
+    protected int[] getVariableColumnNumbers(Set<String> variableNames) throws IOException {
         return (commentMarker == null || commentMarker.trim().isEmpty())
                 ? getColumnNumbers(variableNames)
                 : getColumnNumbers(variableNames, commentMarker);
