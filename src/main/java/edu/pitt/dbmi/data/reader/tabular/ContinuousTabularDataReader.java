@@ -77,7 +77,6 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
     }
 
     protected double[][] extractData(List<Node> variables, int[] excludedColumns, String comment) throws IOException {
-        int maxNumOfCols = getNumOfColumns();  // counts all variables, including excluded ones
         int numCols = variables.size();
         int numRows = (hasHeader) ? getNumOfRows() - 1 : getNumOfRows();
 
@@ -195,7 +194,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                                         try {
                                             data[row][col++] = Double.parseDouble(value);
                                         } catch (NumberFormatException exception) {
-                                            String errMsg = String.format("Invalid data %s on line %d column %d.", value, lineNumber, colNum);
+                                            String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
                                             LOGGER.error(errMsg, exception);
                                             throw new DataReaderException(errMsg);
                                         }
@@ -227,7 +226,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                                     try {
                                         data[row][col++] = Double.parseDouble(value);
                                     } catch (NumberFormatException exception) {
-                                        String errMsg = String.format("Invalid data %s on line %d column %d.", value, lineNumber, colNum);
+                                        String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
                                         LOGGER.error(errMsg, exception);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -280,7 +279,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                         try {
                             data[row][col++] = Double.parseDouble(value);
                         } catch (NumberFormatException exception) {
-                            String errMsg = String.format("Invalid data %s on line %d column %d.", value, lineNumber, colNum);
+                            String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
                             LOGGER.error(errMsg, exception);
                             throw new DataReaderException(errMsg);
                         }
@@ -379,7 +378,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                                         try {
                                             data[row][col++] = Double.parseDouble(value);
                                         } catch (NumberFormatException exception) {
-                                            String errMsg = String.format("Invalid data %s on line %d column %d.", value, lineNumber, colNum);
+                                            String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
                                             LOGGER.error(errMsg, exception);
                                             throw new DataReaderException(errMsg);
                                         }
@@ -411,7 +410,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                                     try {
                                         data[row][col++] = Double.parseDouble(value);
                                     } catch (NumberFormatException exception) {
-                                        String errMsg = String.format("Invalid data %s on line %d column %d.", value, lineNumber, colNum);
+                                        String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
                                         LOGGER.error(errMsg, exception);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -463,7 +462,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                         try {
                             data[row][col++] = Double.parseDouble(value);
                         } catch (NumberFormatException exception) {
-                            String errMsg = String.format("Invalid data %s on line %d column %d.", value, lineNumber, colNum);
+                            String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
                             LOGGER.error(errMsg, exception);
                             throw new DataReaderException(errMsg);
                         }

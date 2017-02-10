@@ -156,19 +156,20 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                                 if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
                                     excludedIndex++;
                                 } else {
+                                    // ensure we don't go out of bound
+                                    if (col >= numCols) {
+                                        errors.add(String.format("Line %d: excess data.  Expect %d.", lineNumber, numCols));
+                                    }
+
                                     col++;
-                                    if (col > numCols) {
-                                        errors.add(String.format("Line %d: excess data.  Expect %d but found %d.", lineNumber, numCols, col));
-                                    } else {
-                                        if (value.length() > 0) {
-                                            try {
-                                                Double.parseDouble(value);
-                                            } catch (NumberFormatException exception) {
-                                                errors.add(String.format("Line %d, column %d: invalid value %s.", lineNumber, colNum, value));
-                                            }
-                                        } else {
-                                            errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
+                                    if (value.length() > 0) {
+                                        try {
+                                            Double.parseDouble(value);
+                                        } catch (NumberFormatException exception) {
+                                            errors.add(String.format("Line %d, column %d: invalid number %s.", lineNumber, colNum, value));
                                         }
+                                    } else {
+                                        errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
                                     }
                                 }
                             }
@@ -182,22 +183,26 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                             dataBuilder.delete(0, dataBuilder.length());
 
                             if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                                col++;
-                                if (col < numCols) {
-                                    errors.add(String.format("Line %d: insufficient data.  Expect %d but found %d.", lineNumber, numCols, col));
-                                } else if (col > numCols) {
-                                    errors.add(String.format("Line %d: excess data.  Expect %d but found %d.", lineNumber, numCols, col));
-                                } else {
-                                    if (value.length() > 0) {
-                                        try {
-                                            Double.parseDouble(value);
-                                        } catch (NumberFormatException exception) {
-                                            errors.add(String.format("Line %d, column %d: invalid value %s.", lineNumber, colNum, value));
-                                        }
-                                    } else {
-                                        errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
-                                    }
+                                // ensure number of data don't exceed
+                                if (col >= numCols) {
+                                    errors.add(String.format("Line %d: excess data.  Expect %d.", lineNumber, numCols));
                                 }
+
+                                col++;
+                                if (value.length() > 0) {
+                                    try {
+                                        Double.parseDouble(value);
+                                    } catch (NumberFormatException exception) {
+                                        errors.add(String.format("Line %d, column %d: invalid number %s.", lineNumber, colNum, value));
+                                    }
+                                } else {
+                                    errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
+                                }
+                            }
+
+                            // ensure there sufficient number of data
+                            if (col < numCols) {
+                                errors.add(String.format("Line %d: insufficient data.  Expect %d but found %d.", lineNumber, numCols, col));
                             }
                         }
 
@@ -215,28 +220,33 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                 }
             } while (position < fileSize);
 
+            // case when no newline char at the end of the file
             if (colNum > 0 || dataBuilder.length() > 0) {
                 colNum++;
                 String value = dataBuilder.toString().trim();
                 dataBuilder.delete(0, dataBuilder.length());
 
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                    col++;
-                    if (col < numCols) {
-                        errors.add(String.format("Line %d: insufficient data.  Expect %d but found %d.", lineNumber, numCols, col));
-                    } else if (col > numCols) {
-                        errors.add(String.format("Line %d: excess data.  Expect %d but found %d.", lineNumber, numCols, col));
-                    } else {
-                        if (value.length() > 0) {
-                            try {
-                                Double.parseDouble(value);
-                            } catch (NumberFormatException exception) {
-                                errors.add(String.format("Line %d, column %d: invalid value %s.", lineNumber, colNum, value));
-                            }
-                        } else {
-                            errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
-                        }
+                    // ensure number of data don't exceed
+                    if (col >= numCols) {
+                        errors.add(String.format("Line %d: excess data.  Expect %d.", lineNumber, numCols));
                     }
+
+                    col++;
+                    if (value.length() > 0) {
+                        try {
+                            Double.parseDouble(value);
+                        } catch (NumberFormatException exception) {
+                            errors.add(String.format("Line %d, column %d: invalid number %s.", lineNumber, colNum, value));
+                        }
+                    } else {
+                        errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
+                    }
+                }
+
+                // ensure there sufficient number of data
+                if (col < numCols) {
+                    errors.add(String.format("Line %d: insufficient data.  Expect %d but found %d.", lineNumber, numCols, col));
                 }
             }
         }
@@ -307,19 +317,20 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                                 if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
                                     excludedIndex++;
                                 } else {
+                                    // ensure we don't go out of bound
+                                    if (col >= numCols) {
+                                        errors.add(String.format("Line %d: excess data.  Expect %d.", lineNumber, numCols));
+                                    }
+
                                     col++;
-                                    if (col > numCols) {
-                                        errors.add(String.format("Line %d: excess data.  Expect %d but found %d.", lineNumber, numCols, col));
-                                    } else {
-                                        if (value.length() > 0) {
-                                            try {
-                                                Double.parseDouble(value);
-                                            } catch (NumberFormatException exception) {
-                                                errors.add(String.format("Line %d, column %d: invalid value %s.", lineNumber, colNum, value));
-                                            }
-                                        } else {
-                                            errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
+                                    if (value.length() > 0) {
+                                        try {
+                                            Double.parseDouble(value);
+                                        } catch (NumberFormatException exception) {
+                                            errors.add(String.format("Line %d, column %d: invalid number %s.", lineNumber, colNum, value));
                                         }
+                                    } else {
+                                        errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
                                     }
                                 }
                             }
@@ -333,22 +344,26 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                             dataBuilder.delete(0, dataBuilder.length());
 
                             if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                                col++;
-                                if (col < numCols) {
-                                    errors.add(String.format("Line %d: insufficient data.  Expect %d but found %d.", lineNumber, numCols, col));
-                                } else if (col > numCols) {
-                                    errors.add(String.format("Line %d: excess data.  Expect %d but found %d.", lineNumber, numCols, col));
-                                } else {
-                                    if (value.length() > 0) {
-                                        try {
-                                            Double.parseDouble(value);
-                                        } catch (NumberFormatException exception) {
-                                            errors.add(String.format("Line %d, column %d: invalid value %s.", lineNumber, colNum, value));
-                                        }
-                                    } else {
-                                        errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
-                                    }
+                                // ensure number of data don't exceed
+                                if (col >= numCols) {
+                                    errors.add(String.format("Line %d: excess data.  Expect %d.", lineNumber, numCols));
                                 }
+
+                                col++;
+                                if (value.length() > 0) {
+                                    try {
+                                        Double.parseDouble(value);
+                                    } catch (NumberFormatException exception) {
+                                        errors.add(String.format("Line %d, column %d: invalid number %s.", lineNumber, colNum, value));
+                                    }
+                                } else {
+                                    errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
+                                }
+                            }
+
+                            // ensure there sufficient number of data
+                            if (col < numCols) {
+                                errors.add(String.format("Line %d: insufficient data.  Expect %d but found %d.", lineNumber, numCols, col));
                             }
                         }
 
@@ -365,28 +380,33 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                 }
             } while (position < fileSize);
 
+            // case when no newline char at the end of the file
             if (colNum > 0 || dataBuilder.length() > 0) {
                 colNum++;
                 String value = dataBuilder.toString().trim();
                 dataBuilder.delete(0, dataBuilder.length());
 
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                    col++;
-                    if (col < numCols) {
-                        errors.add(String.format("Line %d: insufficient data.  Expect %d but found %d.", lineNumber, numCols, col));
-                    } else if (col > numCols) {
-                        errors.add(String.format("Line %d: excess data.  Expect %d but found %d.", lineNumber, numCols, col));
-                    } else {
-                        if (value.length() > 0) {
-                            try {
-                                Double.parseDouble(value);
-                            } catch (NumberFormatException exception) {
-                                errors.add(String.format("Line %d, column %d: invalid value %s.", lineNumber, colNum, value));
-                            }
-                        } else {
-                            errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
-                        }
+                    // ensure number of data don't exceed
+                    if (col >= numCols) {
+                        errors.add(String.format("Line %d: excess data.  Expect %d.", lineNumber, numCols));
                     }
+
+                    col++;
+                    if (value.length() > 0) {
+                        try {
+                            Double.parseDouble(value);
+                        } catch (NumberFormatException exception) {
+                            errors.add(String.format("Line %d, column %d: invalid number %s.", lineNumber, colNum, value));
+                        }
+                    } else {
+                        errors.add(String.format("Line %d, column %d: missing value.", lineNumber, colNum));
+                    }
+                }
+
+                // ensure there sufficient number of data
+                if (col < numCols) {
+                    errors.add(String.format("Line %d: insufficient data.  Expect %d but found %d.", lineNumber, numCols, col));
                 }
             }
         }
