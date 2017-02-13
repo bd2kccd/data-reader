@@ -18,8 +18,6 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.cmu.tetrad.data.ContinuousVariable;
-import edu.cmu.tetrad.graph.Node;
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import java.io.File;
 import java.io.IOException;
@@ -45,7 +43,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
         super(dataFile, delimiter);
     }
 
-    protected List<Node> extractVariablesFromData(int[] excludedColumns) throws IOException {
+    protected List<String> extractVariablesFromData(int[] excludedColumns) throws IOException {
         if (hasHeader) {
             return (commentMarker == null || commentMarker.trim().isEmpty())
                     ? extractVariables(excludedColumns)
@@ -55,8 +53,8 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
         }
     }
 
-    private List<Node> extractVariables(int[] excludedColumns, String comment) throws IOException {
-        List<Node> nodes = new LinkedList<>();
+    private List<String> extractVariables(int[] excludedColumns, String comment) throws IOException {
+        List<String> nodes = new LinkedList<>();
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -120,7 +118,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                                     excludedIndex++;
                                 } else {
                                     if (value.length() > 0) {
-                                        nodes.add(new ContinuousVariable(value));
+                                        nodes.add(value);
                                     } else {
                                         String errMsg = String.format("Missing variable name at column %d.", colNum);
                                         LOGGER.error(errMsg);
@@ -152,7 +150,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                     excludedIndex++;
                 } else {
                     if (value.length() > 0) {
-                        nodes.add(new ContinuousVariable(value));
+                        nodes.add(value);
                     } else {
                         String errMsg = String.format("Missing variable name at column %d.", colNum);
                         LOGGER.error(errMsg);
@@ -166,8 +164,8 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
         return nodes;
     }
 
-    private List<Node> extractVariables(int[] excludedColumns) throws IOException {
-        List<Node> nodes = new LinkedList<>();
+    private List<String> extractVariables(int[] excludedColumns) throws IOException {
+        List<String> nodes = new LinkedList<>();
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -205,7 +203,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                                     excludedIndex++;
                                 } else {
                                     if (value.length() > 0) {
-                                        nodes.add(new ContinuousVariable(value));
+                                        nodes.add(value);
                                     } else {
                                         String errMsg = String.format("Missing variable name at column %d.", colNum);
                                         LOGGER.error(errMsg);
@@ -237,7 +235,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                     excludedIndex++;
                 } else {
                     if (value.length() > 0) {
-                        nodes.add(new ContinuousVariable(value));
+                        nodes.add(value);
                     } else {
                         String errMsg = String.format("Missing variable name at column %d.", colNum);
                         LOGGER.error(errMsg);
@@ -257,8 +255,8 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
      * @return
      * @throws IOException
      */
-    private List<Node> generateVariables(int[] excludedColumns) throws IOException {
-        List<Node> nodes = new LinkedList<>();
+    private List<String> generateVariables(int[] excludedColumns) throws IOException {
+        List<String> nodes = new LinkedList<>();
 
         int numOfCols = getNumOfColumns();
         int length = excludedColumns.length;
@@ -267,7 +265,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
             if (length > 0 && (excludedIndex < length && colNum == excludedColumns[excludedIndex])) {
                 excludedIndex++;
             } else {
-                nodes.add(new ContinuousVariable(String.format("V%d", colNum)));
+                nodes.add(String.format("V%d", colNum));
             }
         }
 

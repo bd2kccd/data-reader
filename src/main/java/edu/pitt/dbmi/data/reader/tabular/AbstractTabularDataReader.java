@@ -44,7 +44,7 @@ public abstract class AbstractTabularDataReader extends AbstractDataReader {
     }
 
     protected int[] getVariableColumnNumbers(Set<String> variableNames) throws IOException {
-        return (commentMarker == null || commentMarker.trim().isEmpty())
+        return commentMarker.isEmpty()
                 ? getColumnNumbers(variableNames)
                 : getColumnNumbers(variableNames, commentMarker);
     }

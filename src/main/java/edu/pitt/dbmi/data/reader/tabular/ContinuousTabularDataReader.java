@@ -18,10 +18,8 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.cmu.tetrad.data.BoxDataSet;
-import edu.cmu.tetrad.data.DataSet;
-import edu.cmu.tetrad.data.DoubleDataBox;
-import edu.cmu.tetrad.graph.Node;
+import edu.pitt.dbmi.data.ContinuousDataset;
+import edu.pitt.dbmi.data.Dataset;
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import java.io.File;
 import java.io.IOException;
@@ -49,34 +47,34 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
     }
 
     @Override
-    public DataSet readInData() throws IOException {
+    public Dataset readInData() throws IOException {
         return readInData(Collections.EMPTY_SET);
     }
 
     @Override
-    public DataSet readInData(Set<String> excludedVariables) throws IOException {
+    public Dataset readInData(Set<String> excludedVariables) throws IOException {
         return readInDataset(getVariableColumnNumbers(excludedVariables));
     }
 
     @Override
-    public DataSet readInData(int[] excludedColumns) throws IOException {
+    public Dataset readInData(int[] excludedColumns) throws IOException {
         return readInDataset(getValidColumnNumbers(excludedColumns));
     }
 
-    public DataSet readInDataset(int[] excludedColumns) throws IOException {
-        List<Node> variables = extractVariablesFromData(excludedColumns);
+    public Dataset readInDataset(int[] excludedColumns) throws IOException {
+        List<String> variables = extractVariablesFromData(excludedColumns);
         double[][] data = extractContinuousData(variables, excludedColumns);
 
-        return new BoxDataSet(new DoubleDataBox(data), variables);
+        return new ContinuousDataset(variables, data);
     }
 
-    protected double[][] extractContinuousData(List<Node> variables, int[] excludedColumns) throws IOException {
-        return (commentMarker == null || commentMarker.trim().isEmpty())
+    protected double[][] extractContinuousData(List<String> variables, int[] excludedColumns) throws IOException {
+        return commentMarker.isEmpty()
                 ? extractData(variables, excludedColumns)
                 : extractData(variables, excludedColumns, commentMarker);
     }
 
-    protected double[][] extractData(List<Node> variables, int[] excludedColumns, String comment) throws IOException {
+    protected double[][] extractData(List<String> variables, int[] excludedColumns, String comment) throws IOException {
         int numCols = variables.size();
         int numRows = (hasHeader) ? getNumOfRows() - 1 : getNumOfRows();
 
@@ -302,7 +300,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
         return data;
     }
 
-    protected double[][] extractData(List<Node> variables, int[] excludedColumns) throws IOException {
+    protected double[][] extractData(List<String> variables, int[] excludedColumns) throws IOException {
         int numCols = variables.size();
         int numRows = (hasHeader) ? getNumOfRows() - 1 : getNumOfRows();
 

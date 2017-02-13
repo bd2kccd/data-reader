@@ -18,7 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.cmu.tetrad.data.DataSet;
+import edu.pitt.dbmi.data.Dataset;
 import java.io.IOException;
 import java.util.Set;
 
@@ -37,7 +37,7 @@ public interface TabularDataReader {
      * @return
      * @throws IOException whenever unable to read file
      */
-    public DataSet readInData() throws IOException;
+    public Dataset readInData() throws IOException;
 
     /**
      *
@@ -47,9 +47,9 @@ public interface TabularDataReader {
      * @return
      * @throws IOException whenever unable to read file
      */
-    public DataSet readInData(Set<String> excludedVariables) throws IOException;
+    public Dataset readInData(Set<String> excludedVariables) throws IOException;
 
-    public DataSet readInData(int[] excludedColumns) throws IOException;
+    public Dataset readInData(int[] excludedColumns) throws IOException;
 
     public void setQuoteCharacter(char quoteCharacter);
 

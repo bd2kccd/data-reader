@@ -310,7 +310,7 @@ public abstract class AbstractDataReader {
 
     public int getNumOfRows() throws IOException {
         if (numOfRows == -1) {
-            numOfRows = (commentMarker == null || commentMarker.trim().isEmpty())
+            numOfRows = commentMarker.isEmpty()
                     ? countRows()
                     : countRows(commentMarker);
         }
@@ -320,7 +320,7 @@ public abstract class AbstractDataReader {
 
     public int getNumOfColumns() throws IOException {
         if (numOfColumns == -1) {
-            numOfColumns = (commentMarker == null || commentMarker.trim().isEmpty())
+            numOfColumns = commentMarker.isEmpty()
                     ? countColumns()
                     : countColumns(commentMarker);
         }

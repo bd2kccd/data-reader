@@ -18,7 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.cmu.tetrad.data.DataSet;
+import edu.pitt.dbmi.data.ContinuousDataset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -53,14 +53,14 @@ public class TabularDataReaderTest {
         dataReader.setHasHeader(true);
 
         Set<String> excludeVars = new HashSet<>(Arrays.asList("Date", "Time"));
-        DataSet dataSet = dataReader.readInData(excludeVars);
+        ContinuousDataset dataSet = (ContinuousDataset) dataReader.readInData(excludeVars);
 
-        List<String> variableNames = dataSet.getVariableNames();
+        List<String> variableNames = dataSet.getGetVariables();
         long expected = 13;
         long actual = variableNames.size();
         Assert.assertEquals(expected, actual);
 
-        double[][] data = dataSet.getDoubleData().toArray();
+        double[][] data = dataSet.getData();
         expected = 14;
         actual = data.length;
         Assert.assertEquals(expected, actual);
