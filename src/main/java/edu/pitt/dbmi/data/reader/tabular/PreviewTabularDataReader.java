@@ -70,17 +70,20 @@ public class PreviewTabularDataReader extends AbstractDataReader implements Prev
             boolean skipLine = false;
             boolean checkRequired = true;  // require check for comment
             boolean hasQuoteChar = false;
+            boolean isDone = false;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
 
-                while (buffer.hasRemaining()) {
+                while (buffer.hasRemaining() && !isDone) {
                     byte currentChar = buffer.get();
 
                     if (skipLine) {
                         if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
                             skipLine = false;
                         }
-                    } else if (rowNum >= fromRow && rowNum <= toRow) {
+                    } else if (rowNum > toRow) {
+                        isDone = true;
+                    } else {
                         if (currentChar >= SPACE || currentChar == delimiter) {
                             // case where line starts with spaces
                             if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
@@ -105,6 +108,16 @@ public class PreviewTabularDataReader extends AbstractDataReader implements Prev
                                 }
                             }
 
+                            // line has data but not the one we want
+                            if (!checkRequired && rowNum < fromRow) {
+                                skipLine = true;
+                                dataBuilder.delete(0, dataBuilder.length());
+                                colNum = 0;
+                                rowNum++;
+                                checkRequired = true;
+                                continue;
+                            }
+
                             if (currentChar == quoteCharacter) {
                                 hasQuoteChar = !hasQuoteChar;
                                 dataBuilder.append((char) currentChar);
@@ -116,7 +129,21 @@ public class PreviewTabularDataReader extends AbstractDataReader implements Prev
                                     String value = dataBuilder.toString().trim();
                                     dataBuilder.delete(0, dataBuilder.length());
 
-                                    if (colNum >= fromColumn && colNum <= toColumn) {
+                                    // we are done with this line
+                                    if (colNum > toColumn) {
+                                        skipLine = true;
+                                        colNum = 0;
+                                        checkRequired = true;
+                                        rowNum++;
+                                        if (lineBuilder.length() > 0) {
+                                            lineBuilder.deleteCharAt(lineBuilder.length() - 1);
+                                            String line = lineBuilder.toString().trim();
+                                            lineBuilder.delete(0, lineBuilder.length());
+                                            if (line.length() > 0) {
+                                                previews.add(line);
+                                            }
+                                        }
+                                    } else if (colNum >= fromColumn) {
                                         lineBuilder.append(value);
                                         lineBuilder.append(delim);
                                     }
@@ -134,22 +161,21 @@ public class PreviewTabularDataReader extends AbstractDataReader implements Prev
                                     lineBuilder.append(value);
                                     lineBuilder.append(delim);
                                 }
-
-                                rowNum++;
                             }
 
-                            lineBuilder.deleteCharAt(lineBuilder.length() - 1);
-                            String line = lineBuilder.toString().trim();
-                            lineBuilder.delete(0, lineBuilder.length());
-                            if (line.length() > 0) {
-                                previews.add(line);
+                            if (lineBuilder.length() > 0) {
+                                lineBuilder.deleteCharAt(lineBuilder.length() - 1);
+                                String line = lineBuilder.toString().trim();
+                                lineBuilder.delete(0, lineBuilder.length());
+                                if (line.length() > 0) {
+                                    previews.add(line);
+                                }
+                                rowNum++;
                             }
 
                             colNum = 0;
                             checkRequired = true;
                         }
-                    } else {
-                        skipLine = true;
                     }
                 }
 
