@@ -52,7 +52,7 @@ public abstract class AbstractDataReader {
 
         // set default values
         this.quoteCharacter = -1;
-        this.commentMarker = null;
+        this.commentMarker = "";
         this.numOfRows = -1;
         this.numOfColumns = -1;
     }
