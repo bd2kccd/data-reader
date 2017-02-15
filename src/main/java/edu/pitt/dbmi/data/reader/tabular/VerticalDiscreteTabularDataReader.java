@@ -19,7 +19,7 @@
 package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.Dataset;
-import edu.pitt.dbmi.data.VerticalTabularDiscreteDataset;
+import edu.pitt.dbmi.data.VerticalDiscreteTabularDataset;
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import java.io.File;
 import java.io.IOException;
@@ -68,7 +68,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
 
         int[][] data = extractAndEncodeDataFromFile(varInfos, excludedColumns);
 
-        return new VerticalTabularDiscreteDataset(varInfos, data);
+        return new VerticalDiscreteTabularDataset(varInfos, data);
     }
 
     protected int[][] extractAndEncodeDataFromFile(DiscreteVarInfo[] varInfos, int[] excludedColumns) throws IOException {

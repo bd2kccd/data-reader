@@ -19,7 +19,7 @@
 package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.Dataset;
-import edu.pitt.dbmi.data.VerticalTabularDiscreteDataset;
+import edu.pitt.dbmi.data.VerticalDiscreteTabularDataset;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,9 +42,11 @@ public class VerticalDiscreteTabularDataReaderTest {
 
     /**
      * Test of readInDataset method, of class VerticalDiscreteTabularDataReader.
+     *
+     * @throws IOException
      */
     @Test
-    public void testReadInDataset() throws IOException {
+    public void testReadInVerticalTabularDiscreteDataset() throws IOException {
         Path dataFile = Paths.get("test", "data", "discrete", "uci_balloon.csv");
         char delimiter = ',';
 
@@ -61,8 +63,8 @@ public class VerticalDiscreteTabularDataReaderTest {
         dataReader.setHasHeader(true);
 
         Dataset dataset = dataReader.readInData(variables);
-        if (dataset instanceof VerticalTabularDiscreteDataset) {
-            VerticalTabularDiscreteDataset vDataset = (VerticalTabularDiscreteDataset) dataset;
+        if (dataset instanceof VerticalDiscreteTabularDataset) {
+            VerticalDiscreteTabularDataset vDataset = (VerticalDiscreteTabularDataset) dataset;
 
             DiscreteVarInfo[] variableInfos = vDataset.getVariableInfos();
             int expected = 3;

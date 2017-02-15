@@ -18,30 +18,30 @@
  */
 package edu.pitt.dbmi.data;
 
-import java.util.List;
+import edu.pitt.dbmi.data.reader.tabular.DiscreteVarInfo;
 
 /**
  *
- * Feb 13, 2017 6:00:13 PM
+ * Feb 15, 2017 5:14:08 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousDataset implements Dataset {
+public class VerticalDiscreteTabularDataset implements Dataset {
 
-    private final List<String> getVariables;
+    private final DiscreteVarInfo[] variableInfos;
 
-    private final double[][] data;
+    private final int[][] data;
 
-    public ContinuousDataset(List<String> getVariables, double[][] data) {
-        this.getVariables = getVariables;
+    public VerticalDiscreteTabularDataset(DiscreteVarInfo[] variableInfos, int[][] data) {
+        this.variableInfos = variableInfos;
         this.data = data;
     }
 
-    public List<String> getGetVariables() {
-        return getVariables;
+    public DiscreteVarInfo[] getVariableInfos() {
+        return variableInfos;
     }
 
-    public double[][] getData() {
+    public int[][] getData() {
         return data;
     }
 

@@ -45,7 +45,7 @@ public class DataValidationTest {
      */
     @Test
     public void testValidate() {
-        Path dataFile = Paths.get("test", "data", "error_small_data.csv");
+        Path dataFile = Paths.get("test", "data", "continuous", "error_sim_data_5var_10case.csv");
         char delimiter = ',';
         char quoteCharacter = '"';
         String commentMarker = "//";

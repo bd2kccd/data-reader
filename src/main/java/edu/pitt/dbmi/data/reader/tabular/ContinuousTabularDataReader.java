@@ -18,7 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.pitt.dbmi.data.ContinuousDataset;
+import edu.pitt.dbmi.data.ContinuousTabularDataset;
 import edu.pitt.dbmi.data.Dataset;
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import java.io.File;
@@ -65,7 +65,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
         List<String> variables = extractVariablesFromData(excludedColumns);
         double[][] data = extractContinuousData(variables, excludedColumns);
 
-        return new ContinuousDataset(variables, data);
+        return new ContinuousTabularDataset(variables, data);
     }
 
     protected double[][] extractContinuousData(List<String> variables, int[] excludedColumns) throws IOException {
