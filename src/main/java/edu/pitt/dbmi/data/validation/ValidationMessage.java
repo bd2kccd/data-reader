@@ -18,18 +18,22 @@
  */
 package edu.pitt.dbmi.data.validation;
 
-import java.util.List;
-
 /**
  *
- * Feb 6, 2017 5:44:56 PM
+ * Feb 16, 2017 1:56:50 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataValidation {
+public interface ValidationMessage {
 
-    public void validate();
+    public static final String FILE_IO_ERROR = "Unable to read file.";
 
-    public List<ValidationResult> getValidationResults();
+    public static final String MISSING_VALUE = "Missing value.";
+
+    public static final String INVALID_NUMBER = "Invalid number.";
+
+    public static final String EXCESS_DATA = "Excess data.";
+
+    public static final String INSUFFICIENT_DATA = "Insufficient data.";
 
 }
