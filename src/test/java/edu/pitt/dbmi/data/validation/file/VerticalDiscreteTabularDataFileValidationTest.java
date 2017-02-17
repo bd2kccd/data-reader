@@ -28,25 +28,25 @@ import org.junit.Test;
 
 /**
  *
- * Feb 17, 2017 3:10:35 PM
+ * Feb 17, 2017 5:37:44 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataFileValidationTest {
+public class VerticalDiscreteTabularDataFileValidationTest {
 
-    public ContinuousTabularDataFileValidationTest() {
+    public VerticalDiscreteTabularDataFileValidationTest() {
     }
 
     /**
      * Test of validateDataFromFile method, of class
-     * ContinuousTabularDataFileValidation.
+     * VerticalDiscreteTabularDataFileValidation.
      */
     @Test
     public void testValidateDataFromFile() {
-        Path dataFile = Paths.get("test", "data", "continuous", "error_sim_data_5var_10case.csv");
+        Path dataFile = Paths.get("test", "data", "discrete", "uci_balloon.csv");
         char delimiter = ',';
 
-        TabularDataValidation validation = new ContinuousTabularDataFileValidation(dataFile.toFile(), delimiter);
+        TabularDataValidation validation = new VerticalDiscreteTabularDataFileValidation(dataFile.toFile(), delimiter);
         validation.setHasHeader(true);
 
         validation.validate();
@@ -77,7 +77,7 @@ public class ContinuousTabularDataFileValidationTest {
         actual = warnings.size();
         Assert.assertEquals(expected, actual);
 
-        expected = 2;
+        expected = 0;
         actual = errors.size();
         Assert.assertEquals(expected, actual);
     }

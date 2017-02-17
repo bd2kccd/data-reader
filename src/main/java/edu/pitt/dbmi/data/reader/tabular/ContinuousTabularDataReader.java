@@ -26,9 +26,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +36,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataReader extends AbstractContinuousTabularDataReader implements TabularDataReader {
+public class ContinuousTabularDataReader extends AbstractContinuousTabularDataReader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ContinuousTabularDataReader.class);
 
@@ -47,28 +45,14 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
     }
 
     @Override
-    public Dataset readInData() throws IOException {
-        return readInData(Collections.EMPTY_SET);
-    }
-
-    @Override
-    public Dataset readInData(Set<String> excludedVariables) throws IOException {
-        return readInDataset(getVariableColumnNumbers(excludedVariables));
-    }
-
-    @Override
-    public Dataset readInData(int[] excludedColumns) throws IOException {
-        return readInDataset(getValidColumnNumbers(excludedColumns));
-    }
-
-    public Dataset readInDataset(int[] excludedColumns) throws IOException {
+    protected Dataset readInDataFromFile(int[] excludedColumns) throws IOException {
         List<String> variables = extractVariablesFromData(excludedColumns);
-        double[][] data = extractContinuousData(variables, excludedColumns);
+        double[][] data = extractDataFromFile(variables, excludedColumns);
 
         return new ContinuousTabularDataset(variables, data);
     }
 
-    protected double[][] extractContinuousData(List<String> variables, int[] excludedColumns) throws IOException {
+    protected double[][] extractDataFromFile(List<String> variables, int[] excludedColumns) throws IOException {
         return commentMarker.isEmpty()
                 ? extractData(variables, excludedColumns)
                 : extractData(variables, excludedColumns, commentMarker);

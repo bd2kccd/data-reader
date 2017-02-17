@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Collections;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +35,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDataReader implements TabularDataReader {
+public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDataReader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(VerticalDiscreteTabularDataReader.class);
 
@@ -46,21 +44,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
     }
 
     @Override
-    public Dataset readInData() throws IOException {
-        return readInData(Collections.EMPTY_SET);
-    }
-
-    @Override
-    public Dataset readInData(Set<String> excludedVariables) throws IOException {
-        return readInDataset(getVariableColumnNumbers(excludedVariables));
-    }
-
-    @Override
-    public Dataset readInData(int[] excludedColumns) throws IOException {
-        return readInDataset(getValidColumnNumbers(excludedColumns));
-    }
-
-    public Dataset readInDataset(int[] excludedColumns) throws IOException {
+    protected Dataset readInDataFromFile(int[] excludedColumns) throws IOException {
         DiscreteVarInfo[] varInfos = extractVariableDataFromFile(extractVariablesFromFile(excludedColumns), excludedColumns);
         for (DiscreteVarInfo varInfo : varInfos) {
             varInfo.recategorize();

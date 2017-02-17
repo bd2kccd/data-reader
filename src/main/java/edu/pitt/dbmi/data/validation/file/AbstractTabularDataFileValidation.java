@@ -18,7 +18,6 @@
  */
 package edu.pitt.dbmi.data.validation.file;
 
-import edu.pitt.dbmi.data.reader.tabular.AbstractTabularDataReader;
 import edu.pitt.dbmi.data.validation.MessageType;
 import edu.pitt.dbmi.data.validation.ValidationAttribute;
 import edu.pitt.dbmi.data.validation.ValidationCode;
@@ -28,10 +27,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
 
 /**
  *
@@ -39,16 +34,11 @@ import java.util.Set;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractTabularDataFileValidation extends AbstractTabularDataReader implements TabularDataFileValidation {
-
-    protected final List<ValidationResult> validationResults;
+public abstract class AbstractTabularDataFileValidation extends AbstractTabularDataValidation {
 
     public AbstractTabularDataFileValidation(File dataFile, char delimiter) {
         super(dataFile, delimiter);
-        this.validationResults = new LinkedList<>();
     }
-
-    protected abstract void validateDataFromFile(int[] excludedColumns) throws IOException;
 
     protected int validateVariablesFromFile(int[] excludedColumns) throws IOException {
         if (hasHeader) {
@@ -272,40 +262,6 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
         }
 
         return numOfVars;
-    }
-
-    @Override
-    public void validate(Set<String> excludedVariables) {
-        try {
-            validateDataFromFile(getVariableColumnNumbers(excludedVariables));
-        } catch (IOException exception) {
-            String errMsg = String.format("Unable to read file %s.", dataFile.getName());
-            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
-            result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getName());
-            validationResults.add(result);
-        }
-    }
-
-    @Override
-    public void validate(int[] excludedColumns) {
-        try {
-            validateDataFromFile(getValidColumnNumbers(excludedColumns));
-        } catch (IOException exception) {
-            String errMsg = String.format("Unable to read file %s.", dataFile.getName());
-            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
-            result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getName());
-            validationResults.add(result);
-        }
-    }
-
-    @Override
-    public void validate() {
-        validate(Collections.EMPTY_SET);
-    }
-
-    @Override
-    public List<ValidationResult> getValidationResults() {
-        return validationResults;
     }
 
 }

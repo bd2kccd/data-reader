@@ -27,7 +27,7 @@ import java.util.Set;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularDataFileValidation extends DataValidation {
+public interface TabularDataValidation extends DataValidation {
 
     public void validate(Set<String> excludedVariables);
 

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularDataReader {
+public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularDataFileReader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDiscreteTabularDataReader.class);
 
