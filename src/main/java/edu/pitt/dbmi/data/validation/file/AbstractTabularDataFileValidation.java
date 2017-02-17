@@ -32,8 +32,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -43,8 +41,6 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractTabularDataFileValidation extends AbstractTabularDataReader implements TabularDataFileValidation {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTabularDataFileValidation.class);
-
     protected final List<ValidationResult> validationResults;
 
     public AbstractTabularDataFileValidation(File dataFile, char delimiter) {
@@ -52,19 +48,19 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
         this.validationResults = new LinkedList<>();
     }
 
-    protected abstract void validateDataFile(int[] excludedColumns) throws IOException;
+    protected abstract void validateDataFromFile(int[] excludedColumns) throws IOException;
 
-    protected int extractVariablesFromFile(int[] excludedColumns) throws IOException {
+    protected int validateVariablesFromFile(int[] excludedColumns) throws IOException {
         if (hasHeader) {
             return (commentMarker == null || commentMarker.trim().isEmpty())
-                    ? extractVariables(excludedColumns)
-                    : extractVariables(excludedColumns, commentMarker);
+                    ? validateVariables(excludedColumns)
+                    : validateVariables(excludedColumns, commentMarker);
         } else {
             return getNumOfColumns();
         }
     }
 
-    private int extractVariables(int[] excludedColumns, String comment) throws IOException {
+    private int validateVariables(int[] excludedColumns, String comment) throws IOException {
         int numOfVars = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
@@ -185,7 +181,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
         return numOfVars;
     }
 
-    private int extractVariables(int[] excludedColumns) throws IOException {
+    private int validateVariables(int[] excludedColumns) throws IOException {
         int numOfVars = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
@@ -277,22 +273,18 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
     @Override
     public void validate(Set<String> excludedVariables) {
         try {
-            validateDataFile(getVariableColumnNumbers(excludedVariables));
+            validateDataFromFile(getVariableColumnNumbers(excludedVariables));
         } catch (IOException exception) {
-            String errMsg = String.format("Unable to read file %s for validation.", dataFile.getName());
             validationResults.add(new ValidationResult(ValidationCode.ERROR, ValidationMessage.FILE_IO_ERROR));
-            LOGGER.error(errMsg, exception);
         }
     }
 
     @Override
     public void validate(int[] excludedColumns) {
         try {
-            validateDataFile(getValidColumnNumbers(excludedColumns));
+            validateDataFromFile(getValidColumnNumbers(excludedColumns));
         } catch (IOException exception) {
-            String errMsg = String.format("Unable to read file %s for validation.", dataFile.getName());
             validationResults.add(new ValidationResult(ValidationCode.ERROR, ValidationMessage.FILE_IO_ERROR));
-            LOGGER.error(errMsg, exception);
         }
     }
 

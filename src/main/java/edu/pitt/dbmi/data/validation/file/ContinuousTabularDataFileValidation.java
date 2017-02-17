@@ -27,8 +27,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -38,21 +36,274 @@ import org.slf4j.LoggerFactory;
  */
 public class ContinuousTabularDataFileValidation extends AbstractTabularDataFileValidation {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ContinuousTabularDataFileValidation.class);
-
     public ContinuousTabularDataFileValidation(File dataFile, char delimiter) {
         super(dataFile, delimiter);
     }
 
     @Override
-    protected void validateDataFile(int[] excludedColumns) throws IOException {
-        int numOfVars = extractVariablesFromFile(excludedColumns);
+    protected void validateDataFromFile(int[] excludedColumns) throws IOException {
+        int numOfVars = validateVariablesFromFile(excludedColumns);
+        int numOfRows = commentMarker.isEmpty()
+                ? validateData(numOfVars, excludedColumns)
+                : validateData(numOfVars, excludedColumns, commentMarker);
     }
 
-    private void validateData(int numOfVars, int[] excludedColumns, String comment) throws IOException {
+    private int validateData(int numOfVars, int[] excludedColumns, String comment) throws IOException {
+        int rowCount = 0;
+
+        try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
+            long fileSize = fc.size();
+            long position = 0;
+            long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;
+
+            StringBuilder dataBuilder = new StringBuilder();
+            byte[] prefix = comment.getBytes();
+            int index = 0;
+            int numOfExCols = excludedColumns.length;
+            int excludedIndex = 0;
+            int colNum = 0;
+            int dataCol = 0;  // data column number
+            int lineNumber = 1; // actual row number
+            boolean isHeader = false;
+            boolean skipLine = false;
+            boolean checkRequired = true;  // require check for comment
+            boolean hasQuoteChar = false;
+            boolean done = false;
+            boolean skipHeader = hasHeader;
+            byte previousChar = -1;
+            do {
+                MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
+
+                if (skipHeader) {
+                    while (buffer.hasRemaining() && !done) {
+                        byte currentChar = buffer.get();
+
+                        if (skipLine) {
+                            if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
+                                skipLine = false;
+                                if (isHeader) {
+                                    done = true;
+                                }
+
+                                lineNumber++;
+                                if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                                    lineNumber--;
+                                }
+                            }
+                        } else if (currentChar > SPACE || currentChar == delimiter) {
+                            if (currentChar == prefix[index]) {
+                                index++;
+                                if (index == prefix.length) {
+                                    skipLine = true;
+                                    index = 0;
+                                }
+                            } else {
+                                skipLine = true;
+                                index = 0;
+                                isHeader = true;
+                            }
+                        } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
+                            if (index > 0) {
+                                done = true;
+                            }
+                            index = 0;
+
+                            lineNumber++;
+                            if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                                lineNumber--;
+                            }
+                        }
+
+                        previousChar = currentChar;
+                    }
+                    skipHeader = false;
+                }
+
+                while (buffer.hasRemaining()) {
+                    byte currentChar = buffer.get();
+
+                    if (skipLine) {
+                        if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
+                            skipLine = false;
+                        }
+                    } else if (currentChar >= SPACE || currentChar == delimiter) {
+                        // case where line starts with spaces
+                        if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
+                            continue;
+                        }
+
+                        if (checkRequired) {
+                            if (currentChar == prefix[index]) {
+                                index++;
+
+                                // all the comment chars are matched
+                                if (index == prefix.length) {
+                                    index = 0;
+                                    skipLine = true;
+                                    dataBuilder.delete(0, dataBuilder.length());
+                                    colNum = 0;
+                                    continue;
+                                }
+                            } else {
+                                index = 0;
+                                checkRequired = false;
+                            }
+                        }
+
+                        if (currentChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else if (currentChar == delimiter) {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currentChar);
+                            } else {
+                                colNum++;
+                                String value = dataBuilder.toString().trim();
+                                dataBuilder.delete(0, dataBuilder.length());
+
+                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
+                                    excludedIndex++;
+                                } else {
+                                    dataCol++;
+
+                                    // ensure we don't go out of bound
+                                    if (dataCol > numOfVars) {
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.EXCESS_DATA);
+                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                        validationResults.add(result);
+                                    } else {
+                                        if (value.length() > 0) {
+                                            try {
+                                                Double.parseDouble(value);
+                                            } catch (NumberFormatException exception) {
+                                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INVALID_NUMBER);
+                                                result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                                result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                                validationResults.add(result);
+                                            }
+                                        } else {
+                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                            validationResults.add(result);
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            dataBuilder.append((char) currentChar);
+                        }
+                    } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
+                        if (colNum > 0 || dataBuilder.length() > 0) {
+                            colNum++;
+                            String value = dataBuilder.toString().trim();
+                            dataBuilder.delete(0, dataBuilder.length());
+
+                            if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
+                                dataCol++;
+
+                                // ensure we don't go out of bound
+                                if (dataCol > numOfVars) {
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.EXCESS_DATA);
+                                    result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                    result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                    validationResults.add(result);
+                                } else if (dataCol < numOfVars) {
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INSUFFICIENT_DATA);
+                                    result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                    result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                    validationResults.add(result);
+                                } else {
+                                    if (value.length() > 0) {
+                                        try {
+                                            Double.parseDouble(value);
+                                        } catch (NumberFormatException exception) {
+                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INVALID_NUMBER);
+                                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                            validationResults.add(result);
+                                        }
+                                    } else {
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                        validationResults.add(result);
+                                    }
+                                }
+                            }
+
+                            rowCount++;
+                        }
+
+                        colNum = 0;
+                        dataCol = 0;
+                        excludedIndex = 0;
+                        checkRequired = true;
+
+                        lineNumber++;
+                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                            lineNumber--;
+                        }
+                    }
+
+                    previousChar = currentChar;
+                }
+
+                position += size;
+                if ((position + size) > fileSize) {
+                    size = fileSize - position;
+                }
+            } while (position < fileSize);
+
+            // case when no newline char at the end of the file
+            if (colNum > 0 || dataBuilder.length() > 0) {
+                colNum++;
+                String value = dataBuilder.toString().trim();
+                dataBuilder.delete(0, dataBuilder.length());
+
+                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
+                    dataCol++;
+
+                    // ensure we don't go out of bound
+                    if (dataCol > numOfVars) {
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.EXCESS_DATA);
+                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                        validationResults.add(result);
+                    } else if (dataCol < numOfVars) {
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INSUFFICIENT_DATA);
+                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                        validationResults.add(result);
+                    } else {
+                        if (value.length() > 0) {
+                            try {
+                                Double.parseDouble(value);
+                            } catch (NumberFormatException exception) {
+                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INVALID_NUMBER);
+                                result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                validationResults.add(result);
+                            }
+                        } else {
+                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                            validationResults.add(result);
+                        }
+                    }
+                }
+
+                rowCount++;
+            }
+        }
+
+        return rowCount;
     }
 
-    private void validateData(int numOfVars, int[] excludedColumns) throws IOException {
+    private int validateData(int numOfVars, int[] excludedColumns) throws IOException {
+        int rowCount = 0;
+
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
             long position = 0;
@@ -190,6 +441,8 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                                     }
                                 }
                             }
+
+                            rowCount++;
                         }
 
                         colNum = 0;
@@ -249,8 +502,12 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                         }
                     }
                 }
+
+                rowCount++;
             }
         }
+
+        return rowCount;
     }
 
 }
