@@ -18,9 +18,9 @@
  */
 package edu.pitt.dbmi.data.validation.file;
 
+import edu.pitt.dbmi.data.validation.MessageType;
 import edu.pitt.dbmi.data.validation.ValidationAttribute;
 import edu.pitt.dbmi.data.validation.ValidationCode;
-import edu.pitt.dbmi.data.validation.ValidationMessage;
 import edu.pitt.dbmi.data.validation.ValidationResult;
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +46,11 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
         int numOfRows = commentMarker.isEmpty()
                 ? validateData(numOfVars, excludedColumns)
                 : validateData(numOfVars, excludedColumns, commentMarker);
+        String infoMsg = String.format("There are %d cases and %d variables.", numOfRows, numOfVars);
+        ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_SUMMARY, infoMsg);
+        result.setAttribute(ValidationAttribute.ROW_NUMBER, numOfRows);
+        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, numOfVars);
+        validationResults.add(result);
     }
 
     private int validateData(int numOfVars, int[] excludedColumns, String comment) throws IOException {
@@ -167,22 +172,30 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
 
                                     // ensure we don't go out of bound
                                     if (dataCol > numOfVars) {
-                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.EXCESS_DATA);
+                                        String errMsg = String.format(
+                                                "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                                lineNumber, colNum, numOfVars, dataCol);
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, dataCol);
                                         validationResults.add(result);
                                     } else {
                                         if (value.length() > 0) {
                                             try {
                                                 Double.parseDouble(value);
                                             } catch (NumberFormatException exception) {
-                                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INVALID_NUMBER);
+                                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
                                                 result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                                 result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                                result.setAttribute(ValidationAttribute.VALUE, value);
                                                 validationResults.add(result);
                                             }
                                         } else {
-                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                                            String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
                                             validationResults.add(result);
@@ -204,27 +217,40 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
 
                                 // ensure we don't go out of bound
                                 if (dataCol > numOfVars) {
-                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.EXCESS_DATA);
+                                    String errMsg = String.format(
+                                            "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                            lineNumber, colNum, numOfVars, dataCol);
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                     result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                    result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                                    result.setAttribute(ValidationAttribute.ACTUAL_COUNT, dataCol);
                                     validationResults.add(result);
                                 } else if (dataCol < numOfVars) {
-                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INSUFFICIENT_DATA);
+                                    String errMsg = String.format(
+                                            "Insufficient data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                            lineNumber, colNum, numOfVars, dataCol);
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                     result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                    result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                                    result.setAttribute(ValidationAttribute.ACTUAL_COUNT, dataCol);
                                     validationResults.add(result);
                                 } else {
                                     if (value.length() > 0) {
                                         try {
                                             Double.parseDouble(value);
                                         } catch (NumberFormatException exception) {
-                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INVALID_NUMBER);
+                                            String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
                                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                            result.setAttribute(ValidationAttribute.VALUE, value);
                                             validationResults.add(result);
                                         }
                                     } else {
-                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
                                         validationResults.add(result);
@@ -266,27 +292,40 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
 
                     // ensure we don't go out of bound
                     if (dataCol > numOfVars) {
-                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.EXCESS_DATA);
+                        String errMsg = String.format(
+                                "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                lineNumber, colNum, numOfVars, dataCol);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, dataCol);
                         validationResults.add(result);
                     } else if (dataCol < numOfVars) {
-                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INSUFFICIENT_DATA);
+                        String errMsg = String.format(
+                                "Insufficient data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                lineNumber, colNum, numOfVars, dataCol);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, dataCol);
                         validationResults.add(result);
                     } else {
                         if (value.length() > 0) {
                             try {
                                 Double.parseDouble(value);
                             } catch (NumberFormatException exception) {
-                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INVALID_NUMBER);
+                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
                                 result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                 result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                result.setAttribute(ValidationAttribute.VALUE, value);
                                 validationResults.add(result);
                             }
                         } else {
-                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                            String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
                             validationResults.add(result);
@@ -377,22 +416,30 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
 
                                     // ensure we don't go out of bound
                                     if (dataCol > numOfVars) {
-                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.EXCESS_DATA);
+                                        String errMsg = String.format(
+                                                "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                                lineNumber, colNum, numOfVars, dataCol);
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, dataCol);
                                         validationResults.add(result);
                                     } else {
                                         if (value.length() > 0) {
                                             try {
                                                 Double.parseDouble(value);
                                             } catch (NumberFormatException exception) {
-                                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INVALID_NUMBER);
+                                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
                                                 result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                                 result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                                result.setAttribute(ValidationAttribute.VALUE, value);
                                                 validationResults.add(result);
                                             }
                                         } else {
-                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                                            String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
                                             validationResults.add(result);
@@ -414,27 +461,40 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
 
                                 // ensure we don't go out of bound
                                 if (dataCol > numOfVars) {
-                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.EXCESS_DATA);
+                                    String errMsg = String.format(
+                                            "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                            lineNumber, colNum, numOfVars, dataCol);
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                     result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                    result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                                    result.setAttribute(ValidationAttribute.ACTUAL_COUNT, dataCol);
                                     validationResults.add(result);
                                 } else if (dataCol < numOfVars) {
-                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INSUFFICIENT_DATA);
+                                    String errMsg = String.format(
+                                            "Insufficient data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                            lineNumber, colNum, numOfVars, dataCol);
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                     result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                    result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                                    result.setAttribute(ValidationAttribute.ACTUAL_COUNT, dataCol);
                                     validationResults.add(result);
                                 } else {
                                     if (value.length() > 0) {
                                         try {
                                             Double.parseDouble(value);
                                         } catch (NumberFormatException exception) {
-                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INVALID_NUMBER);
+                                            String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
                                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                            result.setAttribute(ValidationAttribute.VALUE, value);
                                             validationResults.add(result);
                                         }
                                     } else {
-                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
                                         validationResults.add(result);
@@ -475,27 +535,40 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
 
                     // ensure we don't go out of bound
                     if (dataCol > numOfVars) {
-                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.EXCESS_DATA);
+                        String errMsg = String.format(
+                                "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                lineNumber, colNum, numOfVars, dataCol);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, dataCol);
                         validationResults.add(result);
                     } else if (dataCol < numOfVars) {
-                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INSUFFICIENT_DATA);
+                        String errMsg = String.format(
+                                "Insufficient data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                lineNumber, colNum, numOfVars, dataCol);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, dataCol);
                         validationResults.add(result);
                     } else {
                         if (value.length() > 0) {
                             try {
                                 Double.parseDouble(value);
                             } catch (NumberFormatException exception) {
-                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.INVALID_NUMBER);
+                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
                                 result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                 result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                result.setAttribute(ValidationAttribute.VALUE, value);
                                 validationResults.add(result);
                             }
                         } else {
-                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                            String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
                             validationResults.add(result);

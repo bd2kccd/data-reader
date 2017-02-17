@@ -19,9 +19,9 @@
 package edu.pitt.dbmi.data.validation.file;
 
 import edu.pitt.dbmi.data.reader.tabular.AbstractTabularDataReader;
+import edu.pitt.dbmi.data.validation.MessageType;
 import edu.pitt.dbmi.data.validation.ValidationAttribute;
 import edu.pitt.dbmi.data.validation.ValidationCode;
-import edu.pitt.dbmi.data.validation.ValidationMessage;
 import edu.pitt.dbmi.data.validation.ValidationResult;
 import java.io.File;
 import java.io.IOException;
@@ -130,7 +130,8 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                                 } else {
                                     numOfVars++;
                                     if (value.length() == 0) {
-                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
                                         validationResults.add(result);
@@ -169,7 +170,8 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
                     numOfVars++;
                     if (value.length() == 0) {
-                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
                         validationResults.add(result);
@@ -220,7 +222,8 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                             } else {
                                 numOfVars++;
                                 if (value.length() == 0) {
-                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                                    String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                     result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
                                     validationResults.add(result);
@@ -258,7 +261,8 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
                     numOfVars++;
                     if (value.length() == 0) {
-                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, ValidationMessage.MISSING_VALUE);
+                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
                         validationResults.add(result);
@@ -275,7 +279,10 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
         try {
             validateDataFromFile(getVariableColumnNumbers(excludedVariables));
         } catch (IOException exception) {
-            validationResults.add(new ValidationResult(ValidationCode.ERROR, ValidationMessage.FILE_IO_ERROR));
+            String errMsg = String.format("Unable to read file %s.", dataFile.getName());
+            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
+            result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getName());
+            validationResults.add(result);
         }
     }
 
@@ -284,7 +291,10 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
         try {
             validateDataFromFile(getValidColumnNumbers(excludedColumns));
         } catch (IOException exception) {
-            validationResults.add(new ValidationResult(ValidationCode.ERROR, ValidationMessage.FILE_IO_ERROR));
+            String errMsg = String.format("Unable to read file %s.", dataFile.getName());
+            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
+            result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getName());
+            validationResults.add(result);
         }
     }
 

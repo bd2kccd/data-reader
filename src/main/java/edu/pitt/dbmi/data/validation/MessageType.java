@@ -20,21 +20,17 @@ package edu.pitt.dbmi.data.validation;
 
 /**
  *
- * Feb 16, 2017 1:49:30 PM
+ * Feb 17, 2017 1:49:26 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public enum ValidationAttribute {
+public enum MessageType {
 
-    LINE_NUMBER,
-    COLUMN_NUMBER,
-    ROW_NUMBER,
-    EXPECTED_COUNT,
-    ACTUAL_COUNT,
-    LINE_COUNT,
-    COLUMN_COUNT,
-    ROW_COUNT,
-    FILE_NAME,
-    VALUE
+    FILE_IO_ERROR,
+    FILE_MISSING_VALUE,
+    FILE_INVALID_NUMBER,
+    FILE_EXCESS_DATA,
+    FILE_INSUFFICIENT_DAT,
+    FILE_SUMMARY
 
 }

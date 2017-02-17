@@ -29,45 +29,36 @@ import java.util.Map;
  */
 public class ValidationResult {
 
-    private ValidationCode code;
+    private final ValidationCode code;
 
-    private String message;
+    private final MessageType messageType;
 
     private final Map<ValidationAttribute, Object> attributes;
 
-    public ValidationResult(ValidationCode code) {
-        this(code, null);
-    }
+    private String message;
 
-    public ValidationResult(ValidationCode code, String message) {
-        this(code, message, new EnumMap<>(ValidationAttribute.class));
-    }
-
-    private ValidationResult(ValidationCode code, String message, Map<ValidationAttribute, Object> attributes) {
+    public ValidationResult(ValidationCode code, MessageType messageType) {
         this.code = code;
+        this.messageType = messageType;
+        this.attributes = new EnumMap<>(ValidationAttribute.class);
+    }
+
+    public ValidationResult(ValidationCode code, MessageType messageType, String message) {
+        this(code, messageType);
         this.message = message;
-        this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "ValidationResult{" + "code=" + code + ", message=" + message + ", attributes=" + attributes + '}';
+        return "ValidationResult{" + "code=" + code + ", messageType=" + messageType + ", attributes=" + attributes + ", message=" + message + '}';
     }
 
     public ValidationCode getCode() {
         return code;
     }
 
-    public void setCode(ValidationCode code) {
-        this.code = code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
+    public MessageType getMessageType() {
+        return messageType;
     }
 
     public Map<ValidationAttribute, Object> getAttributes() {
@@ -76,6 +67,14 @@ public class ValidationResult {
 
     public void setAttribute(ValidationAttribute attribute, Object value) {
         this.attributes.put(attribute, value);
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 
 }
