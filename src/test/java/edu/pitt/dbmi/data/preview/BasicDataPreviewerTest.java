@@ -16,23 +16,45 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.preview;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  *
- * Feb 10, 2017 4:46:56 PM
+ * Feb 20, 2017 2:15:27 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface PreviewDataReader {
+public class BasicDataPreviewerTest {
 
-    public List<String> getPreviews(int fromRow, int toRow, int fromColumn, int toColumn) throws IOException;
+    public BasicDataPreviewerTest() {
+    }
 
-    public void setQuoteCharacter(char quoteCharacter);
+    /**
+     * Test of getPreviews method, of class BasicDataPreviewer.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testGetPreviews() throws IOException {
+        Path dataFile = Paths.get("test", "data", "discrete", "uci_balloon.csv");
 
-    public void setCommentMarker(String commentMarker);
+        DataPreviewer dataPreviewer = new BasicDataPreviewer(dataFile.toFile());
+
+        int fromLine = 3;
+        int toLine = 5;
+        int numOfCharacters = Integer.MAX_VALUE;
+
+        List<String> linePreviews = dataPreviewer.getPreviews(fromLine, toLine, numOfCharacters);
+        long expected = 3;
+        long actual = linePreviews.size();
+        Assert.assertEquals(expected, actual);
+    }
 
 }
