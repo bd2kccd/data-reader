@@ -18,14 +18,15 @@
  */
 package edu.pitt.dbmi.data.validation.file;
 
-import edu.pitt.dbmi.data.reader.tabular.AbstractTabularDataReader;
+import edu.pitt.dbmi.data.validation.MessageType;
+import edu.pitt.dbmi.data.validation.ValidationAttribute;
+import edu.pitt.dbmi.data.validation.ValidationCode;
+import edu.pitt.dbmi.data.validation.ValidationResult;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  *
@@ -33,32 +34,24 @@ import java.util.List;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractTabularDataFileValidation extends AbstractTabularDataReader implements TabularDataFileValidation {
-
-    protected final List<String> errors;
-    protected final List<String> infos;
-    protected final List<String> warnings;
+public abstract class AbstractTabularDataFileValidation extends AbstractTabularDataValidation {
 
     public AbstractTabularDataFileValidation(File dataFile, char delimiter) {
         super(dataFile, delimiter);
-
-        this.errors = new LinkedList<>();
-        this.infos = new LinkedList<>();
-        this.warnings = new LinkedList<>();
     }
 
-    protected List<String> extractVariablesFromFile(int[] excludedColumns) throws IOException {
+    protected int validateVariablesFromFile(int[] excludedColumns) throws IOException {
         if (hasHeader) {
             return (commentMarker == null || commentMarker.trim().isEmpty())
-                    ? extractVariables(excludedColumns)
-                    : extractVariables(excludedColumns, commentMarker);
+                    ? validateVariables(excludedColumns)
+                    : validateVariables(excludedColumns, commentMarker);
         } else {
-            return generateVariables(excludedColumns);
+            return getNumOfColumns();
         }
     }
 
-    private List<String> extractVariables(int[] excludedColumns, String comment) throws IOException {
-        List<String> variables = new LinkedList<>();
+    private int validateVariables(int[] excludedColumns, String comment) throws IOException {
+        int numOfVars = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -71,13 +64,15 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
             int colNum = 0;
             int excludedIndex = 0;
             int numOfExCols = excludedColumns.length;
+            int lineNumber = 1;
             boolean skipLine = false;
             boolean checkRequired = true;  // require check for comment
             boolean hasQuoteChar = false;
-            boolean endOfLine = false;
+            boolean done = false;
+            byte previousChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !endOfLine) {
+                while (buffer.hasRemaining() && !done) {
                     byte currentChar = buffer.get();
 
                     if (skipLine) {
@@ -87,6 +82,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                     } else if (currentChar >= SPACE || currentChar == delimiter) {
                         // case where line starts with spaces
                         if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
+                            previousChar = currentChar;
                             continue;
                         }
 
@@ -100,6 +96,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                                     skipLine = true;
                                     dataBuilder.delete(0, dataBuilder.length());
                                     colNum = 0;
+                                    previousChar = currentChar;
                                     continue;
                                 }
                             } else {
@@ -121,9 +118,13 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                                 if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
                                     excludedIndex++;
                                 } else {
-                                    variables.add(value);
+                                    numOfVars++;
                                     if (value.length() == 0) {
-                                        errors.add(String.format("Column %d: missing variable name.", colNum));
+                                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                        validationResults.add(result);
                                     }
                                 }
                             }
@@ -131,8 +132,17 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                             dataBuilder.append((char) currentChar);
                         }
                     } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
-                        endOfLine = colNum > 0 || dataBuilder.length() > 0;
+                        if (colNum > 0 || dataBuilder.length() > 0) {
+                            done = true;
+                        } else {
+                            lineNumber++;
+                            if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                                lineNumber--;
+                            }
+                        }
                     }
+
+                    previousChar = currentChar;
                 }
 
                 position += size;
@@ -148,20 +158,23 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                 dataBuilder.delete(0, dataBuilder.length());
 
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                    variables.add(value);
+                    numOfVars++;
                     if (value.length() == 0) {
-                        errors.add(String.format("Column %d: missing variable name.", colNum));
+                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                        validationResults.add(result);
                     }
                 }
             }
-
         }
 
-        return variables;
+        return numOfVars;
     }
 
-    private List<String> extractVariables(int[] excludedColumns) throws IOException {
-        List<String> variables = new LinkedList<>();
+    private int validateVariables(int[] excludedColumns) throws IOException {
+        int numOfVars = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -172,11 +185,13 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
             int colNum = 0;
             int excludedIndex = 0;
             int numOfExCols = excludedColumns.length;
+            int lineNumber = 1;
             boolean hasQuoteChar = false;
-            boolean endOfLine = false;
+            boolean done = false;
+            byte previousChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !endOfLine) {
+                while (buffer.hasRemaining() && !done) {
                     byte currentChar = buffer.get();
 
                     if (currentChar >= SPACE || currentChar == delimiter) {
@@ -188,28 +203,37 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                         if (currentChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
                         } else if (currentChar == delimiter) {
-                            if (hasQuoteChar) {
-                                dataBuilder.append((char) currentChar);
-                            } else {
-                                colNum++;
-                                String value = dataBuilder.toString().trim();
-                                dataBuilder.delete(0, dataBuilder.length());
+                            colNum++;
+                            String value = dataBuilder.toString().trim();
+                            dataBuilder.delete(0, dataBuilder.length());
 
-                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
-                                    excludedIndex++;
-                                } else {
-                                    variables.add(value);
-                                    if (value.length() == 0) {
-                                        errors.add(String.format("Column %d: missing variable name.", colNum));
-                                    }
+                            if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
+                                excludedIndex++;
+                            } else {
+                                numOfVars++;
+                                if (value.length() == 0) {
+                                    String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                                    result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                    result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                    validationResults.add(result);
                                 }
                             }
                         } else {
                             dataBuilder.append((char) currentChar);
                         }
                     } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
-                        endOfLine = colNum > 0 || dataBuilder.length() > 0;
+                        if (colNum > 0 || dataBuilder.length() > 0) {
+                            done = true;
+                        } else {
+                            lineNumber++;
+                            if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                                lineNumber--;
+                            }
+                        }
                     }
+
+                    previousChar = currentChar;
                 }
 
                 position += size;
@@ -225,63 +249,19 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                 dataBuilder.delete(0, dataBuilder.length());
 
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                    variables.add(value);
+                    numOfVars++;
                     if (value.length() == 0) {
-                        errors.add(String.format("Column %d: missing variable name.", colNum));
+                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                        validationResults.add(result);
                     }
                 }
             }
-
         }
 
-        return variables;
-    }
-
-    private List<String> generateVariables(int[] excludedColumns) throws IOException {
-        List<String> variables = new LinkedList<>();
-
-        int numOfCols = getNumOfColumns();
-        int length = excludedColumns.length;
-        int excludedIndex = 0;
-        for (int colNum = 1; colNum <= numOfCols; colNum++) {
-            if (length > 0 && (excludedIndex < length && colNum == excludedColumns[excludedIndex])) {
-                excludedIndex++;
-            } else {
-                variables.add(String.format("V%d", colNum));
-            }
-        }
-
-        return variables;
-    }
-
-    @Override
-    public boolean hasErrors() {
-        return !errors.isEmpty();
-    }
-
-    @Override
-    public boolean hasInfos() {
-        return !infos.isEmpty();
-    }
-
-    @Override
-    public boolean hasWarnings() {
-        return !warnings.isEmpty();
-    }
-
-    @Override
-    public List<String> getErrors() {
-        return errors;
-    }
-
-    @Override
-    public List<String> getInfos() {
-        return infos;
-    }
-
-    @Override
-    public List<String> getWarnings() {
-        return warnings;
+        return numOfVars;
     }
 
 }

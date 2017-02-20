@@ -16,20 +16,33 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation;
+package edu.pitt.dbmi.data;
 
-import java.util.List;
+import edu.pitt.dbmi.data.reader.tabular.DiscreteVarInfo;
 
 /**
  *
- * Feb 6, 2017 5:44:56 PM
+ * Feb 15, 2017 5:14:08 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataValidation {
+public class VerticalDiscreteTabularDataset implements Dataset {
 
-    public void validate();
+    private final DiscreteVarInfo[] variableInfos;
 
-    public List<ValidationResult> getValidationResults();
+    private final int[][] data;
+
+    public VerticalDiscreteTabularDataset(DiscreteVarInfo[] variableInfos, int[][] data) {
+        this.variableInfos = variableInfos;
+        this.data = data;
+    }
+
+    public DiscreteVarInfo[] getVariableInfos() {
+        return variableInfos;
+    }
+
+    public int[][] getData() {
+        return data;
+    }
 
 }

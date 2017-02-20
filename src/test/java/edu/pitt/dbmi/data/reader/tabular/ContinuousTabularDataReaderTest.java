@@ -18,7 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.pitt.dbmi.data.ContinuousDataset;
+import edu.pitt.dbmi.data.ContinuousTabularDataset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -34,9 +34,9 @@ import org.junit.Test;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class TabularDataReaderTest {
+public class ContinuousTabularDataReaderTest {
 
-    public TabularDataReaderTest() {
+    public ContinuousTabularDataReaderTest() {
     }
 
     /**
@@ -45,15 +45,15 @@ public class TabularDataReaderTest {
      * @throws Exception
      */
     @Test
-    public void testTabDelimited() throws Exception {
-        Path dataFile = Paths.get("test", "data", "uci", "small_AirQualityUCI.csv");
+    public void testReadInContinuousTabularDataset() throws Exception {
+        Path dataFile = Paths.get("test", "data", "continuous", "uci_air_quality.csv");
         char delimiter = ',';
 
         TabularDataReader dataReader = new ContinuousTabularDataReader(dataFile.toFile(), delimiter);
         dataReader.setHasHeader(true);
 
         Set<String> excludeVars = new HashSet<>(Arrays.asList("Date", "Time"));
-        ContinuousDataset dataSet = (ContinuousDataset) dataReader.readInData(excludeVars);
+        ContinuousTabularDataset dataSet = (ContinuousTabularDataset) dataReader.readInData(excludeVars);
 
         List<String> variableNames = dataSet.getGetVariables();
         long expected = 13;

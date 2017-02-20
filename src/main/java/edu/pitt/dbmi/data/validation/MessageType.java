@@ -16,33 +16,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data;
-
-import java.util.List;
+package edu.pitt.dbmi.data.validation;
 
 /**
  *
- * Feb 13, 2017 6:00:13 PM
+ * Feb 17, 2017 1:49:26 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousDataset implements Dataset {
+public enum MessageType {
 
-    private final List<String> getVariables;
-
-    private final double[][] data;
-
-    public ContinuousDataset(List<String> getVariables, double[][] data) {
-        this.getVariables = getVariables;
-        this.data = data;
-    }
-
-    public List<String> getGetVariables() {
-        return getVariables;
-    }
-
-    public double[][] getData() {
-        return data;
-    }
+    FILE_IO_ERROR,
+    FILE_MISSING_VALUE,
+    FILE_INVALID_NUMBER,
+    FILE_EXCESS_DATA,
+    FILE_INSUFFICIENT_DAT,
+    FILE_SUMMARY
 
 }

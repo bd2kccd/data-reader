@@ -18,18 +18,16 @@
  */
 package edu.pitt.dbmi.data.validation;
 
-import java.util.List;
-
 /**
  *
- * Feb 6, 2017 5:44:56 PM
+ * Feb 16, 2017 1:47:01 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataValidation {
+public enum ValidationCode {
 
-    public void validate();
-
-    public List<ValidationResult> getValidationResults();
+    INFO,
+    WARNING,
+    ERROR
 
 }

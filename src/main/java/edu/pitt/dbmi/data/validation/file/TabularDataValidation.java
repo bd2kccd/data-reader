@@ -16,20 +16,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation;
+package edu.pitt.dbmi.data.validation.file;
 
-import java.util.List;
+import edu.pitt.dbmi.data.validation.DataValidation;
+import java.util.Set;
 
 /**
  *
- * Feb 6, 2017 5:44:56 PM
+ * Feb 6, 2017 6:26:15 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataValidation {
+public interface TabularDataValidation extends DataValidation {
 
-    public void validate();
+    public void validate(Set<String> excludedVariables);
 
-    public List<ValidationResult> getValidationResults();
+    public void validate(int[] excludedColumns);
+
+    public void setQuoteCharacter(char quoteCharacter);
+
+    public void setCommentMarker(String commentMarker);
+
+    public void setHasHeader(boolean hasHeader);
 
 }

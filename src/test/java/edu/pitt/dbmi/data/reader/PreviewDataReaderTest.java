@@ -43,7 +43,7 @@ public class PreviewDataReaderTest {
      */
     @Test
     public void testGetPreviews() throws Exception {
-        Path dataFile = Paths.get("test", "data", "uci", "small_AirQualityUCI.csv");
+        Path dataFile = Paths.get("test", "data", "continuous", "uci_air_quality.csv");
         char delimiter = ',';
         char quoteCharacter = '"';
         String commentMarker = "//";
