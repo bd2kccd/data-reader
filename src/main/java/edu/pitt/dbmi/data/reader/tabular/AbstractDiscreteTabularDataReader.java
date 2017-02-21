@@ -460,7 +460,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
     }
 
     private DiscreteVarInfo[] extractVariables(int[] excludedColumns, String comment) throws IOException {
-        int numOfCols = getNumOfColumns();
+        int numOfCols = getNumberOfColumns();
         int numOfExCols = excludedColumns.length;
         int varInfoSize = numOfCols - numOfExCols;
         DiscreteVarInfo[] varInfos = new DiscreteVarInfo[varInfoSize];
@@ -578,7 +578,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
     }
 
     private DiscreteVarInfo[] extractVariables(int[] excludedColumns) throws IOException {
-        int numOfCols = getNumOfColumns();
+        int numOfCols = getNumberOfColumns();
         int numOfExCols = excludedColumns.length;
         int varInfoSize = numOfCols - numOfExCols;
         DiscreteVarInfo[] varInfos = new DiscreteVarInfo[varInfoSize];
@@ -680,7 +680,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
      * @throws IOException
      */
     private DiscreteVarInfo[] generateVariables(int[] excludedColumns) throws IOException {
-        int numOfCols = getNumOfColumns();
+        int numOfCols = getNumberOfColumns();
         int numOfExCols = excludedColumns.length;
         int size = numOfCols - numOfExCols;
         int exColIndex = 0;

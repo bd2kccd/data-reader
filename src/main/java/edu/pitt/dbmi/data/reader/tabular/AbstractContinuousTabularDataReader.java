@@ -65,12 +65,14 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
             byte[] prefix = comment.getBytes();
             int index = 0;
             int colNum = 0;
+            int lineNumber = 1;
             int excludedIndex = 0;
             int numOfExCols = excludedColumns.length;
             boolean skipLine = false;
             boolean checkRequired = true;  // require check for comment
             boolean hasQuoteChar = false;
             boolean endOfLine = false;
+            byte previousChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
                 while (buffer.hasRemaining() && !endOfLine) {
@@ -83,6 +85,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                     } else if (currentChar >= SPACE || currentChar == delimiter) {
                         // case where line starts with spaces
                         if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
+                            previousChar = currentChar;
                             continue;
                         }
 
@@ -96,6 +99,8 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                                     skipLine = true;
                                     dataBuilder.delete(0, dataBuilder.length());
                                     colNum = 0;
+
+                                    previousChar = currentChar;
                                     continue;
                                 }
                             } else {
@@ -120,7 +125,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                                     if (value.length() > 0) {
                                         nodes.add(value);
                                     } else {
-                                        String errMsg = String.format("Missing variable name at column %d.", colNum);
+                                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -131,7 +136,14 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                         }
                     } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
                         endOfLine = colNum > 0 || dataBuilder.length() > 0;
+
+                        lineNumber++;
+                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                            lineNumber--;
+                        }
                     }
+
+                    previousChar = currentChar;
                 }
 
                 position += size;
@@ -152,7 +164,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                     if (value.length() > 0) {
                         nodes.add(value);
                     } else {
-                        String errMsg = String.format("Missing variable name at column %d.", colNum);
+                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNumber, colNum);
                         LOGGER.error(errMsg);
                         throw new DataReaderException(errMsg);
                     }
@@ -174,10 +186,12 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
 
             StringBuilder dataBuilder = new StringBuilder();
             int colNum = 0;
+            int lineNumber = 1;
             int excludedIndex = 0;
             int numOfExCols = excludedColumns.length;
             boolean hasQuoteChar = false;
             boolean endOfLine = false;
+            byte previousChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
                 while (buffer.hasRemaining() && !endOfLine) {
@@ -186,6 +200,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                     if (currentChar >= SPACE || currentChar == delimiter) {
                         // case where line starts with spaces
                         if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
+                            previousChar = currentChar;
                             continue;
                         }
 
@@ -205,7 +220,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                                     if (value.length() > 0) {
                                         nodes.add(value);
                                     } else {
-                                        String errMsg = String.format("Missing variable name at column %d.", colNum);
+                                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -216,7 +231,14 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                         }
                     } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
                         endOfLine = colNum > 0 || dataBuilder.length() > 0;
+
+                        lineNumber++;
+                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                            lineNumber--;
+                        }
                     }
+
+                    previousChar = currentChar;
                 }
 
                 position += size;
@@ -237,7 +259,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                     if (value.length() > 0) {
                         nodes.add(value);
                     } else {
-                        String errMsg = String.format("Missing variable name at column %d.", colNum);
+                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNumber, colNum);
                         LOGGER.error(errMsg);
                         throw new DataReaderException(errMsg);
                     }
@@ -258,7 +280,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
     private List<String> generateVariables(int[] excludedColumns) throws IOException {
         List<String> nodes = new LinkedList<>();
 
-        int numOfCols = getNumOfColumns();
+        int numOfCols = getNumberOfColumns();
         int length = excludedColumns.length;
         int excludedIndex = 0;
         for (int colNum = 1; colNum <= numOfCols; colNum++) {

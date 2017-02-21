@@ -225,7 +225,7 @@ public abstract class AbstractTabularDataReader extends AbstractDataReader {
 
     protected int[] getValidColumnNumbers(int[] columnNumbers) throws IOException {
         Set<Integer> indices = new TreeSet<>();
-        int numOfVars = getNumOfColumns();
+        int numOfVars = getNumberOfColumns();
         for (int colNum : columnNumbers) {
             if (colNum > 0 && colNum <= numOfVars) {
                 indices.add(colNum);

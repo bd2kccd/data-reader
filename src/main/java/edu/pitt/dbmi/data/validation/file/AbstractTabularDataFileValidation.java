@@ -46,7 +46,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                     ? validateVariables(excludedColumns)
                     : validateVariables(excludedColumns, commentMarker);
         } else {
-            return getNumOfColumns();
+            return getNumberOfColumns();
         }
     }
 

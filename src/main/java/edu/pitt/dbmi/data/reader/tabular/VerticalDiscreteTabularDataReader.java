@@ -63,7 +63,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
 
     protected int[][] extractAndEncodeData(DiscreteVarInfo[] varInfos, int[] excludedColumns, String comment) throws IOException {
         int numCols = varInfos.length;
-        int numRows = (hasHeader) ? getNumOfRows() - 1 : getNumOfRows();
+        int numRows = (hasHeader) ? getNumberOfRows() - 1 : getNumberOfRows();
         int[][] data = new int[numCols][numRows];
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -295,7 +295,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
 
     protected int[][] extractAndEncodeData(DiscreteVarInfo[] varInfos, int[] excludedColumns) throws IOException {
         int numCols = varInfos.length;
-        int numRows = (hasHeader) ? getNumOfRows() - 1 : getNumOfRows();
+        int numRows = (hasHeader) ? getNumberOfRows() - 1 : getNumberOfRows();
         int[][] data = new int[numCols][numRows];
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();

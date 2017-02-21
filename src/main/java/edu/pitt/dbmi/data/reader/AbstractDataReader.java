@@ -40,8 +40,8 @@ public abstract class AbstractDataReader {
     protected byte quoteCharacter;
     protected String commentMarker;
 
-    private int numOfRows;
-    private int numOfColumns;
+    private int numberOfRows;
+    private int numberOfColumns;
 
     protected final File dataFile;
     protected final byte delimiter;
@@ -53,8 +53,8 @@ public abstract class AbstractDataReader {
         // set default values
         this.quoteCharacter = -1;
         this.commentMarker = "";
-        this.numOfRows = -1;
-        this.numOfColumns = -1;
+        this.numberOfRows = -1;
+        this.numberOfColumns = -1;
     }
 
     /**
@@ -308,24 +308,24 @@ public abstract class AbstractDataReader {
         }
     }
 
-    public int getNumOfRows() throws IOException {
-        if (numOfRows == -1) {
-            numOfRows = commentMarker.isEmpty()
+    public int getNumberOfRows() throws IOException {
+        if (numberOfRows == -1) {
+            numberOfRows = commentMarker.isEmpty()
                     ? countRows()
                     : countRows(commentMarker);
         }
 
-        return numOfRows;
+        return numberOfRows;
     }
 
-    public int getNumOfColumns() throws IOException {
-        if (numOfColumns == -1) {
-            numOfColumns = commentMarker.isEmpty()
+    public int getNumberOfColumns() throws IOException {
+        if (numberOfColumns == -1) {
+            numberOfColumns = commentMarker.isEmpty()
                     ? countColumns()
                     : countColumns(commentMarker);
         }
 
-        return numOfColumns;
+        return numberOfColumns;
     }
 
 }

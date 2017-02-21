@@ -59,43 +59,49 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
     }
 
     protected double[][] extractData(List<String> variables, int[] excludedColumns, String comment) throws IOException {
-        int numCols = variables.size();
-        int numRows = (hasHeader) ? getNumOfRows() - 1 : getNumOfRows();
+        int numOfColumns = variables.size();
+        int numOfRows = (hasHeader) ? getNumberOfRows() - 1 : getNumberOfRows();
 
-        double[][] data = new double[numRows][numCols];
+        double[][] data = new double[numOfRows][numOfColumns];
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
             long position = 0;
             long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;
 
             StringBuilder dataBuilder = new StringBuilder();
+            boolean hasQuoteChar = false;
+            boolean skipHeader = hasHeader;
+            boolean skipLine = false;
+            boolean done = false;
+            boolean isHeader = false;
+            boolean checkRequired = true;  // require check for comment
             byte[] prefix = comment.getBytes();
             int index = 0;
-            int numOfExCols = excludedColumns.length;
             int excludedIndex = 0;
-            int colNum = 0;
-            int row = 0;  // data row number
-            int col = 0;  // data column number
-            int lineNumber = 1; // actual row number
-            boolean isHeader = false;
-            boolean skipLine = false;
-            boolean checkRequired = true;  // require check for comment
-            boolean hasQuoteChar = false;
-            boolean endOfLine = false;
-            boolean skipHeader = hasHeader;
+            int numOfExCols = excludedColumns.length;
+            int lineNumber = 1; // actual line number in file
+            int colNum = 0;  // actual file columm number
+            int dataColNum = 0;  // actual data column number
+            int row = 0;  // array row number
+            int col = 0;  // array column number
+            byte previousChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
 
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && !endOfLine) {
+                    while (buffer.hasRemaining() && !done) {
                         byte currentChar = buffer.get();
 
                         if (skipLine) {
                             if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
                                 skipLine = false;
-                                lineNumber++;
                                 if (isHeader) {
-                                    endOfLine = true;
+                                    done = true;
+                                }
+
+                                lineNumber++;
+                                if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                                    lineNumber--;
                                 }
                             }
                         } else if (currentChar > SPACE || currentChar == delimiter) {
@@ -112,11 +118,17 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                             }
                         } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
                             if (index > 0) {
-                                endOfLine = true;
+                                done = true;
                             }
                             index = 0;
+
                             lineNumber++;
+                            if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                                lineNumber--;
+                            }
                         }
+
+                        previousChar = currentChar;
                     }
                     skipHeader = false;
                 }
@@ -131,6 +143,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                     } else if (currentChar >= SPACE || currentChar == delimiter) {
                         // case where line starts with spaces
                         if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
+                            previousChar = currentChar;
                             continue;
                         }
 
@@ -144,6 +157,8 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                                     skipLine = true;
                                     dataBuilder.delete(0, dataBuilder.length());
                                     colNum = 0;
+
+                                    previousChar = currentChar;
                                     continue;
                                 }
                             } else {
@@ -165,9 +180,11 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                                 if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
                                     excludedIndex++;
                                 } else {
+                                    dataColNum++;
+
                                     // ensure we don't go out of bound
-                                    if (col >= numCols) {
-                                        String errMsg = String.format("Excess data on line %d.  Expect %d.", lineNumber, numCols);
+                                    if (dataColNum > numOfColumns) {
+                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, dataColNum, numOfColumns);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -176,12 +193,12 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                                         try {
                                             data[row][col++] = Double.parseDouble(value);
                                         } catch (NumberFormatException exception) {
-                                            String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
+                                            String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
                                             LOGGER.error(errMsg, exception);
                                             throw new DataReaderException(errMsg);
                                         }
                                     } else {
-                                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -197,44 +214,49 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                             dataBuilder.delete(0, dataBuilder.length());
 
                             if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                                // ensure number of data don't exceed
-                                if (col >= numCols) {
-                                    String errMsg = String.format("Excess data on line %d.  Expect %d.", lineNumber, numCols);
+                                dataColNum++;
+
+                                // ensure the data is within bound
+                                if (dataColNum > numOfColumns) {
+                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, dataColNum, numOfColumns);
                                     LOGGER.error(errMsg);
                                     throw new DataReaderException(errMsg);
-                                }
-
-                                if (value.length() > 0) {
-                                    try {
-                                        data[row][col++] = Double.parseDouble(value);
-                                    } catch (NumberFormatException exception) {
-                                        String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
-                                        LOGGER.error(errMsg, exception);
+                                } else if (dataColNum < numOfColumns) {
+                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, dataColNum, numOfColumns);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                } else {
+                                    if (value.length() > 0) {
+                                        try {
+                                            data[row][col++] = Double.parseDouble(value);
+                                        } catch (NumberFormatException exception) {
+                                            String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                            LOGGER.error(errMsg, exception);
+                                            throw new DataReaderException(errMsg);
+                                        }
+                                    } else {
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
+                                        LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
-                                } else {
-                                    String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
                                 }
-                            }
-
-                            // ensure there sufficient number of data
-                            if (col < numCols) {
-                                String errMsg = String.format("Insufficient data on line %d.  Expect %d but found %d.", lineNumber, numCols, col);
-                                LOGGER.error(errMsg);
-                                throw new DataReaderException(errMsg);
                             }
 
                             row++;
                         }
 
-                        colNum = 0;
                         col = 0;
+                        colNum = 0;
+                        dataColNum = 0;
                         excludedIndex = 0;
+
                         lineNumber++;
-                        checkRequired = true;
+                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                            lineNumber--;
+                        }
                     }
+
+                    previousChar = currentChar;
                 }
 
                 position += size;
@@ -250,33 +272,32 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                 dataBuilder.delete(0, dataBuilder.length());
 
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                    // ensure number of data don't exceed
-                    if (col >= numCols) {
-                        String errMsg = String.format("Excess data on line %d.  Expect %d.", lineNumber, numCols);
+                    dataColNum++;
+
+                    // ensure the data is within bound
+                    if (dataColNum > numOfColumns) {
+                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, dataColNum, numOfColumns);
                         LOGGER.error(errMsg);
                         throw new DataReaderException(errMsg);
-                    }
-
-                    if (value.length() > 0) {
-                        try {
-                            data[row][col++] = Double.parseDouble(value);
-                        } catch (NumberFormatException exception) {
-                            String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
-                            LOGGER.error(errMsg, exception);
+                    } else if (dataColNum < numOfColumns) {
+                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, dataColNum, numOfColumns);
+                        LOGGER.error(errMsg);
+                        throw new DataReaderException(errMsg);
+                    } else {
+                        if (value.length() > 0) {
+                            try {
+                                data[row][col++] = Double.parseDouble(value);
+                            } catch (NumberFormatException exception) {
+                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                LOGGER.error(errMsg, exception);
+                                throw new DataReaderException(errMsg);
+                            }
+                        } else {
+                            String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
+                            LOGGER.error(errMsg);
                             throw new DataReaderException(errMsg);
                         }
-                    } else {
-                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
-                        LOGGER.error(errMsg);
-                        throw new DataReaderException(errMsg);
                     }
-                }
-
-                // ensure there sufficient number of data
-                if (col < numCols) {
-                    String errMsg = String.format("Insufficient data on line %d.  Expect %d but found %d.", lineNumber, numCols, col);
-                    LOGGER.error(errMsg);
-                    throw new DataReaderException(errMsg);
                 }
             }
         }
@@ -285,44 +306,55 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
     }
 
     protected double[][] extractData(List<String> variables, int[] excludedColumns) throws IOException {
-        int numCols = variables.size();
-        int numRows = (hasHeader) ? getNumOfRows() - 1 : getNumOfRows();
+        int numOfColumns = variables.size();
+        int numOfRows = (hasHeader) ? getNumberOfRows() - 1 : getNumberOfRows();
 
-        double[][] data = new double[numRows][numCols];
+        double[][] data = new double[numOfRows][numOfColumns];
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
             long position = 0;
             long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;
 
             StringBuilder dataBuilder = new StringBuilder();
-            boolean skipHeader = hasHeader;
             boolean hasQuoteChar = false;
+            boolean skipHeader = hasHeader;
             boolean skipLine = false;
-            boolean endOfLine = false;
-            int numOfExCols = excludedColumns.length;
-            int row = 0;  // data row number
-            int col = 0;  // data column number
-            int lineNumber = 1; // actual row number
-            int colNum = 0;  // actual columm number
+            boolean done = false;
             int excludedIndex = 0;
+            int numOfExCols = excludedColumns.length;
+            int lineNumber = 1; // actual line number in file
+            int colNum = 0;  // actual file columm number
+            int dataColNum = 0;  // actual data column number
+            int row = 0;  // array row number
+            int col = 0;  // array column number
+            byte previousChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
 
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && !endOfLine) {
+                    while (buffer.hasRemaining() && !done) {
                         byte currentChar = buffer.get();
 
                         if (skipLine) {
                             if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
                                 skipLine = false;
-                                endOfLine = true;
+                                done = true;
+
                                 lineNumber++;
+                                if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                                    lineNumber--;
+                                }
                             }
                         } else if (currentChar > SPACE || currentChar == delimiter) {
                             skipLine = true;
                         } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
                             lineNumber++;
+                            if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                                lineNumber--;
+                            }
                         }
+
+                        previousChar = currentChar;
                     }
                     skipHeader = false;
                 }
@@ -333,6 +365,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                     if (currentChar >= SPACE || currentChar == delimiter) {
                         // case where line starts with spaces
                         if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
+                            previousChar = currentChar;
                             continue;
                         }
 
@@ -349,9 +382,11 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                                 if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
                                     excludedIndex++;
                                 } else {
+                                    dataColNum++;
+
                                     // ensure we don't go out of bound
-                                    if (col >= numCols) {
-                                        String errMsg = String.format("Excess data on line %d.  Expect %d.", lineNumber, numCols);
+                                    if (dataColNum > numOfColumns) {
+                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, dataColNum, numOfColumns);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -360,12 +395,12 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                                         try {
                                             data[row][col++] = Double.parseDouble(value);
                                         } catch (NumberFormatException exception) {
-                                            String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
+                                            String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
                                             LOGGER.error(errMsg, exception);
                                             throw new DataReaderException(errMsg);
                                         }
                                     } else {
-                                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -381,43 +416,49 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                             dataBuilder.delete(0, dataBuilder.length());
 
                             if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                                // ensure number of data don't exceed
-                                if (col >= numCols) {
-                                    String errMsg = String.format("Excess data on line %d.  Expect %d.", lineNumber, numCols);
+                                dataColNum++;
+
+                                // ensure the data is within bound
+                                if (dataColNum > numOfColumns) {
+                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, dataColNum, numOfColumns);
                                     LOGGER.error(errMsg);
                                     throw new DataReaderException(errMsg);
-                                }
-
-                                if (value.length() > 0) {
-                                    try {
-                                        data[row][col++] = Double.parseDouble(value);
-                                    } catch (NumberFormatException exception) {
-                                        String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
-                                        LOGGER.error(errMsg, exception);
+                                } else if (dataColNum < numOfColumns) {
+                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, dataColNum, numOfColumns);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                } else {
+                                    if (value.length() > 0) {
+                                        try {
+                                            data[row][col++] = Double.parseDouble(value);
+                                        } catch (NumberFormatException exception) {
+                                            String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                            LOGGER.error(errMsg, exception);
+                                            throw new DataReaderException(errMsg);
+                                        }
+                                    } else {
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
+                                        LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
-                                } else {
-                                    String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
                                 }
-                            }
-
-                            // ensure there sufficient number of data
-                            if (col < numCols) {
-                                String errMsg = String.format("Insufficient data on line %d.  Expect %d but found %d.", lineNumber, numCols, col);
-                                LOGGER.error(errMsg);
-                                throw new DataReaderException(errMsg);
                             }
 
                             row++;
                         }
 
-                        colNum = 0;
                         col = 0;
+                        colNum = 0;
+                        dataColNum = 0;
                         excludedIndex = 0;
+
                         lineNumber++;
+                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                            lineNumber--;
+                        }
                     }
+
+                    previousChar = currentChar;
                 }
 
                 position += size;
@@ -433,33 +474,32 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                 dataBuilder.delete(0, dataBuilder.length());
 
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                    // ensure number of data don't exceed
-                    if (col >= numCols) {
-                        String errMsg = String.format("Excess data on line %d.  Expect %d.", lineNumber, numCols);
+                    dataColNum++;
+
+                    // ensure the data is within bound
+                    if (dataColNum > numOfColumns) {
+                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, dataColNum, numOfColumns);
                         LOGGER.error(errMsg);
                         throw new DataReaderException(errMsg);
-                    }
-
-                    if (value.length() > 0) {
-                        try {
-                            data[row][col++] = Double.parseDouble(value);
-                        } catch (NumberFormatException exception) {
-                            String errMsg = String.format("Invalid number %s on line %d column %d.", value, lineNumber, colNum);
-                            LOGGER.error(errMsg, exception);
+                    } else if (dataColNum < numOfColumns) {
+                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, dataColNum, numOfColumns);
+                        LOGGER.error(errMsg);
+                        throw new DataReaderException(errMsg);
+                    } else {
+                        if (value.length() > 0) {
+                            try {
+                                data[row][col++] = Double.parseDouble(value);
+                            } catch (NumberFormatException exception) {
+                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                LOGGER.error(errMsg, exception);
+                                throw new DataReaderException(errMsg);
+                            }
+                        } else {
+                            String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
+                            LOGGER.error(errMsg);
                             throw new DataReaderException(errMsg);
                         }
-                    } else {
-                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
-                        LOGGER.error(errMsg);
-                        throw new DataReaderException(errMsg);
                     }
-                }
-
-                // ensure there sufficient number of data
-                if (col < numCols) {
-                    String errMsg = String.format("Insufficient data on line %d.  Expect %d but found %d.", lineNumber, numCols, col);
-                    LOGGER.error(errMsg);
-                    throw new DataReaderException(errMsg);
                 }
             }
         }
