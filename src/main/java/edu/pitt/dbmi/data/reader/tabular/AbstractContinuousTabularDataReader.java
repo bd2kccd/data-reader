@@ -158,9 +158,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                 String value = dataBuilder.toString().trim();
                 dataBuilder.delete(0, dataBuilder.length());
 
-                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
-                    excludedIndex++;
-                } else {
+                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
                     if (value.length() > 0) {
                         nodes.add(value);
                     } else {
@@ -253,9 +251,7 @@ public abstract class AbstractContinuousTabularDataReader extends AbstractTabula
                 String value = dataBuilder.toString().trim();
                 dataBuilder.delete(0, dataBuilder.length());
 
-                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
-                    excludedIndex++;
-                } else {
+                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
                     if (value.length() > 0) {
                         nodes.add(value);
                     } else {

@@ -249,6 +249,7 @@ public class ContinuousTabularDataReader extends AbstractContinuousTabularDataRe
                         colNum = 0;
                         dataColNum = 0;
                         excludedIndex = 0;
+                        checkRequired = true;
 
                         lineNumber++;
                         if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
