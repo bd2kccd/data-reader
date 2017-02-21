@@ -187,7 +187,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
                                     if (value.length() > 0) {
                                         varInfos[varInfoIndex++].setValue(value);
                                     } else {
-                                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -218,7 +218,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
                                     if (value.length() > 0) {
                                         varInfos[varInfoIndex++].setValue(value);
                                     } else {
-                                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -269,7 +269,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
                         if (value.length() > 0) {
                             varInfos[varInfoIndex++].setValue(value);
                         } else {
-                            String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                            String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                             LOGGER.error(errMsg);
                             throw new DataReaderException(errMsg);
                         }
@@ -366,7 +366,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
                                     if (value.length() > 0) {
                                         varInfos[varInfoIndex++].setValue(value);
                                     } else {
-                                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -397,7 +397,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
                                     if (value.length() > 0) {
                                         varInfos[varInfoIndex++].setValue(value);
                                     } else {
-                                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -447,7 +447,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
                         if (value.length() > 0) {
                             varInfos[varInfoIndex++].setValue(value);
                         } else {
-                            String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                            String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                             LOGGER.error(errMsg);
                             throw new DataReaderException(errMsg);
                         }
@@ -462,8 +462,8 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
     private DiscreteVarInfo[] extractVariables(int[] excludedColumns, String comment) throws IOException {
         int numOfCols = getNumberOfColumns();
         int numOfExCols = excludedColumns.length;
-        int varInfoSize = numOfCols - numOfExCols;
-        DiscreteVarInfo[] varInfos = new DiscreteVarInfo[varInfoSize];
+        int numOfVars = numOfCols - numOfExCols;
+        DiscreteVarInfo[] varInfos = new DiscreteVarInfo[numOfVars];
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -476,6 +476,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
             int colNum = 0;
             int excludedIndex = 0;
             int varInfoIndex = 0;
+            int lineNumber = 1; // actual file line number
             boolean skipLine = false;
             boolean checkRequired = true;  // require check for comment
             boolean hasQuoteChar = false;
@@ -533,98 +534,7 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
                                     if (value.length() > 0) {
                                         varInfos[varInfoIndex++] = new DiscreteVarInfo(value);
                                     } else {
-                                        String errMsg = String.format("Missing variable name at column %d.", colNum);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
-                                    }
-                                }
-                            }
-                        } else {
-                            dataBuilder.append((char) currentChar);
-                        }
-                    } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
-                        endOfLine = colNum > 0 || dataBuilder.length() > 0;
-                    }
-
-                    previousChar = currentChar;
-                }
-
-                position += size;
-                if ((position + size) > fileSize) {
-                    size = fileSize - position;
-                }
-            } while (position < fileSize);
-
-            // data at the end of line
-            if (colNum > 0 || dataBuilder.length() > 0) {
-                colNum++;
-                String value = dataBuilder.toString().trim();
-                dataBuilder.delete(0, dataBuilder.length());
-
-                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                    if (value.length() > 0) {
-                        varInfos[varInfoIndex++] = new DiscreteVarInfo(value);
-                    } else {
-                        String errMsg = String.format("Missing variable name at column %d.", colNum);
-                        LOGGER.error(errMsg);
-                        throw new DataReaderException(errMsg);
-                    }
-                }
-            }
-
-        }
-
-        return varInfos;
-    }
-
-    private DiscreteVarInfo[] extractVariables(int[] excludedColumns) throws IOException {
-        int numOfCols = getNumberOfColumns();
-        int numOfExCols = excludedColumns.length;
-        int varInfoSize = numOfCols - numOfExCols;
-        DiscreteVarInfo[] varInfos = new DiscreteVarInfo[varInfoSize];
-
-        try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
-            long fileSize = fc.size();
-            long position = 0;
-            long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;
-
-            StringBuilder dataBuilder = new StringBuilder();
-            int colNum = 0;
-            int excludedIndex = 0;
-            int varInfoIndex = 0;
-            int lineNumber = 1; // actual row number
-            boolean hasQuoteChar = false;
-            boolean endOfLine = false;
-            byte previousChar = -1;
-            do {
-                MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !endOfLine) {
-                    byte currentChar = buffer.get();
-
-                    if (currentChar >= SPACE || currentChar == delimiter) {
-                        // case where line starts with spaces
-                        if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
-                            previousChar = currentChar;
-                            continue;
-                        }
-
-                        if (currentChar == quoteCharacter) {
-                            hasQuoteChar = !hasQuoteChar;
-                        } else if (currentChar == delimiter) {
-                            if (hasQuoteChar) {
-                                dataBuilder.append((char) currentChar);
-                            } else {
-                                colNum++;
-                                String value = dataBuilder.toString().trim();
-                                dataBuilder.delete(0, dataBuilder.length());
-
-                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
-                                    excludedIndex++;
-                                } else {
-                                    if (value.length() > 0) {
-                                        varInfos[varInfoIndex++] = new DiscreteVarInfo(value);
-                                    } else {
-                                        String errMsg = String.format("Missing variable name on line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -661,7 +571,103 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
                     if (value.length() > 0) {
                         varInfos[varInfoIndex++] = new DiscreteVarInfo(value);
                     } else {
-                        String errMsg = String.format("Missing variable name on line %d column %d.", lineNumber, colNum);
+                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNumber, colNum);
+                        LOGGER.error(errMsg);
+                        throw new DataReaderException(errMsg);
+                    }
+                }
+            }
+
+        }
+
+        return varInfos;
+    }
+
+    private DiscreteVarInfo[] extractVariables(int[] excludedColumns) throws IOException {
+        int numOfCols = getNumberOfColumns();
+        int numOfExCols = excludedColumns.length;
+        int numOfVars = numOfCols - numOfExCols;
+        DiscreteVarInfo[] varInfos = new DiscreteVarInfo[numOfVars];
+
+        try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
+            long fileSize = fc.size();
+            long position = 0;
+            long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;
+
+            StringBuilder dataBuilder = new StringBuilder();
+            int colNum = 0;
+            int excludedIndex = 0;
+            int varInfoIndex = 0;
+            int lineNumber = 1; // actual file line number
+            boolean hasQuoteChar = false;
+            boolean endOfLine = false;
+            byte previousChar = -1;
+            do {
+                MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
+                while (buffer.hasRemaining() && !endOfLine) {
+                    byte currentChar = buffer.get();
+
+                    if (currentChar >= SPACE || currentChar == delimiter) {
+                        // case where line starts with spaces
+                        if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
+                            previousChar = currentChar;
+                            continue;
+                        }
+
+                        if (currentChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else if (currentChar == delimiter) {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currentChar);
+                            } else {
+                                colNum++;
+                                String value = dataBuilder.toString().trim();
+                                dataBuilder.delete(0, dataBuilder.length());
+
+                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
+                                    excludedIndex++;
+                                } else {
+                                    if (value.length() > 0) {
+                                        varInfos[varInfoIndex++] = new DiscreteVarInfo(value);
+                                    } else {
+                                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNumber, colNum);
+                                        LOGGER.error(errMsg);
+                                        throw new DataReaderException(errMsg);
+                                    }
+                                }
+                            }
+                        } else {
+                            dataBuilder.append((char) currentChar);
+                        }
+                    } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
+                        endOfLine = colNum > 0 || dataBuilder.length() > 0;
+
+                        lineNumber++;
+                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                            lineNumber--;
+                        }
+                    }
+
+                    previousChar = currentChar;
+                }
+
+                position += size;
+                if ((position + size) > fileSize) {
+                    size = fileSize - position;
+                }
+            } while (position < fileSize);
+
+            // data at the end of line
+            if (colNum > 0 || dataBuilder.length() > 0) {
+                colNum++;
+                String value = dataBuilder.toString().trim();
+                dataBuilder.delete(0, dataBuilder.length());
+
+                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
+                    if (value.length() > 0) {
+                        varInfos[varInfoIndex++] = new DiscreteVarInfo(value);
+                    } else {
+                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNumber, colNum);
                         LOGGER.error(errMsg);
                         throw new DataReaderException(errMsg);
                     }

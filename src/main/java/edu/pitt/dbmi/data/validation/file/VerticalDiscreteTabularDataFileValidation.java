@@ -173,7 +173,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                     // ensure we don't go out of bound
                                     if (dataColNum > numOfVars) {
                                         String errMsg = String.format(
-                                                "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                                "Line %d, column %d: Excess data.  Expect %d value(s) but encounter %d.",
                                                 lineNumber, colNum, numOfVars, dataColNum);
                                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
@@ -183,7 +183,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                         validationResults.add(result);
                                     } else {
                                         if (value.length() == 0) {
-                                            String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                            String errMsg = String.format("Line %d, column %d: Missing value.", lineNumber, colNum);
                                             ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
@@ -207,7 +207,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                 // ensure we don't go out of bound
                                 if (dataColNum > numOfVars) {
                                     String errMsg = String.format(
-                                            "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                            "Line %d, column %d: Excess data.  Expect %d value(s) but encounter %d.",
                                             lineNumber, colNum, numOfVars, dataColNum);
                                     ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
@@ -217,7 +217,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                     validationResults.add(result);
                                 } else if (dataColNum < numOfVars) {
                                     String errMsg = String.format(
-                                            "Insufficient data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                            "Line %d, column %d: Insufficient data.  Expect %d value(s) but encounter %d.",
                                             lineNumber, colNum, numOfVars, dataColNum);
                                     ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
@@ -227,7 +227,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                     validationResults.add(result);
                                 } else {
                                     if (value.length() == 0) {
-                                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Line %d, column %d: Missing value.", lineNumber, colNum);
                                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
@@ -271,7 +271,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                     // ensure we don't go out of bound
                     if (dataColNum > numOfVars) {
                         String errMsg = String.format(
-                                "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                "Line %d, column %d: Excess data.  Expect %d value(s) but encounter %d.",
                                 lineNumber, colNum, numOfVars, dataColNum);
                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
@@ -281,7 +281,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                         validationResults.add(result);
                     } else if (dataColNum < numOfVars) {
                         String errMsg = String.format(
-                                "Insufficient data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                "Line %d, column %d: Insufficient data.  Expect %d value(s) but encounter %d.",
                                 lineNumber, colNum, numOfVars, dataColNum);
                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
@@ -291,7 +291,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                         validationResults.add(result);
                     } else {
                         if (value.length() == 0) {
-                            String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                            String errMsg = String.format("Line %d, column %d: Missing value.", lineNumber, colNum);
                             ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
@@ -385,7 +385,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                     // ensure we don't go out of bound
                                     if (dataColNum > numOfVars) {
                                         String errMsg = String.format(
-                                                "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                                "Line %d, column %d: Excess data.  Expect %d value(s) but encounter %d.",
                                                 lineNumber, colNum, numOfVars, dataColNum);
                                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
@@ -395,7 +395,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                         validationResults.add(result);
                                     } else {
                                         if (value.length() == 0) {
-                                            String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                            String errMsg = String.format("Line %d, column %d: Missing value.", lineNumber, colNum);
                                             ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
@@ -420,7 +420,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                 // ensure we don't go out of bound
                                 if (dataColNum > numOfVars) {
                                     String errMsg = String.format(
-                                            "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                            "Line %d, column %d: Excess data.  Expect %d value(s) but encounter %d.",
                                             lineNumber, colNum, numOfVars, dataColNum);
                                     ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
@@ -430,7 +430,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                     validationResults.add(result);
                                 } else if (dataColNum < numOfVars) {
                                     String errMsg = String.format(
-                                            "Insufficient data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                            "Line %d, column %d: Insufficient data.  Expect %d value(s) but encounter %d.",
                                             lineNumber, colNum, numOfVars, dataColNum);
                                     ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
@@ -440,7 +440,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                     validationResults.add(result);
                                 } else {
                                     if (value.length() == 0) {
-                                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Line %d, column %d: Missing value.", lineNumber, colNum);
                                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
@@ -483,7 +483,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                     // ensure we don't go out of bound
                     if (dataColNum > numOfVars) {
                         String errMsg = String.format(
-                                "Excess data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                "Line %d, column %d: Excess data.  Expect %d value(s) but encounter %d.",
                                 lineNumber, colNum, numOfVars, dataColNum);
                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
@@ -493,7 +493,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                         validationResults.add(result);
                     } else if (dataColNum < numOfVars) {
                         String errMsg = String.format(
-                                "Insufficient data on line %d at column %d.  Expect %d value(s) but encounter %d.",
+                                "Line %d, column %d: Insufficient data.  Expect %d value(s) but encounter %d.",
                                 lineNumber, colNum, numOfVars, dataColNum);
                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
@@ -503,7 +503,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                         validationResults.add(result);
                     } else {
                         if (value.length() == 0) {
-                            String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                            String errMsg = String.format("Line %d, column %d: Missing value.", lineNumber, colNum);
                             ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
