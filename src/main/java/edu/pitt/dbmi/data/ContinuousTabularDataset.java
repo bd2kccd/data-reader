@@ -28,17 +28,17 @@ import java.util.List;
  */
 public class ContinuousTabularDataset implements Dataset {
 
-    private final List<String> getVariables;
+    private final List<String> variables;
 
     private final double[][] data;
 
-    public ContinuousTabularDataset(List<String> getVariables, double[][] data) {
-        this.getVariables = getVariables;
+    public ContinuousTabularDataset(List<String> variables, double[][] data) {
+        this.variables = variables;
         this.data = data;
     }
 
-    public List<String> getGetVariables() {
-        return getVariables;
+    public List<String> getVariables() {
+        return variables;
     }
 
     public double[][] getData() {

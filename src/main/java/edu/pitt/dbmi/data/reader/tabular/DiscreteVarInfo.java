@@ -18,6 +18,9 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -32,6 +35,7 @@ public class DiscreteVarInfo {
 
     private final String name;
     private final Map<String, Integer> values;
+    private List<String> categories;
 
     public DiscreteVarInfo(String name) {
         this.name = name;
@@ -40,31 +44,33 @@ public class DiscreteVarInfo {
 
     public void recategorize() {
         Set<String> keyset = values.keySet();
+        categories = new ArrayList<>(keyset.size());
         int count = 0;
         for (String key : keyset) {
             values.put(key, count++);
+            categories.add(key);
         }
     }
 
     @Override
     public String toString() {
-        return "DiscreteVarInfo{" + "name=" + name + ", values=" + values + ", categories=" + values.keySet() + '}';
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Integer getEncodeValue(String value) {
-        return values.get(value);
+        return "DiscreteVarInfo{" + "name=" + name + ", values=" + values + ", categories=" + categories + '}';
     }
 
     public void setValue(String value) {
         this.values.put(value, null);
     }
 
-    public Set<String> getCategories() {
-        return values.keySet();
+    public Integer getEncodeValue(String value) {
+        return values.get(value);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public List<String> getCategories() {
+        return (categories == null) ? Collections.EMPTY_LIST : categories;
     }
 
 }

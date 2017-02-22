@@ -55,7 +55,7 @@ public class ContinuousTabularDataReaderTest {
         Set<String> excludeVars = new HashSet<>(Arrays.asList("Date", "Time"));
         ContinuousTabularDataset dataSet = (ContinuousTabularDataset) dataReader.readInData(excludeVars);
 
-        List<String> variableNames = dataSet.getGetVariables();
+        List<String> variableNames = dataSet.getVariables();
         long expected = 13;
         long actual = variableNames.size();
         Assert.assertEquals(expected, actual);
