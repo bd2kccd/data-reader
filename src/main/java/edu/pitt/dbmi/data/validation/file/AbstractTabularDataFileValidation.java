@@ -46,7 +46,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                     ? validateVariables(excludedColumns)
                     : validateVariables(excludedColumns, commentMarker);
         } else {
-            return getNumOfColumns();
+            return getNumberOfColumns();
         }
     }
 
@@ -62,17 +62,17 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
             byte[] prefix = comment.getBytes();
             int index = 0;
             int colNum = 0;
+            int lineNumber = 1;
             int excludedIndex = 0;
             int numOfExCols = excludedColumns.length;
-            int lineNumber = 1;
             boolean skipLine = false;
             boolean checkRequired = true;  // require check for comment
             boolean hasQuoteChar = false;
-            boolean done = false;
+            boolean endOfLine = false;
             byte previousChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !done) {
+                while (buffer.hasRemaining() && !endOfLine) {
                     byte currentChar = buffer.get();
 
                     if (skipLine) {
@@ -96,6 +96,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                                     skipLine = true;
                                     dataBuilder.delete(0, dataBuilder.length());
                                     colNum = 0;
+
                                     previousChar = currentChar;
                                     continue;
                                 }
@@ -120,7 +121,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                                 } else {
                                     numOfVars++;
                                     if (value.length() == 0) {
-                                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNumber, colNum);
                                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
@@ -132,13 +133,11 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                             dataBuilder.append((char) currentChar);
                         }
                     } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
-                        if (colNum > 0 || dataBuilder.length() > 0) {
-                            done = true;
-                        } else {
-                            lineNumber++;
-                            if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
-                                lineNumber--;
-                            }
+                        endOfLine = colNum > 0 || dataBuilder.length() > 0;
+
+                        lineNumber++;
+                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                            lineNumber--;
                         }
                     }
 
@@ -160,7 +159,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
                     numOfVars++;
                     if (value.length() == 0) {
-                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNumber, colNum);
                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
@@ -168,6 +167,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                     }
                 }
             }
+
         }
 
         return numOfVars;
@@ -183,53 +183,56 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
 
             StringBuilder dataBuilder = new StringBuilder();
             int colNum = 0;
+            int lineNumber = 1;
             int excludedIndex = 0;
             int numOfExCols = excludedColumns.length;
-            int lineNumber = 1;
             boolean hasQuoteChar = false;
-            boolean done = false;
+            boolean endOfLine = false;
             byte previousChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !done) {
+                while (buffer.hasRemaining() && !endOfLine) {
                     byte currentChar = buffer.get();
 
                     if (currentChar >= SPACE || currentChar == delimiter) {
                         // case where line starts with spaces
                         if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
+                            previousChar = currentChar;
                             continue;
                         }
 
                         if (currentChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
                         } else if (currentChar == delimiter) {
-                            colNum++;
-                            String value = dataBuilder.toString().trim();
-                            dataBuilder.delete(0, dataBuilder.length());
-
-                            if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
-                                excludedIndex++;
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currentChar);
                             } else {
-                                numOfVars++;
-                                if (value.length() == 0) {
-                                    String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
-                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
-                                    result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                    result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
-                                    validationResults.add(result);
+                                colNum++;
+                                String value = dataBuilder.toString().trim();
+                                dataBuilder.delete(0, dataBuilder.length());
+
+                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
+                                    excludedIndex++;
+                                } else {
+                                    numOfVars++;
+                                    if (value.length() == 0) {
+                                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNumber, colNum);
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                        validationResults.add(result);
+                                    }
                                 }
                             }
                         } else {
                             dataBuilder.append((char) currentChar);
                         }
                     } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
-                        if (colNum > 0 || dataBuilder.length() > 0) {
-                            done = true;
-                        } else {
-                            lineNumber++;
-                            if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
-                                lineNumber--;
-                            }
+                        endOfLine = colNum > 0 || dataBuilder.length() > 0;
+
+                        lineNumber++;
+                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                            lineNumber--;
                         }
                     }
 
@@ -251,7 +254,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
                     numOfVars++;
                     if (value.length() == 0) {
-                        String errMsg = String.format("Missing value on line %d at column %d.", lineNumber, colNum);
+                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNumber, colNum);
                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
@@ -259,6 +262,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                     }
                 }
             }
+
         }
 
         return numOfVars;

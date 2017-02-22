@@ -45,7 +45,8 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
 
     @Override
     protected Dataset readInDataFromFile(int[] excludedColumns) throws IOException {
-        DiscreteVarInfo[] varInfos = extractVariableDataFromFile(extractVariablesFromFile(excludedColumns), excludedColumns);
+        DiscreteVarInfo[] varInfos = extractVariablesFromFile(excludedColumns);
+        varInfos = extractVariableDataFromFile(varInfos, excludedColumns);
         for (DiscreteVarInfo varInfo : varInfos) {
             varInfo.recategorize();
         }
@@ -63,7 +64,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
 
     protected int[][] extractAndEncodeData(DiscreteVarInfo[] varInfos, int[] excludedColumns, String comment) throws IOException {
         int numCols = varInfos.length;
-        int numRows = (hasHeader) ? getNumOfRows() - 1 : getNumOfRows();
+        int numRows = (hasHeader) ? getNumberOfRows() - 1 : getNumberOfRows();
         int[][] data = new int[numCols][numRows];
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -196,7 +197,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
                                     if (value.length() > 0) {
                                         data[col++][row] = varInfos[varInfoIndex++].getEncodeValue(value);
                                     } else {
-                                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -227,7 +228,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
                                     if (value.length() > 0) {
                                         data[col++][row] = varInfos[varInfoIndex++].getEncodeValue(value);
                                     } else {
-                                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -281,7 +282,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
                         if (value.length() > 0) {
                             data[col++][row] = varInfos[varInfoIndex++].getEncodeValue(value);
                         } else {
-                            String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                            String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                             LOGGER.error(errMsg);
                             throw new DataReaderException(errMsg);
                         }
@@ -295,7 +296,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
 
     protected int[][] extractAndEncodeData(DiscreteVarInfo[] varInfos, int[] excludedColumns) throws IOException {
         int numCols = varInfos.length;
-        int numRows = (hasHeader) ? getNumOfRows() - 1 : getNumOfRows();
+        int numRows = (hasHeader) ? getNumberOfRows() - 1 : getNumberOfRows();
         int[][] data = new int[numCols][numRows];
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -383,7 +384,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
                                     if (value.length() > 0) {
                                         data[col++][row] = varInfos[varInfoIndex++].getEncodeValue(value);
                                     } else {
-                                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -414,7 +415,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
                                     if (value.length() > 0) {
                                         data[col++][row] = varInfos[varInfoIndex++].getEncodeValue(value);
                                     } else {
-                                        String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                                        String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                                         LOGGER.error(errMsg);
                                         throw new DataReaderException(errMsg);
                                     }
@@ -467,7 +468,7 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
                         if (value.length() > 0) {
                             data[col++][row] = varInfos[varInfoIndex++].getEncodeValue(value);
                         } else {
-                            String errMsg = String.format("Missing data one line %d column %d.", lineNumber, colNum);
+                            String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
                             LOGGER.error(errMsg);
                             throw new DataReaderException(errMsg);
                         }
