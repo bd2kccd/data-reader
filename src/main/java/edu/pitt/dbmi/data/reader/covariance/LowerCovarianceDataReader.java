@@ -18,6 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.covariance;
 
+import edu.pitt.dbmi.data.CovarianceDataset;
 import edu.pitt.dbmi.data.Dataset;
 import edu.pitt.dbmi.data.reader.AbstractDataReader;
 import edu.pitt.dbmi.data.reader.DataReaderException;
@@ -47,10 +48,205 @@ public class LowerCovarianceDataReader extends AbstractDataReader implements Cov
 
     @Override
     public Dataset readInData() throws IOException {
-        int numOfCases = getNumberOfCases();
+        int numberOfCases = getNumberOfCases();
         List<String> variables = extractVariables();
+        double[][] data = extractCovarianceData(variables.size());
 
-        return null;
+        return new CovarianceDataset(numberOfCases, variables, data);
+    }
+
+    private double[][] extractCovarianceData(int matrixSize) throws IOException {
+        double[][] data = new double[matrixSize][matrixSize];
+
+        try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
+            long fileSize = fc.size();
+            long position = 0;
+            long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;
+
+            StringBuilder dataBuilder = new StringBuilder();
+            byte[] prefix = commentMarker.getBytes();
+            int index = 0;
+            int lineNumber = 1;
+            int colNum = 0;
+            int numOfLineData = 0;
+            int col = 0;
+            int row = 0;
+            boolean done = false;
+            boolean skipLine = false;
+            boolean skipToData = true;
+            boolean checkRequired = prefix.length > 0;  // require check for comment
+            boolean hasQuoteChar = false;
+            byte previousChar = -1;
+            do {
+                MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
+
+                if (skipToData) {
+                    while (buffer.hasRemaining() && !done) {
+                        byte currentChar = buffer.get();
+
+                        if (skipLine) {
+                            if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
+                                skipLine = false;
+                                done = (numOfLineData == 2);
+
+                                lineNumber++;
+                                if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                                    lineNumber--;
+                                }
+                            }
+                        } else if (currentChar > SPACE || currentChar == delimiter) {
+                            if (prefix.length > 0 && currentChar == prefix[index]) {
+                                index++;
+                                if (index == prefix.length) {
+                                    skipLine = true;
+                                    index = 0;
+                                }
+                            } else {
+                                skipLine = true;
+                                index = 0;
+                                numOfLineData++;
+                            }
+                        } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
+                            if (index > 0) {
+                                numOfLineData++;
+                                done = (numOfLineData == 2);
+                            }
+                            index = 0;
+
+                            lineNumber++;
+                            if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                                lineNumber--;
+                            }
+                        }
+
+                        previousChar = currentChar;
+                    }
+
+                    skipToData = false;
+                    done = false;
+                }
+
+                while (buffer.hasRemaining()) {
+                    byte currentChar = buffer.get();
+
+                    if (skipLine) {
+                        if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
+                            skipLine = false;
+                        }
+                    } else if (currentChar >= SPACE || currentChar == delimiter) {
+                        // case where line starts with spaces
+                        if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
+                            previousChar = currentChar;
+                            continue;
+                        }
+
+                        if (checkRequired) {
+                            if (currentChar == prefix[index]) {
+                                index++;
+
+                                // all the comment chars are matched
+                                if (index == prefix.length) {
+                                    index = 0;
+                                    skipLine = true;
+                                    dataBuilder.delete(0, dataBuilder.length());
+                                    colNum = 0;
+
+                                    previousChar = currentChar;
+                                    continue;
+                                }
+                            } else {
+                                index = 0;
+                                checkRequired = false;
+                            }
+                        }
+
+                        if (currentChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else if (currentChar == delimiter) {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currentChar);
+                            } else {
+                                colNum++;
+                                String value = dataBuilder.toString().trim();
+                                dataBuilder.delete(0, dataBuilder.length());
+
+                                if (col > row) {
+                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, col + 1, row + 1);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                }
+
+                                if (value.length() > 0) {
+                                    try {
+                                        double covariance = Double.parseDouble(value);
+                                        data[row][col] = covariance;
+                                        data[col][row] = covariance;
+                                    } catch (NumberFormatException exception) {
+                                        String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                        LOGGER.error(errMsg, exception);
+                                        throw new DataReaderException(errMsg);
+                                    }
+                                } else {
+                                    String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                }
+
+                                col++;
+                            }
+                        } else {
+                            dataBuilder.append((char) currentChar);
+                        }
+                    } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
+                        if (colNum > 0 || dataBuilder.length() > 0) {
+                            colNum++;
+                            String value = dataBuilder.toString().trim();
+                            dataBuilder.delete(0, dataBuilder.length());
+
+                            if (col > row) {
+                                String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNumber, col + 1, row + 1);
+                                LOGGER.error(errMsg);
+                                throw new DataReaderException(errMsg);
+                            }
+
+                            if (value.length() > 0) {
+                                try {
+                                    double covariance = Double.parseDouble(value);
+                                    data[row][col] = covariance;
+                                    data[col][row] = covariance;
+                                } catch (NumberFormatException exception) {
+                                    String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNumber, colNum);
+                                    LOGGER.error(errMsg, exception);
+                                    throw new DataReaderException(errMsg);
+                                }
+                            } else {
+                                String errMsg = String.format("Missing data on line %d at column %d.", lineNumber, colNum);
+                                LOGGER.error(errMsg);
+                                throw new DataReaderException(errMsg);
+                            }
+
+                            row++;
+                        }
+
+                        col = 0;
+                        colNum = 0;
+                        checkRequired = prefix.length > 0;
+
+                        lineNumber++;
+                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
+                            lineNumber--;
+                        }
+                    }
+                }
+
+                position += size;
+                if ((position + size) > fileSize) {
+                    size = fileSize - position;
+                }
+            } while (position < fileSize);
+        }
+
+        return data;
     }
 
     private List<String> extractVariables() throws IOException {
