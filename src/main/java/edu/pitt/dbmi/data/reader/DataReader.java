@@ -16,33 +16,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data;
+package edu.pitt.dbmi.data.reader;
 
-import java.util.List;
+import edu.pitt.dbmi.data.Dataset;
+import java.io.IOException;
 
 /**
  *
- * Feb 13, 2017 6:00:13 PM
+ * Feb 22, 2017 4:57:51 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataset implements Dataset {
+public interface DataReader {
 
-    private final List<String> variables;
+    /**
+     * Read in dataset.
+     *
+     * @return
+     * @throws IOException whenever unable to read file
+     */
+    public Dataset readInData() throws IOException;
 
-    private final double[][] data;
+    public void setQuoteCharacter(char quoteCharacter);
 
-    public ContinuousTabularDataset(List<String> variables, double[][] data) {
-        this.variables = variables;
-        this.data = data;
-    }
-
-    public List<String> getVariables() {
-        return variables;
-    }
-
-    public double[][] getData() {
-        return data;
-    }
+    public void setCommentMarker(String commentMarker);
 
 }

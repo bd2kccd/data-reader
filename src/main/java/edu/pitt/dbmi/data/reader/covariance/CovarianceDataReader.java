@@ -16,33 +16,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data;
+package edu.pitt.dbmi.data.reader.covariance;
 
-import java.util.List;
+import edu.pitt.dbmi.data.reader.DataReader;
 
 /**
  *
- * Feb 13, 2017 6:00:13 PM
+ * Feb 22, 2017 2:31:13 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataset implements Dataset {
-
-    private final List<String> variables;
-
-    private final double[][] data;
-
-    public ContinuousTabularDataset(List<String> variables, double[][] data) {
-        this.variables = variables;
-        this.data = data;
-    }
-
-    public List<String> getVariables() {
-        return variables;
-    }
-
-    public double[][] getData() {
-        return data;
-    }
+public interface CovarianceDataReader extends DataReader {
 
 }

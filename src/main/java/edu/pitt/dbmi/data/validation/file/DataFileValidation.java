@@ -16,33 +16,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data;
+package edu.pitt.dbmi.data.validation.file;
 
-import java.util.List;
+import edu.pitt.dbmi.data.validation.DataValidation;
 
 /**
  *
- * Feb 13, 2017 6:00:13 PM
+ * Feb 24, 2017 2:09:30 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataset implements Dataset {
+public interface DataFileValidation extends DataValidation {
 
-    private final List<String> variables;
+    public void setQuoteCharacter(char quoteCharacter);
 
-    private final double[][] data;
-
-    public ContinuousTabularDataset(List<String> variables, double[][] data) {
-        this.variables = variables;
-        this.data = data;
-    }
-
-    public List<String> getVariables() {
-        return variables;
-    }
-
-    public double[][] getData() {
-        return data;
-    }
+    public void setCommentMarker(String commentMarker);
 
 }

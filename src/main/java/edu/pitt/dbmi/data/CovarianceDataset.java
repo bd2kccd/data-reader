@@ -22,19 +22,26 @@ import java.util.List;
 
 /**
  *
- * Feb 13, 2017 6:00:13 PM
+ * Feb 23, 2017 2:50:19 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataset implements Dataset {
+public class CovarianceDataset implements Dataset {
+
+    private final int numberOfCases;
 
     private final List<String> variables;
 
     private final double[][] data;
 
-    public ContinuousTabularDataset(List<String> variables, double[][] data) {
+    public CovarianceDataset(int numberOfCases, List<String> variables, double[][] data) {
+        this.numberOfCases = numberOfCases;
         this.variables = variables;
         this.data = data;
+    }
+
+    public int getNumberOfCases() {
+        return numberOfCases;
     }
 
     public List<String> getVariables() {

@@ -19,6 +19,7 @@
 package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.Dataset;
+import edu.pitt.dbmi.data.reader.DataReader;
 import java.io.IOException;
 import java.util.Set;
 
@@ -29,15 +30,7 @@ import java.util.Set;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularDataReader {
-
-    /**
-     * Read in dataset.
-     *
-     * @return
-     * @throws IOException whenever unable to read file
-     */
-    public Dataset readInData() throws IOException;
+public interface TabularDataReader extends DataReader {
 
     /**
      *
@@ -50,10 +43,6 @@ public interface TabularDataReader {
     public Dataset readInData(Set<String> excludedVariables) throws IOException;
 
     public Dataset readInData(int[] excludedColumns) throws IOException;
-
-    public void setQuoteCharacter(char quoteCharacter);
-
-    public void setCommentMarker(String commentMarker);
 
     public void setHasHeader(boolean hasHeader);
 

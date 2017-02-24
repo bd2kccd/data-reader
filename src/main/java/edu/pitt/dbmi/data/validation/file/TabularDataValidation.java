@@ -18,7 +18,6 @@
  */
 package edu.pitt.dbmi.data.validation.file;
 
-import edu.pitt.dbmi.data.validation.DataValidation;
 import java.util.Set;
 
 /**
@@ -27,15 +26,11 @@ import java.util.Set;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularDataValidation extends DataValidation {
+public interface TabularDataValidation extends DataFileValidation {
 
     public void validate(Set<String> excludedVariables);
 
     public void validate(int[] excludedColumns);
-
-    public void setQuoteCharacter(char quoteCharacter);
-
-    public void setCommentMarker(String commentMarker);
 
     public void setHasHeader(boolean hasHeader);
 
