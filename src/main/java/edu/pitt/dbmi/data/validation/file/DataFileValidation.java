@@ -18,20 +18,18 @@
  */
 package edu.pitt.dbmi.data.validation.file;
 
-import java.util.Set;
+import edu.pitt.dbmi.data.validation.DataValidation;
 
 /**
  *
- * Feb 6, 2017 6:26:15 PM
+ * Feb 24, 2017 2:09:30 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularDataValidation extends DataFileValidation {
+public interface DataFileValidation extends DataValidation {
 
-    public void validate(Set<String> excludedVariables);
+    public void setQuoteCharacter(char quoteCharacter);
 
-    public void validate(int[] excludedColumns);
-
-    public void setHasHeader(boolean hasHeader);
+    public void setCommentMarker(String commentMarker);
 
 }

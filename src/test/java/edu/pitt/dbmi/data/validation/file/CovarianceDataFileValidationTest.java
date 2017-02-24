@@ -5,7 +5,6 @@
  */
 package edu.pitt.dbmi.data.validation.file;
 
-import edu.pitt.dbmi.data.validation.DataValidation;
 import edu.pitt.dbmi.data.validation.ValidationResult;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,7 +32,7 @@ public class CovarianceDataFileValidationTest {
         Path dataFile = Paths.get("test", "data", "covariance", "lead_iq.txt");
         char delimiter = '\t';
 
-        DataValidation validation = new CovarianceDataFileValidation(dataFile.toFile(), delimiter);
+        DataFileValidation validation = new CovarianceDataFileValidation(dataFile.toFile(), delimiter);
 
         validation.validate();
 

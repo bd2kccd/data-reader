@@ -19,7 +19,6 @@
 package edu.pitt.dbmi.data.validation.file;
 
 import edu.pitt.dbmi.data.reader.AbstractDataReader;
-import edu.pitt.dbmi.data.validation.DataValidation;
 import edu.pitt.dbmi.data.validation.MessageType;
 import edu.pitt.dbmi.data.validation.ValidationAttribute;
 import edu.pitt.dbmi.data.validation.ValidationCode;
@@ -38,7 +37,7 @@ import java.util.List;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class CovarianceDataFileValidation extends AbstractDataReader implements DataValidation {
+public class CovarianceDataFileValidation extends AbstractDataReader implements DataFileValidation {
 
     private final List<ValidationResult> validationResults;
 
