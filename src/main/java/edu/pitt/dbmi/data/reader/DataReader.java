@@ -39,6 +39,8 @@ public interface DataReader {
 
     public void setQuoteCharacter(char quoteCharacter);
 
+    public void setMissingValueMarker(String missingValueMarker);
+
     public void setCommentMarker(String commentMarker);
 
 }

@@ -18,6 +18,7 @@
  */
 package edu.pitt.dbmi.data.validation.file;
 
+import edu.pitt.dbmi.data.Delimiter;
 import edu.pitt.dbmi.data.validation.ValidationResult;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,16 +44,20 @@ public class ContinuousTabularDataFileValidationTest {
      */
     @Test
     public void testValidateDataFromFile() {
-        Path dataFile = Paths.get("test", "data", "continuous", "error_sim_data_5var_10case.csv");
-        char delimiter = ',';
+        Path dataFile = Paths.get("test", "data", "continuous", "small_data", "error_small_data.csv");
+        Delimiter delimiter = Delimiter.COMMA;
+        char quoteCharacter = '"';
+        String missingValueMarker = "*";
+        String commentMarker = "//";
 
         TabularDataValidation validation = new ContinuousTabularDataFileValidation(dataFile.toFile(), delimiter);
-        validation.setHasHeader(true);
+        validation.setQuoteCharacter(quoteCharacter);
+        validation.setMissingValueMarker(missingValueMarker);
+        validation.setCommentMarker(commentMarker);
 
         validation.validate();
 
         List<ValidationResult> results = validation.getValidationResults();
-
         List<ValidationResult> infos = new LinkedList<>();
         List<ValidationResult> warnings = new LinkedList<>();
         List<ValidationResult> errors = new LinkedList<>();
@@ -69,11 +74,11 @@ public class ContinuousTabularDataFileValidationTest {
             }
         }
 
-        long expected = 1;
+        long expected = 2;
         long actual = infos.size();
         Assert.assertEquals(expected, actual);
 
-        expected = 0;
+        expected = 1;
         actual = warnings.size();
         Assert.assertEquals(expected, actual);
 

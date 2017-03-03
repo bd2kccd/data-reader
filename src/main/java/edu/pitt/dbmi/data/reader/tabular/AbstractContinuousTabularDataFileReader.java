@@ -19,7 +19,7 @@
 package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.Delimiter;
-import edu.pitt.dbmi.data.reader.AbstractDataFileReader;
+import edu.pitt.dbmi.data.reader.DataReaderException;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -27,26 +27,25 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
- * Feb 25, 2017 1:36:46 AM
+ * Mar 2, 2017 1:35:57 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractTabularDataFileReader extends AbstractDataFileReader {
+public abstract class AbstractContinuousTabularDataFileReader extends AbstractTabularDataFileReader {
 
-    protected boolean hasHeader;
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractContinuousTabularDataFileReader.class);
 
-    public AbstractTabularDataFileReader(File dataFile, Delimiter delimiter) {
+    public AbstractContinuousTabularDataFileReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
-        this.hasHeader = true;
     }
 
-    protected int[] getColumnNumbers(Set<String> variables) throws IOException {
-        List<Integer> indexList = new LinkedList<>();
+    protected List<String> extractVariables(int[] excludedColumns) throws IOException {
+        List<String> variables = new LinkedList<>();
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -59,6 +58,9 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
             byte[] prefix = commentMarker.getBytes();
             int index = 0;
             int colNum = 0;
+            int lineNum = 1;
+            int numOfExCols = excludedColumns.length;
+            int excludedIndex = 0;
             boolean requireCheck = prefix.length > 0;
             boolean skipLine = false;
             boolean finished = false;
@@ -75,7 +77,39 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                             skipLine = false;
                         }
                     } else if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                        finished = prevNonBlankChar > SPACE_CHAR;
+                        if (prevNonBlankChar > SPACE_CHAR) {
+                            finished = true;
+
+                            // data at the end of line
+                            if (colNum > 0 || dataBuilder.length() > 0) {
+                                colNum++;
+                                String value = dataBuilder.toString().trim();
+                                dataBuilder.delete(0, dataBuilder.length());
+
+                                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
+                                    switch (delimiter) {
+                                        case WHITESPACE:
+                                            if (value.length() > 0) {
+                                                variables.add(value);
+                                            }
+                                            break;
+                                        default:
+                                            if (value.length() > 0) {
+                                                variables.add(value);
+                                            } else {
+                                                String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
+                                                LOGGER.error(errMsg);
+                                                throw new DataReaderException(errMsg);
+                                            }
+                                    }
+                                }
+                            }
+                        }
+
+                        lineNum++;
+                        if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                            lineNum--;
+                        }
                     } else {
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
@@ -104,14 +138,16 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
+                        } else if (hasQuoteChar) {
+                            dataBuilder.append((char) currChar);
                         } else {
                             boolean isDelimiter;
                             switch (delimiter) {
                                 case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR) && !hasQuoteChar;
+                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
                                     break;
                                 default:
-                                    isDelimiter = (currChar == delimChar) && !hasQuoteChar;
+                                    isDelimiter = (currChar == delimChar);
                             }
 
                             if (isDelimiter) {
@@ -119,8 +155,16 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                                 String value = dataBuilder.toString().trim();
                                 dataBuilder.delete(0, dataBuilder.length());
 
-                                if (variables.contains(value)) {
-                                    indexList.add(colNum);
+                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
+                                    excludedIndex++;
+                                } else {
+                                    if (value.length() > 0) {
+                                        variables.add(value);
+                                    } else {
+                                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
+                                        LOGGER.error(errMsg);
+                                        throw new DataReaderException(errMsg);
+                                    }
                                 }
                             } else {
                                 dataBuilder.append((char) currChar);
@@ -131,17 +175,6 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                     prevChar = currChar;
                 }
 
-                // data at the end of line
-                if (colNum > 0 || dataBuilder.length() > 0) {
-                    colNum++;
-                    String value = dataBuilder.toString().trim();
-                    dataBuilder.delete(0, dataBuilder.length());
-
-                    if (variables.contains(value)) {
-                        indexList.add(colNum);
-                    }
-                }
-
                 position += size;
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
@@ -149,64 +182,7 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
             } while (position < fileSize);
         }
 
-        int[] indices = new int[indexList.size()];
-        if (indices.length > 0) {
-            int i = 0;
-            for (Integer index : indexList) {
-                indices[i++] = index;
-            }
-        }
-
-        return indices;
-    }
-
-    protected int[] filterValidColumnNumbers(int[] columnNumbers) throws IOException {
-        Set<Integer> indices = new TreeSet<>();
-        int numOfVars = getNumberOfColumns();
-        for (int colNum : columnNumbers) {
-            if (colNum > 0 && colNum <= numOfVars) {
-                indices.add(colNum);
-            }
-        }
-
-        int[] results = new int[indices.size()];
-        int i = 0;
-        for (Integer index : indices) {
-            results[i++] = index;
-        }
-
-        return results;
-    }
-
-    /**
-     *
-     * @param excludedColumns sorted array of column numbers
-     * @return
-     * @throws IOException
-     */
-    protected List<String> generateVariables(int[] excludedColumns) throws IOException {
-        List<String> nodes = new LinkedList<>();
-
-        int numOfCols = getNumberOfColumns();
-        int length = excludedColumns.length;
-        int excludedIndex = 0;
-        for (int colNum = 1; colNum <= numOfCols; colNum++) {
-            if (length > 0 && (excludedIndex < length && colNum == excludedColumns[excludedIndex])) {
-                excludedIndex++;
-            } else {
-                nodes.add(String.format("V%d", colNum));
-            }
-        }
-
-        return nodes;
-    }
-
-    public boolean isHasHeader() {
-        return hasHeader;
-    }
-
-    public void setHasHeader(boolean hasHeader) {
-        this.hasHeader = hasHeader;
+        return variables;
     }
 
 }

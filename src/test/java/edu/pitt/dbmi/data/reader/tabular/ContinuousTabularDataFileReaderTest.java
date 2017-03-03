@@ -18,71 +18,65 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
+import edu.pitt.dbmi.data.ContinuousTabularDataset;
 import edu.pitt.dbmi.data.Dataset;
 import edu.pitt.dbmi.data.Delimiter;
-import edu.pitt.dbmi.data.VerticalDiscreteTabularDataset;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
- * Feb 14, 2017 4:09:06 PM
+ * Mar 2, 2017 2:42:29 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class VerticalDiscreteTabularDataReaderTest {
+public class ContinuousTabularDataFileReaderTest {
 
-    public VerticalDiscreteTabularDataReaderTest() {
+    public ContinuousTabularDataFileReaderTest() {
     }
 
-    /**
-     * Test of readInDataset method, of class VerticalDiscreteTabularDataReader.
-     *
-     * @throws IOException
-     */
-    @Ignore
     @Test
-    public void testReadInVerticalTabularDiscreteDataset() throws IOException {
-        Path dataFile = Paths.get("test", "data", "discrete", "uci_balloon.csv");
-        Delimiter delimiter = Delimiter.COMMA;
+    public void testReadInData() throws IOException {
+        Path dataFile = Paths.get("test", "data", "continuous", "small_data", "small_data.prn");
+
+        Delimiter delimiter = Delimiter.WHITESPACE;
         char quoteCharacter = '"';
         String missingValueMarker = "*";
         String commentMarker = "//";
 
-        String[] variableNames = {
-            //            "COLOR",
-            "SIZE",
-            //            "ACT",
-            //            "AGE",
-            "INFLATED"
-        };
-        Set<String> variables = new HashSet<>(Arrays.asList(variableNames));
+        String[] variables = {"X2", "X4", "X6", "X8", "X10"};
+        Set<String> excludedVariables = new HashSet<>(Arrays.asList(variables));
 
-        TabularDataReader dataReader = new VerticalDiscreteTabularDataReader(dataFile.toFile(), delimiter);
-        dataReader.setHasHeader(true);
+        TabularDataReader reader = new ContinuousTabularDataFileReader(dataFile.toFile(), delimiter);
+        reader.setQuoteCharacter(quoteCharacter);
+        reader.setMissingValueMarker(missingValueMarker);
+        reader.setCommentMarker(commentMarker);
 
-        Dataset dataset = dataReader.readInData(variables);
-        if (dataset instanceof VerticalDiscreteTabularDataset) {
-            VerticalDiscreteTabularDataset vDataset = (VerticalDiscreteTabularDataset) dataset;
+        Dataset dataset = reader.readInData(excludedVariables);
 
-            DiscreteVarInfo[] variableInfos = vDataset.getVariableInfos();
-            int expected = 3;
-            int actual = variableInfos.length;
+        boolean isContinuousTabularDataset = (dataset instanceof ContinuousTabularDataset);
+        Assert.assertTrue(isContinuousTabularDataset);
+
+        if (isContinuousTabularDataset) {
+            ContinuousTabularDataset contDataset = (ContinuousTabularDataset) dataset;
+            List<String> variableNames = contDataset.getVariables();
+            long expected = 5;
+            long actual = variableNames.size();
             Assert.assertEquals(expected, actual);
 
-            int[][] data = vDataset.getData();
-            expected = 3;
+            double[][] data = contDataset.getData();
+            expected = 18;
             actual = data.length;
             Assert.assertEquals(expected, actual);
 
-            expected = 20;
+            expected = 5;
             actual = data[0].length;
             Assert.assertEquals(expected, actual);
         }

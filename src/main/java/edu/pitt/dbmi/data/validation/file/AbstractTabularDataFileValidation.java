@@ -18,6 +18,8 @@
  */
 package edu.pitt.dbmi.data.validation.file;
 
+import edu.pitt.dbmi.data.Delimiter;
+import edu.pitt.dbmi.data.reader.tabular.AbstractTabularDataFileReader;
 import edu.pitt.dbmi.data.validation.MessageType;
 import edu.pitt.dbmi.data.validation.ValidationAttribute;
 import edu.pitt.dbmi.data.validation.ValidationCode;
@@ -27,6 +29,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  *
@@ -34,23 +38,16 @@ import java.nio.channels.FileChannel;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractTabularDataFileValidation extends AbstractTabularDataValidation {
+public abstract class AbstractTabularDataFileValidation extends AbstractTabularDataFileReader {
 
-    public AbstractTabularDataFileValidation(File dataFile, char delimiter) {
+    protected final List<ValidationResult> validationResults;
+
+    public AbstractTabularDataFileValidation(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
+        this.validationResults = new LinkedList<>();
     }
 
-    protected int validateVariablesFromFile(int[] excludedColumns) throws IOException {
-        if (hasHeader) {
-            return (commentMarker == null || commentMarker.trim().isEmpty())
-                    ? validateVariables(excludedColumns)
-                    : validateVariables(excludedColumns, commentMarker);
-        } else {
-            return getNumberOfColumns();
-        }
-    }
-
-    private int validateVariables(int[] excludedColumns, String comment) throws IOException {
+    protected int validateVariables(int[] excludedColumns) throws IOException {
         int numOfVars = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
@@ -58,60 +55,76 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
             long position = 0;
             long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;
 
+            byte delimChar = delimiter.getDelimiterChar();
+
             StringBuilder dataBuilder = new StringBuilder();
-            byte[] prefix = comment.getBytes();
+            byte[] prefix = commentMarker.getBytes();
             int index = 0;
             int colNum = 0;
-            int lineNumber = 1;
-            int excludedIndex = 0;
+            int lineNum = 1;
             int numOfExCols = excludedColumns.length;
+            int excludedIndex = 0;
+            boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean checkRequired = true;  // require check for comment
+            boolean finished = false;
             boolean hasQuoteChar = false;
-            boolean endOfLine = false;
-            byte previousChar = -1;
+            byte prevNonBlankChar = SPACE_CHAR;
+            byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !endOfLine) {
-                    byte currentChar = buffer.get();
+                while (buffer.hasRemaining() && !finished) {
+                    byte currChar = buffer.get();
 
-                    if (skipLine) {
-                        if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        if (prevNonBlankChar > SPACE_CHAR) {
+                            finished = true;
+                        } else {
                             skipLine = false;
+                            prevNonBlankChar = SPACE_CHAR;
+
+                            lineNum++;
+                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                                lineNum--;
+                            }
                         }
-                    } else if (currentChar >= SPACE || currentChar == delimiter) {
-                        // case where line starts with spaces
-                        if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
-                            previousChar = currentChar;
-                            continue;
+                    } else if (!skipLine) {
+                        if (currChar > SPACE_CHAR) {
+                            prevNonBlankChar = currChar;
                         }
 
-                        if (checkRequired) {
-                            if (currentChar == prefix[index]) {
+                        if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
+                            if (currChar == prefix[index]) {
                                 index++;
-
-                                // all the comment chars are matched
                                 if (index == prefix.length) {
                                     index = 0;
                                     skipLine = true;
+                                    prevNonBlankChar = SPACE_CHAR;
                                     dataBuilder.delete(0, dataBuilder.length());
-                                    colNum = 0;
 
-                                    previousChar = currentChar;
+                                    prevChar = currChar;
                                     continue;
                                 }
                             } else {
                                 index = 0;
-                                checkRequired = false;
+                                reqCheck = false;
                             }
                         }
 
-                        if (currentChar == quoteCharacter) {
+                        if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else if (currentChar == delimiter) {
-                            if (hasQuoteChar) {
-                                dataBuilder.append((char) currentChar);
-                            } else {
+                        } else if (hasQuoteChar) {
+                            dataBuilder.append((char) currChar);
+                        } else {
+                            boolean isDelimiter;
+                            switch (delimiter) {
+                                case WHITESPACE:
+                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
+                                    break;
+                                default:
+                                    isDelimiter = (currChar == delimChar);
+                            }
+
+                            if (isDelimiter) {
                                 colNum++;
                                 String value = dataBuilder.toString().trim();
                                 dataBuilder.delete(0, dataBuilder.length());
@@ -121,27 +134,20 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                                 } else {
                                     numOfVars++;
                                     if (value.length() == 0) {
-                                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNumber, colNum);
+                                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNum, colNum);
                                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                         validationResults.add(result);
                                     }
                                 }
+                            } else {
+                                dataBuilder.append((char) currChar);
                             }
-                        } else {
-                            dataBuilder.append((char) currentChar);
-                        }
-                    } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
-                        endOfLine = colNum > 0 || dataBuilder.length() > 0;
-
-                        lineNumber++;
-                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
-                            lineNumber--;
                         }
                     }
 
-                    previousChar = currentChar;
+                    prevChar = currChar;
                 }
 
                 position += size;
@@ -159,113 +165,21 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
                     numOfVars++;
                     if (value.length() == 0) {
-                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNumber, colNum);
+                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNum, colNum);
                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                         validationResults.add(result);
                     }
                 }
             }
-
         }
 
         return numOfVars;
     }
 
-    private int validateVariables(int[] excludedColumns) throws IOException {
-        int numOfVars = 0;
-
-        try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
-            long fileSize = fc.size();
-            long position = 0;
-            long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;
-
-            StringBuilder dataBuilder = new StringBuilder();
-            int colNum = 0;
-            int lineNumber = 1;
-            int excludedIndex = 0;
-            int numOfExCols = excludedColumns.length;
-            boolean hasQuoteChar = false;
-            boolean endOfLine = false;
-            byte previousChar = -1;
-            do {
-                MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !endOfLine) {
-                    byte currentChar = buffer.get();
-
-                    if (currentChar >= SPACE || currentChar == delimiter) {
-                        // case where line starts with spaces
-                        if (currentChar == SPACE && currentChar != delimiter && dataBuilder.length() == 0) {
-                            previousChar = currentChar;
-                            continue;
-                        }
-
-                        if (currentChar == quoteCharacter) {
-                            hasQuoteChar = !hasQuoteChar;
-                        } else if (currentChar == delimiter) {
-                            if (hasQuoteChar) {
-                                dataBuilder.append((char) currentChar);
-                            } else {
-                                colNum++;
-                                String value = dataBuilder.toString().trim();
-                                dataBuilder.delete(0, dataBuilder.length());
-
-                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
-                                    excludedIndex++;
-                                } else {
-                                    numOfVars++;
-                                    if (value.length() == 0) {
-                                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNumber, colNum);
-                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
-                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
-                                        validationResults.add(result);
-                                    }
-                                }
-                            }
-                        } else {
-                            dataBuilder.append((char) currentChar);
-                        }
-                    } else if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
-                        endOfLine = colNum > 0 || dataBuilder.length() > 0;
-
-                        lineNumber++;
-                        if (currentChar == LINE_FEED && previousChar == CARRIAGE_RETURN) {
-                            lineNumber--;
-                        }
-                    }
-
-                    previousChar = currentChar;
-                }
-
-                position += size;
-                if ((position + size) > fileSize) {
-                    size = fileSize - position;
-                }
-            } while (position < fileSize);
-
-            // data at the end of line
-            if (colNum > 0 || dataBuilder.length() > 0) {
-                colNum++;
-                String value = dataBuilder.toString().trim();
-                dataBuilder.delete(0, dataBuilder.length());
-
-                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                    numOfVars++;
-                    if (value.length() == 0) {
-                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNumber, colNum);
-                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
-                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNumber);
-                        validationResults.add(result);
-                    }
-                }
-            }
-
-        }
-
-        return numOfVars;
+    public List<ValidationResult> getValidationResults() {
+        return validationResults;
     }
 
 }

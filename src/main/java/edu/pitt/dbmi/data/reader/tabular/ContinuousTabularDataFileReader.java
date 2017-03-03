@@ -18,6 +18,8 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
+import edu.pitt.dbmi.data.ContinuousTabularDataset;
+import edu.pitt.dbmi.data.Dataset;
 import edu.pitt.dbmi.data.Delimiter;
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import java.io.File;
@@ -25,25 +27,42 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
- * Feb 14, 2017 2:06:43 PM
+ * Mar 2, 2017 1:46:42 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularDataFileReader {
+public class ContinuousTabularDataFileReader extends AbstractContinuousTabularDataFileReader implements TabularDataReader {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDiscreteTabularDataReader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContinuousTabularDataFileReader.class);
 
-    public AbstractDiscreteTabularDataReader(File dataFile, Delimiter delimiter) {
+    public ContinuousTabularDataFileReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
-    protected DiscreteVarInfo[] extractVariableData(DiscreteVarInfo[] varInfos, int[] excludedColumns) throws IOException {
-        String missingValue = (missingValueMarker.length() == 0) ? "*" : missingValueMarker;
+    private Dataset readInDataFromFile(int[] excludedColumns) throws IOException {
+        List<String> variables = hasHeader ? extractVariables(excludedColumns) : generateVariables(excludedColumns);
+        double[][] data = extractData(variables, excludedColumns);
+
+        return new ContinuousTabularDataset(variables, data);
+    }
+
+    protected double[][] extractData(List<String> variables, int[] excludedColumns) throws IOException {
+        int numOfColumns = variables.size();
+        int numOfRows = (hasHeader) ? getNumberOfLines() - 1 : getNumberOfLines();
+
+        double[][] data = new double[numOfRows][numOfColumns];
+        if (numOfRows == 0 || numOfColumns == 0) {
+            return data;
+        }
+
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
             long position = 0;
@@ -56,11 +75,11 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
             int index = 0;
             int colNum = 0;
             int lineNum = 1;
+            int row = 0;  // array row number
+            int col = 0;  // array column number
             int numOfData = 0; // number of data read in per column
             int numOfExCols = excludedColumns.length;
-            int numOfColumns = varInfos.length;
             int excludedIndex = 0;
-            int varInfoIndex = 0;
             boolean skipHeader = hasHeader;
             boolean requireCheck = prefix.length > 0;
             boolean skipLine = false;
@@ -135,18 +154,26 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
                                     throw new DataReaderException(errMsg);
                                 } else {
                                     if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                        varInfos[varInfoIndex++].setValue(missingValue);
+                                        data[row][col++] = Double.NaN;
                                     } else {
-                                        varInfos[varInfoIndex++].setValue(value);
+                                        try {
+                                            data[row][col++] = Double.parseDouble(value);
+                                        } catch (NumberFormatException exception) {
+                                            String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
+                                            LOGGER.error(errMsg, exception);
+                                            throw new DataReaderException(errMsg);
+                                        }
                                     }
                                 }
                             }
+
+                            row++;
                         }
 
+                        col = 0;
                         colNum = 0;
                         numOfData = 0;
                         excludedIndex = 0;
-                        varInfoIndex = 0;
                         requireCheck = true;
                         prevNonBlankChar = SPACE_CHAR;
                         skipLine = false;
@@ -207,9 +234,15 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
                                         throw new DataReaderException(errMsg);
                                     } else {
                                         if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                            varInfos[varInfoIndex++].setValue(missingValue);
+                                            data[row][col++] = Double.NaN;
                                         } else {
-                                            varInfos[varInfoIndex++].setValue(value);
+                                            try {
+                                                data[row][col++] = Double.parseDouble(value);
+                                            } catch (NumberFormatException exception) {
+                                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
+                                                LOGGER.error(errMsg, exception);
+                                                throw new DataReaderException(errMsg);
+                                            }
                                         }
                                     }
                                 }
@@ -229,175 +262,24 @@ public abstract class AbstractDiscreteTabularDataReader extends AbstractTabularD
             } while (position < fileSize);
         }
 
-        return varInfos;
+        return data;
     }
 
-    protected DiscreteVarInfo[] extractVariables(int[] excludedColumns) throws IOException {
-        int numOfCols = getNumberOfColumns();
-        int numOfExCols = excludedColumns.length;
-        int numOfVars = numOfCols - numOfExCols;
-        DiscreteVarInfo[] varInfos = new DiscreteVarInfo[numOfVars];
+    @Override
+    public Dataset readInData(Set<String> excludedVariables) throws IOException {
+        int[] excludedColumns = hasHeader ? getColumnNumbers(excludedVariables) : new int[0];
 
-        try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
-            long fileSize = fc.size();
-            long position = 0;
-            long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;
-
-            byte delimChar = delimiter.getDelimiterChar();
-
-            StringBuilder dataBuilder = new StringBuilder();
-            byte[] prefix = commentMarker.getBytes();
-            int index = 0;
-            int colNum = 0;
-            int lineNum = 1;
-            int excludedIndex = 0;
-            int varInfoIndex = 0;
-            boolean requireCheck = prefix.length > 0;
-            boolean skipLine = false;
-            boolean finished = false;
-            boolean hasQuoteChar = false;
-            byte prevNonBlankChar = SPACE_CHAR;
-            byte prevChar = -1;
-            do {
-                MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !finished) {
-                    byte currChar = buffer.get();
-
-                    if (skipLine) {
-                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                            skipLine = false;
-                        }
-                    } else if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                        if (prevNonBlankChar > SPACE_CHAR) {
-                            finished = true;
-
-                            // data at the end of line
-                            if (colNum > 0 || dataBuilder.length() > 0) {
-                                colNum++;
-                                String value = dataBuilder.toString().trim();
-                                dataBuilder.delete(0, dataBuilder.length());
-
-                                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                                    switch (delimiter) {
-                                        case WHITESPACE:
-                                            if (value.length() > 0) {
-                                                varInfos[varInfoIndex++] = new DiscreteVarInfo(value);
-                                            }
-                                            break;
-                                        default:
-                                            if (value.length() > 0) {
-                                                varInfos[varInfoIndex++] = new DiscreteVarInfo(value);
-                                            } else {
-                                                String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
-                                                LOGGER.error(errMsg);
-                                                throw new DataReaderException(errMsg);
-                                            }
-                                    }
-                                }
-                            }
-                        }
-
-                        lineNum++;
-                        if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
-                            lineNum--;
-                        }
-                    } else {
-                        if (currChar > SPACE_CHAR) {
-                            prevNonBlankChar = currChar;
-                        }
-
-                        if (requireCheck && prevNonBlankChar > SPACE_CHAR) {
-                            if (currChar == prefix[index]) {
-                                index++;
-
-                                // all the comment chars are matched
-                                if (index == prefix.length) {
-                                    index = 0;
-                                    skipLine = true;
-                                    colNum = 0;
-                                    prevNonBlankChar = SPACE_CHAR;
-                                    dataBuilder.delete(0, dataBuilder.length());
-
-                                    prevChar = currChar;
-                                    continue;
-                                }
-                            } else {
-                                index = 0;
-                                requireCheck = false;
-                            }
-                        }
-
-                        if (currChar == quoteCharacter) {
-                            hasQuoteChar = !hasQuoteChar;
-                        } else if (hasQuoteChar) {
-                            dataBuilder.append((char) currChar);
-                        } else {
-                            boolean isDelimiter;
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
-                                    break;
-                                default:
-                                    isDelimiter = (currChar == delimChar);
-                            }
-
-                            if (isDelimiter) {
-                                colNum++;
-                                String value = dataBuilder.toString().trim();
-                                dataBuilder.delete(0, dataBuilder.length());
-
-                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
-                                    excludedIndex++;
-                                } else {
-                                    if (value.length() > 0) {
-                                        varInfos[varInfoIndex++] = new DiscreteVarInfo(value);
-                                    } else {
-                                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
-                                    }
-                                }
-                            } else {
-                                dataBuilder.append((char) currChar);
-                            }
-                        }
-                    }
-
-                    prevChar = currChar;
-                }
-
-                position += size;
-                if ((position + size) > fileSize) {
-                    size = fileSize - position;
-                }
-            } while (position < fileSize);
-        }
-
-        return varInfos;
+        return readInDataFromFile(excludedColumns);
     }
 
-    /**
-     *
-     * @param excludedColumns sorted array of column numbers
-     * @return
-     * @throws IOException
-     */
-    protected DiscreteVarInfo[] generateDiscreteVariables(int[] excludedColumns) throws IOException {
-        int numOfCols = getNumberOfColumns();
-        int numOfExCols = excludedColumns.length;
-        int size = numOfCols - numOfExCols;
-        int exColIndex = 0;
-        int varInfoIndex = 0;
-        DiscreteVarInfo[] varInfos = new DiscreteVarInfo[size];
-        for (int colNum = 1; colNum <= numOfCols; colNum++) {
-            if (numOfExCols > 0 && (exColIndex < numOfExCols && colNum == excludedColumns[exColIndex])) {
-                exColIndex++;
-            } else {
-                varInfos[varInfoIndex++] = new DiscreteVarInfo(String.format("V%d", colNum));
-            }
-        }
+    @Override
+    public Dataset readInData(int[] excludedColumns) throws IOException {
+        return readInDataFromFile(filterValidColumnNumbers(excludedColumns));
+    }
 
-        return varInfos;
+    @Override
+    public Dataset readInData() throws IOException {
+        return readInData(Collections.EMPTY_SET);
     }
 
 }

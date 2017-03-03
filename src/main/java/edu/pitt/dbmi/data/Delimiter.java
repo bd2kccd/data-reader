@@ -16,33 +16,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.covariance;
-
-import edu.pitt.dbmi.data.Dataset;
-import edu.pitt.dbmi.data.Delimiter;
-import edu.pitt.dbmi.data.reader.AbstractDataFileReader;
-import java.io.File;
-import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package edu.pitt.dbmi.data;
 
 /**
  *
- * Feb 22, 2017 2:42:13 PM
+ * Feb 24, 2017 3:19:35 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class LowerCovarianceDataReader extends AbstractDataFileReader implements CovarianceDataReader {
+public enum Delimiter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LowerCovarianceDataReader.class);
+    TAB('\t'),
+    SPACE(' '),
+    WHITESPACE(' '),
+    COMMA(','),
+    COLON(':'),
+    SEMICOLON(';'),
+    PIPE('|');
 
-    public LowerCovarianceDataReader(File dataFile, Delimiter delimiter) {
-        super(dataFile, delimiter);
+    private final byte delimiterChar;
+
+    private Delimiter(char delimiterChar) {
+        this.delimiterChar = (byte) delimiterChar;
     }
 
-    @Override
-    public Dataset readInData() throws IOException {
-        return null;
+    public byte getDelimiterChar() {
+        return delimiterChar;
     }
 
 }

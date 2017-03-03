@@ -30,6 +30,8 @@ public interface DataFileValidation extends DataValidation {
 
     public void setQuoteCharacter(char quoteCharacter);
 
+    public void setMissingValueMarker(String missingValueMarker);
+
     public void setCommentMarker(String commentMarker);
 
 }
