@@ -73,7 +73,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
     }
 
     private void validateDataFromFile(int[] excludedColumns) throws IOException {
-        int numOfVars = validateVariables(excludedColumns);
+        int numOfVars = hasHeader ? validateVariables(excludedColumns) : getNumberOfColumns() - excludedColumns.length;
         int numOfRows = validateData(numOfVars, excludedColumns);
 
         String infoMsg = String.format("There are %d cases and %d variables.", numOfRows, numOfVars);
@@ -113,12 +113,14 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
 
                 // skip header, if any
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && !finished) {
+                    while (buffer.hasRemaining() && skipHeader) {
                         byte currChar = buffer.get();
-
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                             skipLine = false;
-                            finished = prevNonBlankChar > SPACE_CHAR;
+                            if (prevNonBlankChar > SPACE_CHAR) {
+                                prevNonBlankChar = SPACE_CHAR;
+                                skipHeader = false;
+                            }
 
                             lineNum++;
                             if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
@@ -142,24 +144,17 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                                     skipLine = true;
                                 }
                             }
-                        } else {
-                            prevChar = currChar;
                         }
-                    }
 
-                    prevNonBlankChar = SPACE_CHAR;
-                    skipHeader = false;
+                        prevChar = currChar;
+                    }
                 }
 
                 // read in data
                 while (buffer.hasRemaining()) {
                     byte currChar = buffer.get();
 
-                    if (skipLine) {
-                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                            skipLine = false;
-                        }
-                    } else if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                         if (colNum > 0 || dataBuilder.length() > 0) {
                             colNum++;
                             String value = dataBuilder.toString().trim();
@@ -196,13 +191,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                         validationResults.add(result);
-                                    } else if (value.equals(missingValueMarker)) {
-                                        String errMsg = String.format("Line %d, column %d: Missing value.", lineNum, colNum);
-                                        ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_MISSING_VALUE, errMsg);
-                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                        validationResults.add(result);
-                                    } else {
+                                    } else if (!value.equals(missingValueMarker)) {
                                         try {
                                             Double.parseDouble(value);
                                         } catch (NumberFormatException exception) {
@@ -231,7 +220,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                         if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
                             lineNum--;
                         }
-                    } else {
+                    } else if (!skipLine) {
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
                         }
@@ -296,13 +285,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                             validationResults.add(result);
-                                        } else if (value.equals(missingValueMarker)) {
-                                            String errMsg = String.format("Line %d, column %d: Missing value.", lineNum, colNum);
-                                            ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_MISSING_VALUE, errMsg);
-                                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                            validationResults.add(result);
-                                        } else {
+                                        } else if (!value.equals(missingValueMarker)) {
                                             try {
                                                 Double.parseDouble(value);
                                             } catch (NumberFormatException exception) {
@@ -368,13 +351,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                             validationResults.add(result);
-                        } else if (value.equals(missingValueMarker)) {
-                            String errMsg = String.format("Line %d, column %d: Missing value.", lineNum, colNum);
-                            ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_MISSING_VALUE, errMsg);
-                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                            validationResults.add(result);
-                        } else {
+                        } else if (!value.equals(missingValueMarker)) {
                             try {
                                 Double.parseDouble(value);
                             } catch (NumberFormatException exception) {

@@ -73,7 +73,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
     }
 
     private void validateDataFromFile(int[] excludedColumns) throws IOException {
-        int numOfVars = validateVariables(excludedColumns);
+        int numOfVars = hasHeader ? validateVariables(excludedColumns) : getNumberOfColumns() - excludedColumns.length;
         int numOfRows = validateData(numOfVars, excludedColumns);
 
         String infoMsg = String.format("There are %d cases and %d variables.", numOfRows, numOfVars);
@@ -104,7 +104,6 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
             boolean skipHeader = hasHeader;
             boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
             boolean hasQuoteChar = false;
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
@@ -113,18 +112,18 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
 
                 // skip header, if any
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && !finished) {
+                    while (buffer.hasRemaining() && skipHeader) {
                         byte currChar = buffer.get();
-
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                             skipLine = false;
                             if (prevNonBlankChar > SPACE_CHAR) {
-                                finished = true;
-                            } else {
-                                lineNum++;
-                                if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
-                                    lineNum--;
-                                }
+                                prevNonBlankChar = SPACE_CHAR;
+                                skipHeader = false;
+                            }
+
+                            lineNum++;
+                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                                lineNum--;
                             }
                         } else if (!skipLine) {
                             if (currChar > SPACE_CHAR) {
@@ -144,13 +143,10 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                     skipLine = true;
                                 }
                             }
-                        } else {
-                            prevChar = currChar;
                         }
-                    }
 
-                    prevNonBlankChar = SPACE_CHAR;
-                    skipHeader = false;
+                        prevChar = currChar;
+                    }
                 }
 
                 while (buffer.hasRemaining()) {
@@ -177,22 +173,20 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                     result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
                                     result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
                                     validationResults.add(result);
-                                } else if (value.equals(missingValueMarker)) {
-                                    String errMsg = String.format("Line %d, column %d: Missing value.", lineNum, colNum);
-                                    ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_MISSING_VALUE, errMsg);
+                                } else if (numOfData < numOfVars) {
+                                    String errMsg = String.format(
+                                            "Line %d, column %d: Insufficient data.  Expect %d value(s) but encounter %d.",
+                                            lineNum, colNum, numOfVars, numOfData);
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                     result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                    result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                                    result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
                                     validationResults.add(result);
                                 } else {
                                     if (value.length() == 0) {
                                         String errMsg = String.format("Line %d, column %d: Missing value.  No missing marker was found. Assumed value is missing.", lineNum, colNum);
                                         ValidationResult result = new ValidationResult(ValidationCode.WARNING, MessageType.FILE_MISSING_VALUE, errMsg);
-                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                        validationResults.add(result);
-                                    } else if (value.equals(missingValueMarker)) {
-                                        String errMsg = String.format("Line %d, column %d: Missing value.", lineNum, colNum);
-                                        ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_MISSING_VALUE, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                         validationResults.add(result);
@@ -276,12 +270,6 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                             validationResults.add(result);
-                                        } else if (value.equals(missingValueMarker)) {
-                                            String errMsg = String.format("Line %d, column %d: Missing value.", lineNum, colNum);
-                                            ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_MISSING_VALUE, errMsg);
-                                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                            validationResults.add(result);
                                         }
                                     }
                                 }
@@ -321,22 +309,20 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                         result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
                         result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
                         validationResults.add(result);
-                    } else if (value.equals(missingValueMarker)) {
-                        String errMsg = String.format("Line %d, column %d: Missing value.", lineNum, colNum);
-                        ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_MISSING_VALUE, errMsg);
+                    } else if (numOfData < numOfVars) {
+                        String errMsg = String.format(
+                                "Line %d, column %d: Insufficient data.  Expect %d value(s) but encounter %d.",
+                                lineNum, colNum, numOfVars, numOfData);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
                         validationResults.add(result);
                     } else {
                         if (value.length() == 0) {
                             String errMsg = String.format("Line %d, column %d: Missing value.  No missing marker was found. Assumed value is missing.", lineNum, colNum);
                             ValidationResult result = new ValidationResult(ValidationCode.WARNING, MessageType.FILE_MISSING_VALUE, errMsg);
-                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                            validationResults.add(result);
-                        } else if (value.equals(missingValueMarker)) {
-                            String errMsg = String.format("Line %d, column %d: Missing value.", lineNum, colNum);
-                            ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_MISSING_VALUE, errMsg);
                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                             validationResults.add(result);

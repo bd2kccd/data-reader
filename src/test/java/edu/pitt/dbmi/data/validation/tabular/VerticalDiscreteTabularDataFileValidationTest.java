@@ -71,7 +71,7 @@ public class VerticalDiscreteTabularDataFileValidationTest {
             }
         }
 
-        long expected = 3;
+        long expected = 1;
         long actual = infos.size();
         Assert.assertEquals(expected, actual);
 

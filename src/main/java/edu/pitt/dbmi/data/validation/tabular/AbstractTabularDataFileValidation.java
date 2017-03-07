@@ -38,7 +38,7 @@ import java.util.List;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class AbstractTabularDataFileValidation extends AbstractTabularDataFileReader {
+public abstract class AbstractTabularDataFileValidation extends AbstractTabularDataFileReader {
 
     protected final List<ValidationResult> validationResults;
 
@@ -47,7 +47,7 @@ public class AbstractTabularDataFileValidation extends AbstractTabularDataFileRe
         this.validationResults = new LinkedList<>();
     }
 
-    public int validateVariables(int[] excludedColumns) throws IOException {
+    protected int validateVariables(int[] excludedColumns) throws IOException {
         int numOfVars = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
@@ -66,21 +66,20 @@ public class AbstractTabularDataFileValidation extends AbstractTabularDataFileRe
             int excludedIndex = 0;
             boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
+            boolean taskFinished = false;
             boolean hasQuoteChar = false;
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !finished) {
+                while (buffer.hasRemaining() && !taskFinished) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        skipLine = false;
                         if (prevNonBlankChar > SPACE_CHAR) {
-                            finished = true;
+                            taskFinished = true;
                         } else {
-                            skipLine = false;
-
                             lineNum++;
                             if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
                                 lineNum--;
@@ -94,9 +93,12 @@ public class AbstractTabularDataFileValidation extends AbstractTabularDataFileRe
                         if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
                             if (currChar == prefix[index]) {
                                 index++;
+
+                                // all the comment chars are matched
                                 if (index == prefix.length) {
                                     index = 0;
                                     skipLine = true;
+                                    colNum = 0;
                                     prevNonBlankChar = SPACE_CHAR;
                                     dataBuilder.delete(0, dataBuilder.length());
 
@@ -153,7 +155,7 @@ public class AbstractTabularDataFileValidation extends AbstractTabularDataFileRe
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !taskFinished);
 
             // data at the end of line
             if (colNum > 0 || dataBuilder.length() > 0) {
