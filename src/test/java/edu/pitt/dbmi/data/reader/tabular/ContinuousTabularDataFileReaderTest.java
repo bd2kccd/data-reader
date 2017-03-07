@@ -29,11 +29,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
- * Mar 2, 2017 2:42:29 PM
+ * Mar 6, 2017 11:08:38 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
@@ -42,16 +43,39 @@ public class ContinuousTabularDataFileReaderTest {
     public ContinuousTabularDataFileReaderTest() {
     }
 
+    @Ignore
     @Test
     public void testReadInData() throws IOException {
-        Path dataFile = Paths.get("test", "data", "continuous", "small_data", "small_data.prn");
+        Path dataFile = Paths.get("test", "data", "sim_data", "continuous", "small_data.csv");
+        Delimiter delimiter = Delimiter.COMMA;
+        char quoteCharacter = '"';
+        String missingValueMarker = "*";
+        String commentMarker = "//";
 
+        TabularDataReader reader = new ContinuousTabularDataFileReader(dataFile.toFile(), delimiter);
+        reader.setQuoteCharacter(quoteCharacter);
+        reader.setMissingValueMarker(missingValueMarker);
+        reader.setCommentMarker(commentMarker);
+
+        Dataset dataset = reader.readInData();
+        validateDataset(dataset, 10, 18);
+    }
+
+    @Ignore
+    @Test
+    public void testReadInDataWithVariableExclusions() throws IOException {
+        Path dataFile = Paths.get("test", "data", "sim_data", "continuous", "small_data.prn");
         Delimiter delimiter = Delimiter.WHITESPACE;
         char quoteCharacter = '"';
         String missingValueMarker = "*";
         String commentMarker = "//";
 
-        String[] variables = {"X2", "X4", "X6", "X8", "X10"};
+        String[] variables = {
+            "X1",
+            "X3",
+            "X7",
+            "X10"
+        };
         Set<String> excludedVariables = new HashSet<>(Arrays.asList(variables));
 
         TabularDataReader reader = new ContinuousTabularDataFileReader(dataFile.toFile(), delimiter);
@@ -60,23 +84,26 @@ public class ContinuousTabularDataFileReaderTest {
         reader.setCommentMarker(commentMarker);
 
         Dataset dataset = reader.readInData(excludedVariables);
+        validateDataset(dataset, 6, 18);
+    }
 
+    private void validateDataset(Dataset dataset, long numOfVars, long numOfCases) {
         boolean isContinuousTabularDataset = (dataset instanceof ContinuousTabularDataset);
         Assert.assertTrue(isContinuousTabularDataset);
 
         if (isContinuousTabularDataset) {
             ContinuousTabularDataset contDataset = (ContinuousTabularDataset) dataset;
             List<String> variableNames = contDataset.getVariables();
-            long expected = 5;
+            long expected = numOfVars;
             long actual = variableNames.size();
             Assert.assertEquals(expected, actual);
 
             double[][] data = contDataset.getData();
-            expected = 18;
+            expected = numOfCases;
             actual = data.length;
             Assert.assertEquals(expected, actual);
 
-            expected = 5;
+            expected = numOfVars;
             actual = data[0].length;
             Assert.assertEquals(expected, actual);
         }

@@ -84,8 +84,6 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                         if (requireCheck && prevNonBlankChar > SPACE_CHAR) {
                             if (currChar == prefix[index]) {
                                 index++;
-
-                                // all the comment chars are matched
                                 if (index == prefix.length) {
                                     index = 0;
                                     skipLine = true;
@@ -131,22 +129,22 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                     prevChar = currChar;
                 }
 
-                // data at the end of line
-                if (colNum > 0 || dataBuilder.length() > 0) {
-                    colNum++;
-                    String value = dataBuilder.toString().trim();
-                    dataBuilder.delete(0, dataBuilder.length());
-
-                    if (variables.contains(value)) {
-                        indexList.add(colNum);
-                    }
-                }
-
                 position += size;
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
             } while (position < fileSize);
+
+            // data at the end of line
+            if (colNum > 0 || dataBuilder.length() > 0) {
+                colNum++;
+                String value = dataBuilder.toString().trim();
+                dataBuilder.delete(0, dataBuilder.length());
+
+                if (variables.contains(value)) {
+                    indexList.add(colNum);
+                }
+            }
         }
 
         int[] indices = new int[indexList.size()];
@@ -194,7 +192,7 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
             if (length > 0 && (excludedIndex < length && colNum == excludedColumns[excludedIndex])) {
                 excludedIndex++;
             } else {
-                nodes.add(String.format("V%d", colNum));
+                nodes.add(String.format("VAR_%d", colNum));
             }
         }
 

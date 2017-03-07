@@ -27,11 +27,11 @@ import java.nio.channels.FileChannel;
 
 /**
  *
- * Feb 24, 2017 3:24:28 PM
+ * Mar 4, 2017 1:14:52 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class AbstractDataFileReader {
+public abstract class AbstractDataFileReader {
 
     protected static final byte LINE_FEED = '\n';
     protected static final byte CARRIAGE_RETURN = '\r';
@@ -59,12 +59,6 @@ public class AbstractDataFileReader {
         this.numberOfColumns = -1;
     }
 
-    /**
-     * Count number of columns of the first non-blank line.
-     *
-     * @return number of columns
-     * @throws IOException
-     */
     private int countNumberOfColumns() throws IOException {
         int count = 0;
 
@@ -88,27 +82,10 @@ public class AbstractDataFileReader {
                 while (buffer.hasRemaining() && !finished) {
                     byte currChar = buffer.get();
 
-                    if (skipLine) {
-                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                            skipLine = false;
-                        }
-                    } else if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                        if (prevNonBlankChar > SPACE_CHAR) {
-                            finished = true;
-
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    if (prevChar > SPACE_CHAR) {
-                                        count++;
-                                    }
-                                    break;
-                                default:
-                                    if (prevNonBlankChar > SPACE_CHAR) {
-                                        count++;
-                                    }
-                            }
-                        }
-                    } else {
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        skipLine = false;
+                        finished = prevNonBlankChar > SPACE_CHAR;
+                    } else if (!skipLine) {
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
                         }
@@ -134,10 +111,10 @@ public class AbstractDataFileReader {
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else {
+                        } else if (!hasQuoteChar) {
                             switch (delimiter) {
                                 case WHITESPACE:
-                                    if (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR) {
+                                    if (currChar > SPACE_CHAR && prevChar <= SPACE_CHAR) {
                                         if (!hasQuoteChar) {
                                             count++;
                                         }
@@ -150,7 +127,6 @@ public class AbstractDataFileReader {
                                         }
                                     }
                             }
-
                         }
                     }
 
@@ -161,18 +137,18 @@ public class AbstractDataFileReader {
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !finished);
+
+            if (delimiter != Delimiter.WHITESPACE) {
+                if (prevNonBlankChar > SPACE_CHAR) {
+                    count++;
+                }
+            }
         }
 
         return count;
     }
 
-    /**
-     * Count number of non-blank lines.
-     *
-     * @return number of lines
-     * @throws IOException
-     */
     private int countNumberOfLines() throws IOException {
         int count = 0;
 
@@ -190,17 +166,13 @@ public class AbstractDataFileReader {
                 while (buffer.hasRemaining()) {
                     byte currChar = buffer.get();
 
-                    if (skipLine) {
-                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                            skipLine = false;
-                        }
-                    } else if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        skipLine = false;
                         if (index > 0) {
                             index = 0;
                             count++;
                         }
-                    } else {
-                        // case where line starts with spaces
+                    } else if (!skipLine) {
                         if (currChar <= SPACE_CHAR && index == 0) {
                             continue;
                         }
@@ -208,8 +180,6 @@ public class AbstractDataFileReader {
                         if (reqCheck) {
                             if (currChar == prefix[index]) {
                                 index++;
-
-                                // all the comment chars are matched
                                 if (index == prefix.length) {
                                     index = 0;
                                     skipLine = true;
@@ -220,7 +190,6 @@ public class AbstractDataFileReader {
                                 count++;
                             }
                         } else {
-                            // have seen at least a non-blank char
                             skipLine = true;
                             count++;
                         }
@@ -233,7 +202,7 @@ public class AbstractDataFileReader {
                 }
             } while (position < fileSize);
 
-            // case when there's no newline at the end of the file
+            // case where no newline at end of file
             if (index > 0) {
                 index = 0;
                 count++;

@@ -18,6 +18,7 @@
  */
 package edu.pitt.dbmi.data;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -33,7 +34,7 @@ public class ContinuousTabularDataset implements Dataset {
     private final double[][] data;
 
     public ContinuousTabularDataset(List<String> variables, double[][] data) {
-        this.variables = variables;
+        this.variables = (variables == null) ? Collections.EMPTY_LIST : variables;
         this.data = data;
     }
 

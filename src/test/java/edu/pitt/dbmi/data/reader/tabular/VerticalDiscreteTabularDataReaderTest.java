@@ -24,16 +24,13 @@ import edu.pitt.dbmi.data.VerticalDiscreteTabularDataset;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
- * Feb 14, 2017 4:09:06 PM
+ * Mar 6, 2017 5:30:25 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
@@ -42,47 +39,65 @@ public class VerticalDiscreteTabularDataReaderTest {
     public VerticalDiscreteTabularDataReaderTest() {
     }
 
+    @Ignore
+    @Test
+    public void testReadInDataWithMissingValues() throws IOException {
+        Path dataFile = Paths.get("test", "data", "sim_data", "discrete", "small_discrete_data_missing.prn");
+        Delimiter delimiter = Delimiter.WHITESPACE;
+        char quoteCharacter = '"';
+        String missingValueMarker = "*";
+        String commentMarker = "//";
+
+        TabularDataReader reader = new VerticalDiscreteTabularDataReader(dataFile.toFile(), delimiter);
+        reader.setQuoteCharacter(quoteCharacter);
+        reader.setMissingValueMarker(missingValueMarker);
+        reader.setCommentMarker(commentMarker);
+
+        Dataset dataset = reader.readInData();
+        validateDataset(dataset, 10, 19);
+    }
+
     /**
-     * Test of readInDataset method, of class VerticalDiscreteTabularDataReader.
+     * Test of readInData method, of class VerticalDiscreteTabularDataReader.
      *
      * @throws IOException
      */
     @Ignore
     @Test
-    public void testReadInVerticalTabularDiscreteDataset() throws IOException {
-        Path dataFile = Paths.get("test", "data", "discrete", "uci_balloon.csv");
-        Delimiter delimiter = Delimiter.COMMA;
+    public void testReadInData() throws IOException {
+        Path dataFile = Paths.get("test", "data", "sim_data", "discrete", "small_discrete_data.prn");
+        Delimiter delimiter = Delimiter.WHITESPACE;
         char quoteCharacter = '"';
         String missingValueMarker = "*";
         String commentMarker = "//";
 
-        String[] variableNames = {
-            //            "COLOR",
-            "SIZE",
-            //            "ACT",
-            //            "AGE",
-            "INFLATED"
-        };
-        Set<String> variables = new HashSet<>(Arrays.asList(variableNames));
+        TabularDataReader reader = new VerticalDiscreteTabularDataReader(dataFile.toFile(), delimiter);
+        reader.setQuoteCharacter(quoteCharacter);
+        reader.setMissingValueMarker(missingValueMarker);
+        reader.setCommentMarker(commentMarker);
 
-        TabularDataReader dataReader = new VerticalDiscreteTabularDataReader(dataFile.toFile(), delimiter);
-        dataReader.setHasHeader(true);
+        Dataset dataset = reader.readInData();
+        validateDataset(dataset, 10, 19);
+    }
 
-        Dataset dataset = dataReader.readInData(variables);
-        if (dataset instanceof VerticalDiscreteTabularDataset) {
-            VerticalDiscreteTabularDataset vDataset = (VerticalDiscreteTabularDataset) dataset;
+    private void validateDataset(Dataset dataset, long numOfVars, long numOfCases) {
+        boolean isVerticalDiscreteTabularDataReader = (dataset instanceof VerticalDiscreteTabularDataset);
+        Assert.assertTrue(isVerticalDiscreteTabularDataReader);
 
-            DiscreteVarInfo[] variableInfos = vDataset.getVariableInfos();
-            int expected = 3;
-            int actual = variableInfos.length;
+        if (isVerticalDiscreteTabularDataReader) {
+            VerticalDiscreteTabularDataset discDataset = (VerticalDiscreteTabularDataset) dataset;
+
+            DiscreteVarInfo[] varInfos = discDataset.getVariableInfos();
+            long expected = numOfVars;
+            long actual = varInfos.length;
             Assert.assertEquals(expected, actual);
 
-            int[][] data = vDataset.getData();
-            expected = 3;
+            int[][] data = discDataset.getData();
+            expected = numOfVars;
             actual = data.length;
             Assert.assertEquals(expected, actual);
 
-            expected = 20;
+            expected = numOfCases;
             actual = data[0].length;
             Assert.assertEquals(expected, actual);
         }

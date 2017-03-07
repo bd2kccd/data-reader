@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation.file;
+package edu.pitt.dbmi.data.validation.tabular;
 
 import edu.pitt.dbmi.data.Delimiter;
 import edu.pitt.dbmi.data.validation.ValidationResult;
@@ -29,28 +29,24 @@ import org.junit.Test;
 
 /**
  *
- * Feb 17, 2017 3:10:35 PM
+ * Feb 17, 2017 5:00:27 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataFileValidationTest {
+public class VerticalDiscreteTabularDataFileValidationTest {
 
-    public ContinuousTabularDataFileValidationTest() {
+    public VerticalDiscreteTabularDataFileValidationTest() {
     }
 
-    /**
-     * Test of validateDataFromFile method, of class
-     * ContinuousTabularDataFileValidation.
-     */
     @Test
-    public void testValidateDataFromFile() {
-        Path dataFile = Paths.get("test", "data", "continuous", "small_data", "error_small_data.csv");
+    public void testValidate() {
+        Path dataFile = Paths.get("test", "data", "sim_data", "discrete", "small_discrete_data_missing.csv");
         Delimiter delimiter = Delimiter.COMMA;
         char quoteCharacter = '"';
         String missingValueMarker = "*";
         String commentMarker = "//";
 
-        TabularDataValidation validation = new ContinuousTabularDataFileValidation(dataFile.toFile(), delimiter);
+        TabularDataValidation validation = new VerticalDiscreteTabularDataFileValidation(dataFile.toFile(), delimiter);
         validation.setQuoteCharacter(quoteCharacter);
         validation.setMissingValueMarker(missingValueMarker);
         validation.setCommentMarker(commentMarker);
@@ -58,6 +54,7 @@ public class ContinuousTabularDataFileValidationTest {
         validation.validate();
 
         List<ValidationResult> results = validation.getValidationResults();
+
         List<ValidationResult> infos = new LinkedList<>();
         List<ValidationResult> warnings = new LinkedList<>();
         List<ValidationResult> errors = new LinkedList<>();
@@ -74,15 +71,15 @@ public class ContinuousTabularDataFileValidationTest {
             }
         }
 
-        long expected = 2;
+        long expected = 3;
         long actual = infos.size();
         Assert.assertEquals(expected, actual);
 
-        expected = 1;
+        expected = 2;
         actual = warnings.size();
         Assert.assertEquals(expected, actual);
 
-        expected = 2;
+        expected = 0;
         actual = errors.size();
         Assert.assertEquals(expected, actual);
     }

@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation.file;
+package edu.pitt.dbmi.data.validation.tabular;
 
 import edu.pitt.dbmi.data.Delimiter;
 import edu.pitt.dbmi.data.validation.MessageType;
@@ -84,7 +84,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
     }
 
     private int validateData(int numOfVars, int[] excludedColumns) throws IOException {
-        int rowCount = 0;
+        int count = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -102,7 +102,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
             int numOfExCols = excludedColumns.length;
             int excludedIndex = 0;
             boolean skipHeader = hasHeader;
-            boolean requireCheck = prefix.length > 0;
+            boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
             boolean finished = false;
             boolean hasQuoteChar = false;
@@ -116,12 +116,20 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                     while (buffer.hasRemaining() && !finished) {
                         byte currChar = buffer.get();
 
-                        if (!skipLine) {
+                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                            skipLine = false;
+                            finished = prevNonBlankChar > SPACE_CHAR;
+
+                            lineNum++;
+                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                                lineNum--;
+                            }
+                        } else if (!skipLine) {
                             if (currChar > SPACE_CHAR) {
                                 prevNonBlankChar = currChar;
                             }
 
-                            if (requireCheck && prevNonBlankChar > SPACE_CHAR) {
+                            if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
                                 if (currChar == prefix[index]) {
                                     index++;
                                     if (index == prefix.length) {
@@ -134,17 +142,9 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                                     skipLine = true;
                                 }
                             }
-                        } else if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                            skipLine = false;
-                            finished = prevNonBlankChar > SPACE_CHAR;
-
-                            lineNum++;
-                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
-                                lineNum--;
-                            }
+                        } else {
+                            prevChar = currChar;
                         }
-
-                        prevChar = currChar;
                     }
 
                     prevNonBlankChar = SPACE_CHAR;
@@ -155,7 +155,11 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                 while (buffer.hasRemaining()) {
                     byte currChar = buffer.get();
 
-                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                    if (skipLine) {
+                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                            skipLine = false;
+                        }
+                    } else if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                         if (colNum > 0 || dataBuilder.length() > 0) {
                             colNum++;
                             String value = dataBuilder.toString().trim();
@@ -213,13 +217,13 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                                 }
                             }
 
-                            rowCount++;
+                            count++;
                         }
 
                         colNum = 0;
                         numOfData = 0;
                         excludedIndex = 0;
-                        requireCheck = true;
+                        reqCheck = true;
                         prevNonBlankChar = SPACE_CHAR;
                         skipLine = false;
 
@@ -227,12 +231,12 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                         if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
                             lineNum--;
                         }
-                    } else if (!skipLine) {
+                    } else {
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
                         }
 
-                        if (requireCheck && prevNonBlankChar > SPACE_CHAR) {
+                        if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
                             if (currChar == prefix[index]) {
                                 index++;
                                 if (index == prefix.length) {
@@ -246,20 +250,22 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                                 }
                             } else {
                                 index = 0;
-                                requireCheck = false;
+                                reqCheck = false;
                             }
                         }
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
+                        } else if (hasQuoteChar) {
+                            dataBuilder.append((char) currChar);
                         } else {
                             boolean isDelimiter;
                             switch (delimiter) {
                                 case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR) && !hasQuoteChar;
+                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
                                     break;
                                 default:
-                                    isDelimiter = (currChar == delimChar) && !hasQuoteChar;
+                                    isDelimiter = (currChar == delimChar);
                             }
 
                             if (isDelimiter) {
@@ -324,9 +330,70 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                     size = fileSize - position;
                 }
             } while (position < fileSize);
+
+            // case when no newline char at end of file
+            if (colNum > 0 || dataBuilder.length() > 0) {
+                colNum++;
+                String value = dataBuilder.toString().trim();
+                dataBuilder.delete(0, dataBuilder.length());
+
+                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
+                    numOfData++;
+
+                    // ensure we don't go out of bound
+                    if (numOfData > numOfVars) {
+                        String errMsg = String.format(
+                                "Line %d, column %d: Excess data.  Expect %d value(s) but encounter %d.",
+                                lineNum, colNum, numOfVars, numOfData);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
+                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
+                        validationResults.add(result);
+                    } else if (numOfData < numOfVars) {
+                        String errMsg = String.format(
+                                "Line %d, column %d: Insufficient data.  Expect %d value(s) but encounter %d.",
+                                lineNum, colNum, numOfVars, numOfData);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
+                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
+                        validationResults.add(result);
+                    } else {
+                        if (value.length() == 0) {
+                            String errMsg = String.format("Line %d, column %d: Missing value.  No missing marker was found. Assumed value is missing.", lineNum, colNum);
+                            ValidationResult result = new ValidationResult(ValidationCode.WARNING, MessageType.FILE_MISSING_VALUE, errMsg);
+                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                            validationResults.add(result);
+                        } else if (value.equals(missingValueMarker)) {
+                            String errMsg = String.format("Line %d, column %d: Missing value.", lineNum, colNum);
+                            ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_MISSING_VALUE, errMsg);
+                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                            validationResults.add(result);
+                        } else {
+                            try {
+                                Double.parseDouble(value);
+                            } catch (NumberFormatException exception) {
+                                String errMsg = String.format("Line %d, column %d: Invalid number %s.", lineNum, colNum, value);
+                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
+                                result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                result.setAttribute(ValidationAttribute.VALUE, value);
+                                validationResults.add(result);
+                            }
+                        }
+                    }
+                }
+
+                count++;
+            }
         }
 
-        return rowCount;
+        return count;
     }
 
 }

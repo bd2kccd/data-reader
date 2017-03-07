@@ -27,7 +27,7 @@ import org.junit.Test;
 
 /**
  *
- * Feb 20, 2017 2:15:27 PM
+ * Mar 6, 2017 8:41:16 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
@@ -43,7 +43,7 @@ public class BasicDataPreviewerTest {
      */
     @Test
     public void testGetPreviews() throws IOException {
-        Path dataFile = Paths.get("test", "data", "discrete", "uci_balloon.csv");
+        Path dataFile = Paths.get("test", "data", "sim_data", "discrete", "small_discrete_data_missing.prn");
 
         DataPreviewer dataPreviewer = new BasicDataPreviewer(dataFile.toFile());
 

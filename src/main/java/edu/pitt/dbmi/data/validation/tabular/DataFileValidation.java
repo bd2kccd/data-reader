@@ -16,32 +16,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data;
+package edu.pitt.dbmi.data.validation.tabular;
+
+import edu.pitt.dbmi.data.validation.DataValidation;
 
 /**
  *
- * Mar 4, 2017 1:18:51 PM
+ * Feb 24, 2017 2:09:30 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public enum Delimiter {
+public interface DataFileValidation extends DataValidation {
 
-    TAB('\t'),
-    SPACE(' '),
-    WHITESPACE(' '),
-    COMMA(','),
-    COLON(':'),
-    SEMICOLON(';'),
-    PIPE('|');
+    public void setQuoteCharacter(char quoteCharacter);
 
-    private final byte delimiterChar;
+    public void setMissingValueMarker(String missingValueMarker);
 
-    private Delimiter(char delimiterChar) {
-        this.delimiterChar = (byte) delimiterChar;
-    }
-
-    public byte getDelimiterChar() {
-        return delimiterChar;
-    }
+    public void setCommentMarker(String commentMarker);
 
 }

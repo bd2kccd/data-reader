@@ -16,22 +16,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation.file;
 
-import java.util.Set;
+package edu.pitt.dbmi.data.validation.tabular;
 
 /**
  *
- * Feb 6, 2017 6:26:15 PM
+ * Mar 5, 2017 12:44:47 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularDataValidation extends DataFileValidation {
-
-    public void validate(Set<String> excludedVariables);
-
-    public void validate(int[] excludedColumns);
-
-    public void setHasHeader(boolean hasHeader);
+public class NewClass {
 
 }

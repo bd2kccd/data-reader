@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation.file;
+package edu.pitt.dbmi.data.validation.tabular;
 
 import edu.pitt.dbmi.data.Delimiter;
 import edu.pitt.dbmi.data.reader.tabular.AbstractTabularDataFileReader;
@@ -38,7 +38,7 @@ import java.util.List;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractTabularDataFileValidation extends AbstractTabularDataFileReader {
+public class AbstractTabularDataFileValidation extends AbstractTabularDataFileReader {
 
     protected final List<ValidationResult> validationResults;
 
@@ -47,7 +47,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
         this.validationResults = new LinkedList<>();
     }
 
-    protected int validateVariables(int[] excludedColumns) throws IOException {
+    public int validateVariables(int[] excludedColumns) throws IOException {
         int numOfVars = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
@@ -80,7 +80,6 @@ public abstract class AbstractTabularDataFileValidation extends AbstractTabularD
                             finished = true;
                         } else {
                             skipLine = false;
-                            prevNonBlankChar = SPACE_CHAR;
 
                             lineNum++;
                             if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {

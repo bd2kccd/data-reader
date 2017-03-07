@@ -20,12 +20,11 @@ package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.Dataset;
 import edu.pitt.dbmi.data.Delimiter;
+import edu.pitt.dbmi.data.VerticalDiscreteTabularDataset;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -33,9 +32,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDataReader implements TabularDataReader {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(VerticalDiscreteTabularDataReader.class);
+public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDataFileReader implements TabularDataReader {
 
     public VerticalDiscreteTabularDataReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
@@ -45,9 +42,12 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
         DiscreteVarInfo[] varInfos = hasHeader ? extractVariables(excludedColumns) : generateDiscreteVariables(excludedColumns);
         varInfos = extractVariableData(varInfos, excludedColumns);
         for (DiscreteVarInfo varInfo : varInfos) {
-            System.out.println(varInfo);
+            varInfo.recategorize();
         }
-        return null;
+
+        int[][] data = extractAndEncodeData(varInfos, excludedColumns);
+
+        return new VerticalDiscreteTabularDataset(varInfos, data);
     }
 
     @Override
