@@ -59,29 +59,26 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
             byte[] prefix = commentMarker.getBytes();
             int index = 0;
             int colNum = 0;
-            boolean requireCheck = prefix.length > 0;
+            boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
+            boolean taskFinished = false;
             boolean hasQuoteChar = false;
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !finished) {
+                while (buffer.hasRemaining() && !taskFinished) {
                     byte currChar = buffer.get();
 
-                    if (skipLine) {
-                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                            skipLine = false;
-                        }
-                    } else if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                        finished = prevNonBlankChar > SPACE_CHAR;
-                    } else {
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        skipLine = false;
+                        taskFinished = prevNonBlankChar > SPACE_CHAR;
+                    } else if (!skipLine) {
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
                         }
 
-                        if (requireCheck && prevNonBlankChar > SPACE_CHAR) {
+                        if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
                             if (currChar == prefix[index]) {
                                 index++;
                                 if (index == prefix.length) {
@@ -96,20 +93,22 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                                 }
                             } else {
                                 index = 0;
-                                requireCheck = false;
+                                reqCheck = false;
                             }
                         }
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
+                        } else if (hasQuoteChar) {
+                            dataBuilder.append((char) currChar);
                         } else {
                             boolean isDelimiter;
                             switch (delimiter) {
                                 case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR) && !hasQuoteChar;
+                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
                                     break;
                                 default:
-                                    isDelimiter = (currChar == delimChar) && !hasQuoteChar;
+                                    isDelimiter = (currChar == delimChar);
                             }
 
                             if (isDelimiter) {
@@ -118,6 +117,7 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                                 dataBuilder.delete(0, dataBuilder.length());
 
                                 if (variables.contains(value)) {
+                                    System.out.println(value);
                                     indexList.add(colNum);
                                 }
                             } else {
@@ -133,7 +133,7 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !taskFinished);
 
             // data at the end of line
             if (colNum > 0 || dataBuilder.length() > 0) {
@@ -142,6 +142,7 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                 dataBuilder.delete(0, dataBuilder.length());
 
                 if (variables.contains(value)) {
+                    System.out.println(value);
                     indexList.add(colNum);
                 }
             }

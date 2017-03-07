@@ -75,7 +75,6 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
             boolean skipHeader = hasHeader;
             boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
             boolean hasQuoteChar = false;
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
@@ -84,12 +83,14 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
 
                 // skip header, if any
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && !finished) {
+                    while (buffer.hasRemaining() && skipHeader) {
                         byte currChar = buffer.get();
-
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                             skipLine = false;
-                            finished = prevNonBlankChar > SPACE_CHAR;
+                            if (prevNonBlankChar > SPACE_CHAR) {
+                                prevNonBlankChar = SPACE_CHAR;
+                                skipHeader = false;
+                            }
 
                             lineNum++;
                             if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
@@ -117,20 +118,13 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
 
                         prevChar = currChar;
                     }
-
-                    prevNonBlankChar = SPACE_CHAR;
-                    skipHeader = false;
                 }
 
                 // read in data
                 while (buffer.hasRemaining()) {
                     byte currChar = buffer.get();
 
-                    if (skipLine) {
-                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                            skipLine = false;
-                        }
-                    } else if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                         if (colNum > 0 || dataBuilder.length() > 0) {
                             colNum++;
                             String value = dataBuilder.toString().trim();
@@ -165,7 +159,6 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
 
                             row++;
                         }
-
                         col = 0;
                         colNum = 0;
                         numOfData = 0;
@@ -178,7 +171,7 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
                         if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
                             lineNum--;
                         }
-                    } else {
+                    } else if (!skipLine) {
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
                         }
@@ -327,7 +320,6 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                         skipLine = false;
-
                         if (prevNonBlankChar > SPACE_CHAR) {
                             finished = true;
                         } else {
@@ -405,7 +397,7 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !finished);
 
             // data at the end of line
             if (colNum > 0 || dataBuilder.length() > 0) {

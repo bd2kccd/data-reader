@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFileReader {
+public abstract class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFileReader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDiscreteTabularDataFileReader.class);
 
@@ -79,12 +79,14 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
 
                 // skip header, if any
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && !finished) {
+                    while (buffer.hasRemaining() && skipHeader) {
                         byte currChar = buffer.get();
-
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                             skipLine = false;
-                            finished = prevNonBlankChar > SPACE_CHAR;
+                            if (prevNonBlankChar > SPACE_CHAR) {
+                                prevNonBlankChar = SPACE_CHAR;
+                                skipHeader = false;
+                            }
 
                             lineNum++;
                             if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
@@ -108,13 +110,10 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
                                     skipLine = true;
                                 }
                             }
-                        } else {
-                            prevChar = currChar;
                         }
-                    }
 
-                    prevNonBlankChar = SPACE_CHAR;
-                    skipHeader = false;
+                        prevChar = currChar;
+                    }
                 }
 
                 while (buffer.hasRemaining()) {
@@ -295,7 +294,6 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
             boolean skipHeader = hasHeader;
             boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
             boolean hasQuoteChar = false;
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
@@ -304,12 +302,14 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
 
                 // skip header, if any
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && !finished) {
+                    while (buffer.hasRemaining() && skipHeader) {
                         byte currChar = buffer.get();
-
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                             skipLine = false;
-                            finished = prevNonBlankChar > SPACE_CHAR;
+                            if (prevNonBlankChar > SPACE_CHAR) {
+                                prevNonBlankChar = SPACE_CHAR;
+                                skipHeader = false;
+                            }
 
                             lineNum++;
                             if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
@@ -333,13 +333,10 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
                                     skipLine = true;
                                 }
                             }
-                        } else {
-                            prevChar = currChar;
                         }
-                    }
 
-                    prevNonBlankChar = SPACE_CHAR;
-                    skipHeader = false;
+                        prevChar = currChar;
+                    }
                 }
 
                 // read in data
@@ -379,7 +376,6 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
                         varInfoIndex = 0;
                         reqCheck = true;
                         prevNonBlankChar = SPACE_CHAR;
-                        skipLine = false;
 
                         lineNum++;
                         if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
@@ -458,6 +454,7 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
                 }
             } while (position < fileSize);
 
+            // case when no newline at end of file
             if (colNum > 0 || dataBuilder.length() > 0) {
                 colNum++;
                 String value = dataBuilder.toString().trim();
@@ -507,22 +504,21 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
             int lineNum = 1;
             int excludedIndex = 0;
             int varInfoIndex = 0;
-            boolean requireCheck = prefix.length > 0;
+            boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
+            boolean taskFinished = false;
             boolean hasQuoteChar = false;
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !finished) {
+                while (buffer.hasRemaining() && !taskFinished) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                         skipLine = false;
-
                         if (prevNonBlankChar > SPACE_CHAR) {
-                            finished = true;
+                            taskFinished = true;
                         } else {
                             lineNum++;
                             if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
@@ -534,7 +530,7 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
                             prevNonBlankChar = currChar;
                         }
 
-                        if (requireCheck && prevNonBlankChar > SPACE_CHAR) {
+                        if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
                             if (currChar == prefix[index]) {
                                 index++;
 
@@ -551,7 +547,7 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
                                 }
                             } else {
                                 index = 0;
-                                requireCheck = false;
+                                reqCheck = false;
                             }
                         }
 
@@ -598,7 +594,7 @@ public class AbstractDiscreteTabularDataFileReader extends AbstractTabularDataFi
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !taskFinished);
 
             // data at the end of line
             if (colNum > 0 || dataBuilder.length() > 0) {
