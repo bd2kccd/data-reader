@@ -16,8 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation.file;
+package edu.pitt.dbmi.data.validation.tabular;
 
+import edu.pitt.dbmi.data.Delimiter;
+import static edu.pitt.dbmi.data.validation.ValidationCode.INFO;
+import static edu.pitt.dbmi.data.validation.ValidationCode.WARNING;
 import edu.pitt.dbmi.data.validation.ValidationResult;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,7 +31,7 @@ import org.junit.Test;
 
 /**
  *
- * Feb 17, 2017 3:10:35 PM
+ * Feb 16, 2017 2:47:07 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
@@ -38,16 +41,20 @@ public class ContinuousTabularDataFileValidationTest {
     }
 
     /**
-     * Test of validateDataFromFile method, of class
-     * ContinuousTabularDataFileValidation.
+     * Test of validate method, of class ContinuousTabularDataFileValidation.
      */
     @Test
-    public void testValidateDataFromFile() {
-        Path dataFile = Paths.get("test", "data", "continuous", "error_sim_data_5var_10case.csv");
-        char delimiter = ',';
+    public void testValidate() {
+        Path dataFile = Paths.get("test", "data", "sim_data", "continuous", "small_data_errors.txt");
+        Delimiter delimiter = Delimiter.TAB;
+        char quoteCharacter = '"';
+        String missingValueMarker = "*";
+        String commentMarker = "//";
 
         TabularDataValidation validation = new ContinuousTabularDataFileValidation(dataFile.toFile(), delimiter);
-        validation.setHasHeader(true);
+        validation.setQuoteCharacter(quoteCharacter);
+        validation.setMissingValueMarker(missingValueMarker);
+        validation.setCommentMarker(commentMarker);
 
         validation.validate();
 
@@ -73,11 +80,11 @@ public class ContinuousTabularDataFileValidationTest {
         long actual = infos.size();
         Assert.assertEquals(expected, actual);
 
-        expected = 0;
+        expected = 1;
         actual = warnings.size();
         Assert.assertEquals(expected, actual);
 
-        expected = 2;
+        expected = 1;
         actual = errors.size();
         Assert.assertEquals(expected, actual);
     }

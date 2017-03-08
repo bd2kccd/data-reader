@@ -16,8 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation.file;
+package edu.pitt.dbmi.data.validation.tabular;
 
+import edu.pitt.dbmi.data.Delimiter;
 import edu.pitt.dbmi.data.validation.ValidationResult;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,7 +29,7 @@ import org.junit.Test;
 
 /**
  *
- * Feb 17, 2017 5:37:44 PM
+ * Feb 17, 2017 5:00:27 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
@@ -37,17 +38,18 @@ public class VerticalDiscreteTabularDataFileValidationTest {
     public VerticalDiscreteTabularDataFileValidationTest() {
     }
 
-    /**
-     * Test of validateDataFromFile method, of class
-     * VerticalDiscreteTabularDataFileValidation.
-     */
     @Test
-    public void testValidateDataFromFile() {
-        Path dataFile = Paths.get("test", "data", "discrete", "uci_balloon.csv");
-        char delimiter = ',';
+    public void testValidate() {
+        Path dataFile = Paths.get("test", "data", "sim_data", "discrete", "small_discrete_data_missing.csv");
+        Delimiter delimiter = Delimiter.COMMA;
+        char quoteCharacter = '"';
+        String missingValueMarker = "*";
+        String commentMarker = "//";
 
         TabularDataValidation validation = new VerticalDiscreteTabularDataFileValidation(dataFile.toFile(), delimiter);
-        validation.setHasHeader(true);
+        validation.setQuoteCharacter(quoteCharacter);
+        validation.setMissingValueMarker(missingValueMarker);
+        validation.setCommentMarker(commentMarker);
 
         validation.validate();
 
@@ -73,7 +75,7 @@ public class VerticalDiscreteTabularDataFileValidationTest {
         long actual = infos.size();
         Assert.assertEquals(expected, actual);
 
-        expected = 0;
+        expected = 2;
         actual = warnings.size();
         Assert.assertEquals(expected, actual);
 

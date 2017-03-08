@@ -16,26 +16,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.validation.tabular;
 
-import edu.pitt.dbmi.data.Dataset;
-import java.io.IOException;
+import edu.pitt.dbmi.data.validation.DataValidation;
 
 /**
  *
- * Feb 22, 2017 4:57:51 PM
+ * Feb 24, 2017 2:09:30 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader {
-
-    /**
-     * Read in dataset.
-     *
-     * @return
-     * @throws IOException whenever unable to read file
-     */
-    public Dataset readInData() throws IOException;
+public interface DataFileValidation extends DataValidation {
 
     public void setQuoteCharacter(char quoteCharacter);
 

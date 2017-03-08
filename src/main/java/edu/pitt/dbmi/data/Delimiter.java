@@ -16,22 +16,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation.file;
-
-import java.util.Set;
+package edu.pitt.dbmi.data;
 
 /**
  *
- * Feb 6, 2017 6:26:15 PM
+ * Mar 4, 2017 1:18:51 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularDataValidation extends DataFileValidation {
+public enum Delimiter {
 
-    public void validate(Set<String> excludedVariables);
+    TAB('\t'),
+    SPACE(' '),
+    WHITESPACE(' '),
+    COMMA(','),
+    COLON(':'),
+    SEMICOLON(';'),
+    PIPE('|');
 
-    public void validate(int[] excludedColumns);
+    private final byte delimiterChar;
 
-    public void setHasHeader(boolean hasHeader);
+    private Delimiter(char delimiterChar) {
+        this.delimiterChar = (byte) delimiterChar;
+    }
+
+    public byte getDelimiterChar() {
+        return delimiterChar;
+    }
 
 }

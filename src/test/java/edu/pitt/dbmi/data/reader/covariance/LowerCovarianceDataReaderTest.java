@@ -20,6 +20,7 @@ package edu.pitt.dbmi.data.reader.covariance;
 
 import edu.pitt.dbmi.data.CovarianceDataset;
 import edu.pitt.dbmi.data.Dataset;
+import edu.pitt.dbmi.data.Delimiter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,7 +30,7 @@ import org.junit.Test;
 
 /**
  *
- * Feb 22, 2017 2:55:01 PM
+ * Mar 6, 2017 9:19:46 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
@@ -38,29 +39,36 @@ public class LowerCovarianceDataReaderTest {
     public LowerCovarianceDataReaderTest() {
     }
 
+    /**
+     * Test of readInData method, of class LowerCovarianceDataReader.
+     *
+     * @throws IOException
+     */
     @Test
     public void testReadInData() throws IOException {
-        Path dataFile = Paths.get("test", "data", "covariance", "lead_iq.txt");
-        char delimiter = '\t';
+        Path dataFile = Paths.get("test", "data", "cmu", "spartina.txt");
+        Delimiter delimiter = Delimiter.SPACE;
+        String commentMarker = "//";
 
         CovarianceDataReader dataReader = new LowerCovarianceDataReader(dataFile.toFile(), delimiter);
+        dataReader.setCommentMarker(commentMarker);
 
         Dataset dataset = dataReader.readInData();
         Assert.assertTrue(dataset instanceof CovarianceDataset);
 
         CovarianceDataset covarianceDataset = (CovarianceDataset) dataset;
 
-        long expected = 221;
+        long expected = 45;
         long actual = covarianceDataset.getNumberOfCases();
         Assert.assertEquals(expected, actual);
 
         List<String> variableNames = covarianceDataset.getVariables();
-        expected = 7;
+        expected = 15;
         actual = variableNames.size();
         Assert.assertEquals(expected, actual);
 
         double[][] data = covarianceDataset.getData();
-        expected = 7;
+        expected = 15;
         actual = data.length;
         Assert.assertEquals(expected, actual);
     }

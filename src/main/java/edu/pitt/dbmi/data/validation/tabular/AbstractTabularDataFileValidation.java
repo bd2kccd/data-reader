@@ -16,10 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.tabular;
+package edu.pitt.dbmi.data.validation.tabular;
 
 import edu.pitt.dbmi.data.Delimiter;
-import edu.pitt.dbmi.data.reader.AbstractDataFileReader;
+import edu.pitt.dbmi.data.reader.tabular.AbstractTabularDataFileReader;
+import edu.pitt.dbmi.data.validation.MessageType;
+import edu.pitt.dbmi.data.validation.ValidationAttribute;
+import edu.pitt.dbmi.data.validation.ValidationCode;
+import edu.pitt.dbmi.data.validation.ValidationResult;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -27,26 +31,24 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 
 /**
  *
- * Feb 25, 2017 1:36:46 AM
+ * Feb 9, 2017 2:44:27 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractTabularDataFileReader extends AbstractDataFileReader {
+public abstract class AbstractTabularDataFileValidation extends AbstractTabularDataFileReader {
 
-    protected boolean hasHeader;
+    protected final List<ValidationResult> validationResults;
 
-    public AbstractTabularDataFileReader(File dataFile, Delimiter delimiter) {
+    public AbstractTabularDataFileValidation(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
-        this.hasHeader = true;
+        this.validationResults = new LinkedList<>();
     }
 
-    protected int[] getColumnNumbers(Set<String> variables) throws IOException {
-        List<Integer> indexList = new LinkedList<>();
+    protected int validateVariables(int[] excludedColumns) throws IOException {
+        int numOfVars = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -59,6 +61,9 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
             byte[] prefix = commentMarker.getBytes();
             int index = 0;
             int colNum = 0;
+            int lineNum = 1;
+            int numOfExCols = excludedColumns.length;
+            int excludedIndex = 0;
             boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
             boolean taskFinished = false;
@@ -72,7 +77,14 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                         skipLine = false;
-                        taskFinished = prevNonBlankChar > SPACE_CHAR;
+                        if (prevNonBlankChar > SPACE_CHAR) {
+                            taskFinished = true;
+                        } else {
+                            lineNum++;
+                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                                lineNum--;
+                            }
+                        }
                     } else if (!skipLine) {
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
@@ -81,6 +93,8 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                         if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
                             if (currChar == prefix[index]) {
                                 index++;
+
+                                // all the comment chars are matched
                                 if (index == prefix.length) {
                                     index = 0;
                                     skipLine = true;
@@ -116,9 +130,17 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                                 String value = dataBuilder.toString().trim();
                                 dataBuilder.delete(0, dataBuilder.length());
 
-                                if (variables.contains(value)) {
-                                    System.out.println(value);
-                                    indexList.add(colNum);
+                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
+                                    excludedIndex++;
+                                } else {
+                                    numOfVars++;
+                                    if (value.length() == 0) {
+                                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNum, colNum);
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                        validationResults.add(result);
+                                    }
                                 }
                             } else {
                                 dataBuilder.append((char) currChar);
@@ -141,71 +163,24 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                 String value = dataBuilder.toString().trim();
                 dataBuilder.delete(0, dataBuilder.length());
 
-                if (variables.contains(value)) {
-                    System.out.println(value);
-                    indexList.add(colNum);
+                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
+                    numOfVars++;
+                    if (value.length() == 0) {
+                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNum, colNum);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                        validationResults.add(result);
+                    }
                 }
             }
         }
 
-        int[] indices = new int[indexList.size()];
-        if (indices.length > 0) {
-            int i = 0;
-            for (Integer index : indexList) {
-                indices[i++] = index;
-            }
-        }
-
-        return indices;
+        return numOfVars;
     }
 
-    protected int[] filterValidColumnNumbers(int[] columnNumbers) throws IOException {
-        Set<Integer> indices = new TreeSet<>();
-        int numOfVars = getNumberOfColumns();
-        for (int colNum : columnNumbers) {
-            if (colNum > 0 && colNum <= numOfVars) {
-                indices.add(colNum);
-            }
-        }
-
-        int[] results = new int[indices.size()];
-        int i = 0;
-        for (Integer index : indices) {
-            results[i++] = index;
-        }
-
-        return results;
-    }
-
-    /**
-     *
-     * @param excludedColumns sorted array of column numbers
-     * @return
-     * @throws IOException
-     */
-    protected List<String> generateVariables(int[] excludedColumns) throws IOException {
-        List<String> nodes = new LinkedList<>();
-
-        int numOfCols = getNumberOfColumns();
-        int length = excludedColumns.length;
-        int excludedIndex = 0;
-        for (int colNum = 1; colNum <= numOfCols; colNum++) {
-            if (length > 0 && (excludedIndex < length && colNum == excludedColumns[excludedIndex])) {
-                excludedIndex++;
-            } else {
-                nodes.add(String.format("VAR_%d", colNum));
-            }
-        }
-
-        return nodes;
-    }
-
-    public boolean isHasHeader() {
-        return hasHeader;
-    }
-
-    public void setHasHeader(boolean hasHeader) {
-        this.hasHeader = hasHeader;
+    public List<ValidationResult> getValidationResults() {
+        return validationResults;
     }
 
 }

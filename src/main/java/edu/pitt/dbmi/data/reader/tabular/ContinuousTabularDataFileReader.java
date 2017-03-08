@@ -18,36 +18,36 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
+import edu.pitt.dbmi.data.ContinuousTabularDataset;
 import edu.pitt.dbmi.data.Dataset;
 import edu.pitt.dbmi.data.Delimiter;
-import edu.pitt.dbmi.data.VerticalDiscreteTabularDataset;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
- * Feb 14, 2017 2:12:24 PM
+ * Mar 2, 2017 1:46:42 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDataFileReader implements TabularDataReader {
+public class ContinuousTabularDataFileReader extends AbstractContinuousTabularDataFileReader implements TabularDataReader {
 
-    public VerticalDiscreteTabularDataReader(File dataFile, Delimiter delimiter) {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContinuousTabularDataFileReader.class);
+
+    public ContinuousTabularDataFileReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
     private Dataset readInDataFromFile(int[] excludedColumns) throws IOException {
-        DiscreteVarInfo[] varInfos = hasHeader ? extractVariables(excludedColumns) : generateDiscreteVariables(excludedColumns);
-        varInfos = extractVariableData(varInfos, excludedColumns);
-        for (DiscreteVarInfo varInfo : varInfos) {
-            varInfo.recategorize();
-        }
+        List<String> variables = hasHeader ? extractVariables(excludedColumns) : generateVariables(excludedColumns);
+        double[][] data = extractData(variables, excludedColumns);
 
-        int[][] data = extractAndEncodeData(varInfos, excludedColumns);
-
-        return new VerticalDiscreteTabularDataset(varInfos, data);
+        return new ContinuousTabularDataset(variables, data);
     }
 
     @Override
