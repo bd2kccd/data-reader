@@ -26,22 +26,28 @@ package edu.pitt.dbmi.data;
  */
 public enum Delimiter {
 
-    TAB('\t'),
-    SPACE(' '),
-    WHITESPACE(' '),
-    COMMA(','),
-    COLON(':'),
-    SEMICOLON(';'),
-    PIPE('|');
+    TAB('\t', "tab"),
+    SPACE(' ', "space"),
+    WHITESPACE(' ', "whitespace"),
+    COMMA(',', "comma"),
+    COLON(':', "colon"),
+    SEMICOLON(';', "semicolon"),
+    PIPE('|', "pipe");
 
     private final byte delimiterChar;
+    private final String name;
 
-    private Delimiter(char delimiterChar) {
+    private Delimiter(char delimiterChar, String name) {
         this.delimiterChar = (byte) delimiterChar;
+        this.name = name;
     }
 
     public byte getDelimiterChar() {
         return delimiterChar;
+    }
+
+    public String getName() {
+        return name;
     }
 
 }
