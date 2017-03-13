@@ -104,7 +104,6 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
             boolean skipHeader = hasHeader;
             boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
             boolean hasQuoteChar = false;
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
@@ -212,7 +211,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataFile
                         colNum = 0;
                         numOfData = 0;
                         excludedIndex = 0;
-                        reqCheck = true;
+                        reqCheck = prefix.length > 0;
                         prevNonBlankChar = SPACE_CHAR;
                         skipLine = false;
 
