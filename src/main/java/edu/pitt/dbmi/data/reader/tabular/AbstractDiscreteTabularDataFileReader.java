@@ -156,7 +156,7 @@ public abstract class AbstractDiscreteTabularDataFileReader extends AbstractTabu
                         numOfData = 0;
                         excludedIndex = 0;
                         varInfoIndex = 0;
-                        reqCheck = true;
+                        reqCheck = prefix.length > 0;
                         prevNonBlankChar = SPACE_CHAR;
                         skipLine = false;
 
@@ -374,7 +374,7 @@ public abstract class AbstractDiscreteTabularDataFileReader extends AbstractTabu
                         numOfData = 0;
                         excludedIndex = 0;
                         varInfoIndex = 0;
-                        reqCheck = true;
+                        reqCheck = prefix.length > 0;
                         prevNonBlankChar = SPACE_CHAR;
 
                         lineNum++;
