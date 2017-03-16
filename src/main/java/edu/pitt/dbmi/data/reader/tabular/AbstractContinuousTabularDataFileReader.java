@@ -163,7 +163,7 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
                         colNum = 0;
                         numOfData = 0;
                         excludedIndex = 0;
-                        reqCheck = true;
+                        reqCheck = prefix.length > 0;
                         prevNonBlankChar = SPACE_CHAR;
                         skipLine = false;
 
