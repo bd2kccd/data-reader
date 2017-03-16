@@ -193,6 +193,8 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                                     }
                                 }
                             }
+
+                            count++;
                         }
 
                         colNum = 0;
