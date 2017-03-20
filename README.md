@@ -53,6 +53,8 @@ Similiarly, for discrete tabular data, just call
 TabularDataValidation validation = new VerticalDiscreteTabularDataFileValidation(file, Delimiter.WHITESPACE);
 ````
 
+### Covariance Data Validation
+
 And for Covariance data, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns.
 
 ````java
