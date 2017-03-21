@@ -13,6 +13,7 @@ In order to use this data reader as a dependency in your project, you'll first n
     <version>0.1.3</version>
 </dependency>
 ````
+Currently, CMU's [Tetred](https://github.com/cmu-phil/tetrad) project uses this data reader to handle the data validation and loading in their GUI application. Our [causal-cmd](https://github.com/bd2kccd/causal-cmd) command line tool also uses it.
 
 ## Data Validation
 
