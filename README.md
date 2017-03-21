@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This data reader is created to handle large size data files for efficient data validation and loading. It reads data from bytes instead of using any Java file API.
+This data reader was created to handle large size data files for efficient data validation and loading. It reads data from a file as bytes using native file I/O instead of using the Java file handling API.
 
 In order to use this data reader as a dependency in your project, you'll first need to build the data reader with `mvn clean install` and then add the following config to your `pom.xml` file:
 
@@ -13,11 +13,11 @@ In order to use this data reader as a dependency in your project, you'll first n
     <version>0.1.3</version>
 </dependency>
 ````
-Currently, CMU's [Tetred](https://github.com/cmu-phil/tetrad) project uses this data reader to handle the data validation and loading in their GUI application. Our [causal-cmd](https://github.com/bd2kccd/causal-cmd) command line tool also uses it.
+Currently, CMU's [Tetrad](https://github.com/cmu-phil/tetrad) project uses this data reader to handle the data validation and loading in their GUI application. Our [causal-cmd](https://github.com/bd2kccd/causal-cmd) command line tool also uses it.
 
 ## Data Validation
 
-Data validation validates the input data file based on user-specified settings. Currently we support two types of file: Tabular or Covariance.
+Data validation validates the input data file based on user-specified settings. Currently we support two types of files: Tabular or Covariance.
 
 ### Tabular Data Validation
 
@@ -66,7 +66,7 @@ validation.validate(new int[]{1, 2, 3});
 ````
 
 ````java
-// Exclude certain labled variables
+// Exclude certain labeled variables
 validation.validate(new HashSet<>(Arrays.asList(new String[]{"var1", "var2", "var3"})));
 ````
 
@@ -144,7 +144,7 @@ We use `Dataset` as the returned type:
 Dataset dataset;
 ````
 
-And depending on if you want to eclude certain columns/variables, you can pass either column index or actual variable names when calling `readInData()`:
+And depending on if you want to exclude certain columns/variables, you can pass either column index or actual variable names when calling `readInData()`:
 
 ````java
 // No column exclusion
@@ -165,7 +165,7 @@ dataset reader.readInData(new HashSet<>(Arrays.asList(new String[]{"var1", "var2
 
 ### Data Preview
 
-To show a data file preview using Java file API works for small or regular sized files, but handling large data file can often cause the "Out of memory" error. That's why this previewer is created.
+To show a data file preview using Java file API works for small or regular sized files, but handling large data file can often cause the "Out of memory" error. That's why we created this previewer.
 
 ````java
 // Show preview from the first line to line 20,
@@ -200,4 +200,4 @@ char[] delims = {'\t', ' ', ',', ':', ';', '|'};
 char inferredDelimiter = TextFileUtils.inferDelimiter(file, n, skip, comment, quoteCharacter, delims);
 ````
 
-When your application requires a delimiter auto-detection feature, this can be pluged in very easily.
+When your application requires a delimiter auto-detection feature, this can be plugged in very easily.
