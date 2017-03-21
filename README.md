@@ -4,6 +4,16 @@
 
 This data reader is created to handle large size data files for efficient data validation and loading. It reads data from bytes instead of using any Java file API.
 
+In order to use this data reader as a dependency in your project, you'll first need to build the data reader with `mvn clean install` and then add the following config to your `pom.xml` file:
+
+````xml
+<dependency>
+    <groupId>edu.pitt.dbmi</groupId>
+    <artifactId>data-reader</artifactId>
+    <version>0.1.3</version>
+</dependency>
+````
+
 ## Data Validation
 
 Data validation validates the input data file based on user-specified settings. Currently we support two types of file: Tabular or Covariance.
