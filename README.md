@@ -12,7 +12,7 @@ Data validation validates the input data file based on user-specified settings. 
 
 Depending on whether the data is continuous or discrete, the validation may vary. 
 
-For continuous tabular data, file delimiter is required to call the validation:
+To validate continuous tabular data:
 
 ````java
 TabularDataValidation validation = new ContinuousTabularDataFileValidation(file, Delimiter.COMMA);
@@ -29,6 +29,18 @@ validation.setMissingValueMarker("*");
 // Set the quote character
 validation.setQuoteCharacter('"');
 ````
+
+Note: currently we support the following delimiters:
+
+| Delimiter | Char | Corresponding Enum Type |
+| --- | --- | --- |
+| Comma | ',' | Delimiter.COMMA |
+| Colon | ':' | Delimiter.COLON |
+| Space | ' ' | Delimiter.SPACE |
+| Tab | '\t' | Delimiter.TAB |
+| Whitespace | ' ' | Delimiter.WHITESPACE |
+| Semicolon | ';' | Delimiter.SEMICOLON |
+| Pipe | '|' | Delimiter.PIPE |
 
 And depending on if you want to eclude certain columns/variables, you can pass either column index or actual variable names when calling `validate()`:
 
