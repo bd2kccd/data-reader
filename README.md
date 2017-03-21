@@ -59,7 +59,7 @@ validation.validate(new int[]{1, 2, 3});
 validation.validate(new HashSet<>(Arrays.asList(new String[]{"var1", "var2", "var3"})));
 ````
 
-Similiarly, for discrete tabular data, just call 
+Similiarly, for discrete tabular data, just create an instance of `VerticalDiscreteTabularDataFileValidation` by providing the file and delimiter.
 
 ````java
 TabularDataValidation validation = new VerticalDiscreteTabularDataFileValidation(file, Delimiter.WHITESPACE);
@@ -67,7 +67,7 @@ TabularDataValidation validation = new VerticalDiscreteTabularDataFileValidation
 
 ### Covariance Data Validation
 
-And for Covariance data, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns.
+And for Covariance data, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns. Otherwise,its usage is very similar to the tabular data.
 
 ````java
 DataFileValidation validation = new CovarianceDataFileValidation(file, delimiter);
@@ -79,7 +79,9 @@ validation.setCommentMarker("#");
 validation.setQuoteCharacter('"');
 ````
 
-The results of validation can be handled as info, warning, or error messages:
+### Validation Results
+
+The results of validation can be handled as `INFO`, `WARNING`, or `ERROR` messages:
 
 ````java
 List<ValidationResult> results = validation.getValidationResults();
@@ -102,11 +104,13 @@ for (ValidationResult result : results) {
 }
 ````
 
+And this data structure allows developers to handle the results based on their application's specific needs.
+
 ## Data Reading/Loading
 
 The usage of data reader is very similar to data validation corresponding to each file type (Tabular or Covariance) and data type (continuous or discrete).
 
-For example, read a tabular continuous data file:
+For example, read/load a continuous tabular data file:
 
 ````java
 TabularDataReader reader = new ContinuousTabularDataFileReader(file, Delimiter.COMMA);
@@ -122,7 +126,10 @@ reader.setMissingValueMarker("*");
 
 // Set the quote character
 reader.setQuoteCharacter('"');
+````
+We use `Dataset` as the returned type:
 
+````java
 Dataset dataset;
 ````
 
@@ -130,27 +137,24 @@ And depending on if you want to eclude certain columns/variables, you can pass e
 
 ````java
 // No column exclusion
-reader.readInData();
+dataset = reader.readInData();
 ````
 
 ````java
 // Exclude the first 3 columns
-reader.readInData(new int[]{1, 2, 3});
+dataset reader.readInData(new int[]{1, 2, 3});
 ````
 
 ````java
 // Exclude certain labled variables
-reader.readInData(new HashSet<>(Arrays.asList(new String[]{"var1", "var2", "var3"})));
+dataset reader.readInData(new HashSet<>(Arrays.asList(new String[]{"var1", "var2", "var3"})));
 ````
 
-Data reader returns the `Dataset`.
-
-
-## Addition Features
+## Additional Features
 
 ### Data Preview
 
-It's very hard to show a preview of a big data file, that's why this previewer is created.
+To show a data file preview using Java file API works for small or regular sized files, but handling large data file can often cause the "Out of memory" error. That's why this previewer is created.
 
 ````java
 // Show preview from the first line to line 20,
@@ -164,6 +168,8 @@ DataPreviewer dataPreviewer = new BasicDataPreviewer(file);
 
 List<String> linePreviews = dataPreviewer.getPreviews(previewFromLine, previewToLine, previewNumOfCharactersPerLine);
 ````
+This can be very handy when you want to show a preview of a larage data file before asking users tovalidate or load the file. 
+
 
 ### Delimiter Inference
 
@@ -182,3 +188,5 @@ char[] delims = {'\t', ' ', ',', ':', ';', '|'};
 
 char inferredDelimiter = TextFileUtils.inferDelimiter(file, n, skip, comment, quoteCharacter, delims);
 ````
+
+When your application requires a delimiter auto-detection feature, this can be pluged in very easily.
