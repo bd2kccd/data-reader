@@ -70,7 +70,6 @@ public abstract class AbstractDiscreteTabularDataFileReader extends AbstractTabu
             boolean skipHeader = hasHeader;
             boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
             boolean hasQuoteChar = false;
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
@@ -141,7 +140,7 @@ public abstract class AbstractDiscreteTabularDataFileReader extends AbstractTabu
                                     throw new DataReaderException(errMsg);
                                 } else {
                                     if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                        data[col++][row] = varInfos[varInfoIndex++].getEncodeValue(value);
+                                        data[col++][row] = varInfos[varInfoIndex].getEncodeValue(value);
                                     } else {
                                         data[col++][row] = DISCRETE_MISSING_VALUE;
                                     }
@@ -218,10 +217,11 @@ public abstract class AbstractDiscreteTabularDataFileReader extends AbstractTabu
                                         throw new DataReaderException(errMsg);
                                     } else {
                                         if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                            data[col++][row] = varInfos[varInfoIndex++].getEncodeValue(value);
+                                            data[col++][row] = varInfos[varInfoIndex].getEncodeValue(value);
                                         } else {
                                             data[col++][row] = DISCRETE_MISSING_VALUE;
                                         }
+                                        varInfoIndex++;
                                     }
                                 }
                             } else {
@@ -261,7 +261,7 @@ public abstract class AbstractDiscreteTabularDataFileReader extends AbstractTabu
                         throw new DataReaderException(errMsg);
                     } else {
                         if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                            data[col++][row] = varInfos[varInfoIndex++].getEncodeValue(value);
+                            data[col++][row] = varInfos[varInfoIndex].getEncodeValue(value);
                         } else {
                             data[col++][row] = DISCRETE_MISSING_VALUE;
                         }
@@ -363,7 +363,7 @@ public abstract class AbstractDiscreteTabularDataFileReader extends AbstractTabu
                                     throw new DataReaderException(errMsg);
                                 } else {
                                     if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                        varInfos[varInfoIndex++].setValue(value);
+                                        varInfos[varInfoIndex].setValue(value);
                                     }
                                 }
                             }
@@ -435,8 +435,9 @@ public abstract class AbstractDiscreteTabularDataFileReader extends AbstractTabu
                                         throw new DataReaderException(errMsg);
                                     } else {
                                         if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                            varInfos[varInfoIndex++].setValue(value);
+                                            varInfos[varInfoIndex].setValue(value);
                                         }
+                                        varInfoIndex++;
                                     }
                                 }
                             } else {
@@ -474,7 +475,7 @@ public abstract class AbstractDiscreteTabularDataFileReader extends AbstractTabu
                         throw new DataReaderException(errMsg);
                     } else {
                         if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                            varInfos[varInfoIndex++].setValue(value);
+                            varInfos[varInfoIndex].setValue(value);
                         }
                     }
                 }
