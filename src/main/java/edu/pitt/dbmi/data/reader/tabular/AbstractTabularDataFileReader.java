@@ -117,7 +117,6 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                                 dataBuilder.delete(0, dataBuilder.length());
 
                                 if (variables.contains(value)) {
-                                    System.out.println(value);
                                     indexList.add(colNum);
                                 }
                             } else {
@@ -142,7 +141,6 @@ public abstract class AbstractTabularDataFileReader extends AbstractDataFileRead
                 dataBuilder.delete(0, dataBuilder.length());
 
                 if (variables.contains(value)) {
-                    System.out.println(value);
                     indexList.add(colNum);
                 }
             }
