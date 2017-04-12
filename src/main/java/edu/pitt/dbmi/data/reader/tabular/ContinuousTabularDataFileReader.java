@@ -23,9 +23,7 @@ import edu.pitt.dbmi.data.Dataset;
 import edu.pitt.dbmi.data.Delimiter;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,28 +41,12 @@ public class ContinuousTabularDataFileReader extends AbstractContinuousTabularDa
         super(dataFile, delimiter);
     }
 
-    private Dataset readInDataFromFile(int[] excludedColumns) throws IOException {
+    @Override
+    protected Dataset readInDataFromFile(int[] excludedColumns) throws IOException {
         List<String> variables = hasHeader ? extractVariables(excludedColumns) : generateVariables(excludedColumns);
         double[][] data = extractData(variables, excludedColumns);
 
         return new ContinuousTabularDataset(variables, data);
-    }
-
-    @Override
-    public Dataset readInData(Set<String> excludedVariables) throws IOException {
-        int[] excludedColumns = hasHeader ? getColumnNumbers(excludedVariables) : new int[0];
-
-        return readInDataFromFile(excludedColumns);
-    }
-
-    @Override
-    public Dataset readInData(int[] excludedColumns) throws IOException {
-        return readInDataFromFile(filterValidColumnNumbers(excludedColumns));
-    }
-
-    @Override
-    public Dataset readInData() throws IOException {
-        return readInData(Collections.EMPTY_SET);
     }
 
 }
