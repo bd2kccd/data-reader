@@ -23,8 +23,6 @@ import edu.pitt.dbmi.data.Delimiter;
 import edu.pitt.dbmi.data.VerticalDiscreteTabularDataset;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Set;
 
 /**
  *
@@ -38,7 +36,8 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
         super(dataFile, delimiter);
     }
 
-    private Dataset readInDataFromFile(int[] excludedColumns) throws IOException {
+    @Override
+    protected Dataset readInDataFromFile(int[] excludedColumns) throws IOException {
         DiscreteVarInfo[] varInfos = hasHeader ? extractVariables(excludedColumns) : generateDiscreteVariables(excludedColumns);
         varInfos = extractVariableData(varInfos, excludedColumns);
         for (DiscreteVarInfo varInfo : varInfos) {
@@ -48,23 +47,6 @@ public class VerticalDiscreteTabularDataReader extends AbstractDiscreteTabularDa
         int[][] data = extractAndEncodeData(varInfos, excludedColumns);
 
         return new VerticalDiscreteTabularDataset(varInfos, data);
-    }
-
-    @Override
-    public Dataset readInData(Set<String> excludedVariables) throws IOException {
-        int[] excludedColumns = hasHeader ? getColumnNumbers(excludedVariables) : new int[0];
-
-        return readInDataFromFile(excludedColumns);
-    }
-
-    @Override
-    public Dataset readInData(int[] excludedColumns) throws IOException {
-        return readInDataFromFile(filterValidColumnNumbers(excludedColumns));
-    }
-
-    @Override
-    public Dataset readInData() throws IOException {
-        return readInData(Collections.EMPTY_SET);
     }
 
 }

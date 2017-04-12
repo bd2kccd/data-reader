@@ -16,14 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation.tabular;
+package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.Delimiter;
-import edu.pitt.dbmi.data.reader.tabular.AbstractBasicTabularDataFileReader;
-import edu.pitt.dbmi.data.validation.MessageType;
-import edu.pitt.dbmi.data.validation.ValidationAttribute;
-import edu.pitt.dbmi.data.validation.ValidationCode;
-import edu.pitt.dbmi.data.validation.ValidationResult;
+import edu.pitt.dbmi.data.reader.AbstractDataFileReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -31,24 +27,26 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  *
- * Feb 9, 2017 2:44:27 PM
+ * Feb 25, 2017 1:36:46 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractTabularDataFileValidation extends AbstractBasicTabularDataFileReader {
+public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFileReader {
 
-    protected final List<ValidationResult> validationResults;
+    protected boolean hasHeader;
 
-    public AbstractTabularDataFileValidation(File dataFile, Delimiter delimiter) {
+    public AbstractBasicTabularDataFileReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
-        this.validationResults = new LinkedList<>();
+        this.hasHeader = true;
     }
 
-    protected int validateVariables(int[] excludedColumns) throws IOException {
-        int numOfVars = 0;
+    protected int[] getColumnNumbers(Set<String> variables) throws IOException {
+        List<Integer> indexList = new LinkedList<>();
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
@@ -61,9 +59,6 @@ public abstract class AbstractTabularDataFileValidation extends AbstractBasicTab
             byte[] prefix = commentMarker.getBytes();
             int index = 0;
             int colNum = 0;
-            int lineNum = 1;
-            int numOfExCols = excludedColumns.length;
-            int excludedIndex = 0;
             boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
             boolean taskFinished = false;
@@ -77,14 +72,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractBasicTab
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                         skipLine = false;
-                        if (prevNonBlankChar > SPACE_CHAR) {
-                            taskFinished = true;
-                        } else {
-                            lineNum++;
-                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
-                                lineNum--;
-                            }
-                        }
+                        taskFinished = prevNonBlankChar > SPACE_CHAR;
                     } else if (!skipLine) {
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
@@ -93,8 +81,6 @@ public abstract class AbstractTabularDataFileValidation extends AbstractBasicTab
                         if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
                             if (currChar == prefix[index]) {
                                 index++;
-
-                                // all the comment chars are matched
                                 if (index == prefix.length) {
                                     index = 0;
                                     skipLine = true;
@@ -130,17 +116,8 @@ public abstract class AbstractTabularDataFileValidation extends AbstractBasicTab
                                 String value = dataBuilder.toString().trim();
                                 dataBuilder.delete(0, dataBuilder.length());
 
-                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
-                                    excludedIndex++;
-                                } else {
-                                    numOfVars++;
-                                    if (value.length() == 0) {
-                                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNum, colNum);
-                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
-                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                        validationResults.add(result);
-                                    }
+                                if (variables.contains(value)) {
+                                    indexList.add(colNum);
                                 }
                             } else {
                                 dataBuilder.append((char) currChar);
@@ -163,24 +140,70 @@ public abstract class AbstractTabularDataFileValidation extends AbstractBasicTab
                 String value = dataBuilder.toString().trim();
                 dataBuilder.delete(0, dataBuilder.length());
 
-                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                    numOfVars++;
-                    if (value.length() == 0) {
-                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNum, colNum);
-                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
-                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                        validationResults.add(result);
-                    }
+                if (variables.contains(value)) {
+                    indexList.add(colNum);
                 }
             }
         }
 
-        return numOfVars;
+        int[] indices = new int[indexList.size()];
+        if (indices.length > 0) {
+            int i = 0;
+            for (Integer index : indexList) {
+                indices[i++] = index;
+            }
+        }
+
+        return indices;
     }
 
-    public List<ValidationResult> getValidationResults() {
-        return validationResults;
+    protected int[] filterValidColumnNumbers(int[] columnNumbers) throws IOException {
+        Set<Integer> indices = new TreeSet<>();
+        int numOfVars = getNumberOfColumns();
+        for (int colNum : columnNumbers) {
+            if (colNum > 0 && colNum <= numOfVars) {
+                indices.add(colNum);
+            }
+        }
+
+        int[] results = new int[indices.size()];
+        int i = 0;
+        for (Integer index : indices) {
+            results[i++] = index;
+        }
+
+        return results;
+    }
+
+    /**
+     *
+     * @param excludedColumns sorted array of column numbers
+     * @return
+     * @throws IOException
+     */
+    protected List<String> generateVariables(int[] excludedColumns) throws IOException {
+        List<String> nodes = new LinkedList<>();
+
+        int numOfCols = getNumberOfColumns();
+        int length = excludedColumns.length;
+        int excludedIndex = 0;
+        for (int colNum = 1; colNum <= numOfCols; colNum++) {
+            if (length > 0 && (excludedIndex < length && colNum == excludedColumns[excludedIndex])) {
+                excludedIndex++;
+            } else {
+                nodes.add(String.format("VAR_%d", colNum));
+            }
+        }
+
+        return nodes;
+    }
+
+    public boolean isHasHeader() {
+        return hasHeader;
+    }
+
+    public void setHasHeader(boolean hasHeader) {
+        this.hasHeader = hasHeader;
     }
 
 }

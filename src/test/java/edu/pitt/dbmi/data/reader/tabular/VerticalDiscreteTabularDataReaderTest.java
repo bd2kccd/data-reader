@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -39,7 +38,6 @@ public class VerticalDiscreteTabularDataReaderTest {
     public VerticalDiscreteTabularDataReaderTest() {
     }
 
-    @Ignore
     @Test
     public void testReadInDataWithMissingValues() throws IOException {
         Path dataFile = Paths.get("test", "data", "sim_data", "discrete", "small_discrete_data_missing.prn");
@@ -62,7 +60,6 @@ public class VerticalDiscreteTabularDataReaderTest {
      *
      * @throws IOException
      */
-    @Ignore
     @Test
     public void testReadInData() throws IOException {
         Path dataFile = Paths.get("test", "data", "sim_data", "discrete", "small_discrete_data.prn");

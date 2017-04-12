@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -43,7 +42,6 @@ public class ContinuousTabularDataFileReaderTest {
     public ContinuousTabularDataFileReaderTest() {
     }
 
-    @Ignore
     @Test
     public void testReadInData() throws IOException {
         Path dataFile = Paths.get("test", "data", "sim_data", "continuous", "small_data.csv");
@@ -61,7 +59,6 @@ public class ContinuousTabularDataFileReaderTest {
         validateDataset(dataset, 10, 18);
     }
 
-    @Ignore
     @Test
     public void testReadInDataWithVariableExclusions() throws IOException {
         Path dataFile = Paths.get("test", "data", "sim_data", "continuous", "small_data.prn");
