@@ -28,8 +28,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Collections;
-import java.util.Set;
 
 /**
  *
@@ -37,42 +35,14 @@ import java.util.Set;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataFileValidation extends AbstractTabularDataFileValidation implements TabularDataValidation {
+public class ContinuousTabularDataFileValidation extends AbstractTabularDataValidation {
 
     public ContinuousTabularDataFileValidation(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
     @Override
-    public void validate(Set<String> excludedVariables) {
-        try {
-            validateDataFromFile(getColumnNumbers(excludedVariables));
-        } catch (IOException exception) {
-            String errMsg = String.format("Unable to read file %s.", dataFile.getName());
-            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
-            result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getName());
-            validationResults.add(result);
-        }
-    }
-
-    @Override
-    public void validate(int[] excludedColumns) {
-        try {
-            validateDataFromFile(filterValidColumnNumbers(excludedColumns));
-        } catch (IOException exception) {
-            String errMsg = String.format("Unable to read file %s.", dataFile.getName());
-            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
-            result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getName());
-            validationResults.add(result);
-        }
-    }
-
-    @Override
-    public void validate() {
-        validate(Collections.EMPTY_SET);
-    }
-
-    private void validateDataFromFile(int[] excludedColumns) throws IOException {
+    protected void validateDataFromFile(int[] excludedColumns) throws IOException {
         int numOfVars = hasHeader ? validateVariables(excludedColumns) : getNumberOfColumns() - excludedColumns.length;
         int numOfRows = validateData(numOfVars, excludedColumns);
 
