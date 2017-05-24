@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -46,7 +47,7 @@ public class MixedTabularDataFileValidationTest {
     @Test
     public void testValidate() throws Exception {
         Path dataFile = Paths.get("test", "data", "sim_data", "mixed", "small_mixed_data.csv");
-        Delimiter delimiter = Delimiter.TAB;
+        Delimiter delimiter = Delimiter.COMMA;
         char quoteCharacter = '"';
         String missingValueMarker = "*";
         String commentMarker = "//";
@@ -57,7 +58,8 @@ public class MixedTabularDataFileValidationTest {
         validation.setMissingValueMarker(missingValueMarker);
         validation.setCommentMarker(commentMarker);
 
-        validation.validate();
+        int[] excludedColumns = {11};
+        validation.validate(excludedColumns);
 
         List<ValidationResult> results = validation.getValidationResults();
 
@@ -77,21 +79,17 @@ public class MixedTabularDataFileValidationTest {
             }
         }
 
-        System.out.println("================================================================================");
-        printList(infos, "INFO");
-        printList(warnings, "WARNING");
-        printList(errors, "ERROR");
-        System.out.println("================================================================================");
-    }
+        long expected = 1;
+        long actual = infos.size();
+        Assert.assertEquals(expected, actual);
 
-    public void printList(List<ValidationResult> results, String title) {
-        System.out.println(title);
-        System.out.println("--------------------------------------------------------------------------------");
-        results.forEach(result -> {
-            System.out.println(result);
-        });
-        System.out.println();
+        expected = 0;
+        actual = warnings.size();
+        Assert.assertEquals(expected, actual);
 
+        expected = 0;
+        actual = errors.size();
+        Assert.assertEquals(expected, actual);
     }
 
 }

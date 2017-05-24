@@ -48,14 +48,44 @@ public class MixedTabularDataFileValidation extends AbstractTabularDataValidatio
     @Override
     protected void validateDataFromFile(int[] excludedColumns) throws IOException {
         MixedVarInfo[] varInfos = validateMixedVariables(excludedColumns);
-        varInfos = analysMixedVariables(varInfos, excludedColumns);
-        for (MixedVarInfo var : varInfos) {
-            System.out.println(var);
-        }
+        varInfos = analysMixedVariableValidation(varInfos, excludedColumns);
+
+        int numOfVars = varInfos.length;
+        int numOfRows = validateData(varInfos, excludedColumns);
+
+        String infoMsg = String.format("There are %d cases and %d variables.", numOfRows, numOfVars);
+        ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_SUMMARY, infoMsg);
+        result.setAttribute(ValidationAttribute.ROW_NUMBER, numOfRows);
+        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, numOfVars);
+        validationResults.add(result);
     }
 
-    private MixedVarInfo[] analysMixedVariables(MixedVarInfo[] mixedVarInfos, int[] excludedColumns) throws IOException {
+    /**
+     * Ensure continuous variables contain continuous numbers.
+     *
+     * @param mixedVarInfos
+     * @param excludedColumns
+     * @return
+     * @throws IOException
+     */
+    private int validateData(MixedVarInfo[] mixedVarInfos, int[] excludedColumns) throws IOException {
         int numOfVars = mixedVarInfos.length;
+        int numOfRows = (hasHeader) ? getNumberOfLines() - 1 : getNumberOfLines();
+
+        double[][] continuousData = new double[numOfVars][];
+        int[][] discreteData = new int[numOfVars][];
+
+        int mixedVarInfoIndex = 0;
+        for (MixedVarInfo mixedVarInfo : mixedVarInfos) {
+            if (mixedVarInfo.isContinuous()) {
+                mixedVarInfo.clearValues();
+                continuousData[mixedVarInfoIndex++] = new double[numOfRows];
+            } else {
+                mixedVarInfo.recategorize();
+                discreteData[mixedVarInfoIndex++] = new int[numOfRows];
+            }
+        }
+
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
             long position = 0;
@@ -68,16 +98,17 @@ public class MixedTabularDataFileValidation extends AbstractTabularDataValidatio
             int index = 0;
             int colNum = 0;
             int lineNum = 1;
+            int col = 0;  // array column number
             int numOfData = 0; // number of data read in per column
             int numOfExCols = excludedColumns.length;
             int excludedIndex = 0;
-            int varInfoIndex = 0;
             boolean skipHeader = hasHeader;
             boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
             boolean hasQuoteChar = false;
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
+            mixedVarInfoIndex = 0;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
 
@@ -155,27 +186,37 @@ public class MixedTabularDataFileValidation extends AbstractTabularDataValidatio
                                     result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
                                     validationResults.add(result);
                                 } else {
-                                    if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                        MixedVarInfo mixedVarInfo = mixedVarInfos[varInfoIndex];
-                                        if (!mixedVarInfo.isContinuous()) {
-                                            mixedVarInfo.setValue(value);
-                                            if (mixedVarInfo.getNumberOfValues() > numberOfDiscreteCategories) {
-                                                mixedVarInfo.setContinuous(true);
-                                            }
+                                    if (value.length() == 0) {
+                                        String errMsg = String.format("Line %d, column %d: Missing value.  No missing marker was found. Assumed value is missing.", lineNum, colNum);
+                                        ValidationResult result = new ValidationResult(ValidationCode.WARNING, MessageType.FILE_MISSING_VALUE, errMsg);
+                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                        validationResults.add(result);
+                                    } else if (!value.equals(missingValueMarker) && mixedVarInfos[col].isContinuous()) {
+                                        try {
+                                            Double.parseDouble(value);
+                                        } catch (NumberFormatException exception) {
+                                            String errMsg = String.format("Line %d, column %d: Invalid continuous number %s.", lineNum, colNum, value);
+                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
+                                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                            result.setAttribute(ValidationAttribute.VALUE, value);
+                                            validationResults.add(result);
                                         }
                                     }
-                                    varInfoIndex++;
+                                    col++;
                                 }
                             }
                         }
 
-                        skipLine = false;
+                        col = 0;
                         colNum = 0;
                         numOfData = 0;
                         excludedIndex = 0;
-                        varInfoIndex = 0;
+                        mixedVarInfoIndex = 0;
                         reqCheck = prefix.length > 0;
                         prevNonBlankChar = SPACE_CHAR;
+                        skipLine = false;
 
                         lineNum++;
                         if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
@@ -240,6 +281,245 @@ public class MixedTabularDataFileValidation extends AbstractTabularDataValidatio
                                         result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
                                         validationResults.add(result);
                                     } else {
+                                        if (value.length() == 0) {
+                                            String errMsg = String.format("Line %d, column %d: Missing value.  No missing marker was found. Assumed value is missing.", lineNum, colNum);
+                                            ValidationResult result = new ValidationResult(ValidationCode.WARNING, MessageType.FILE_MISSING_VALUE, errMsg);
+                                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                            validationResults.add(result);
+                                        } else if (!value.equals(missingValueMarker) && mixedVarInfos[col].isContinuous()) {
+                                            try {
+                                                Double.parseDouble(value);
+                                            } catch (NumberFormatException exception) {
+                                                String errMsg = String.format("Line %d, column %d: Invalid continuous number %s.", lineNum, colNum, value);
+                                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
+                                                result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                                result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                                result.setAttribute(ValidationAttribute.VALUE, value);
+                                                validationResults.add(result);
+                                            }
+                                        }
+                                        col++;
+                                    }
+                                }
+                            } else {
+                                dataBuilder.append((char) currChar);
+                            }
+                        }
+                    }
+
+                    prevChar = currChar;
+                }
+
+                position += size;
+                if ((position + size) > fileSize) {
+                    size = fileSize - position;
+                }
+            } while (position < fileSize);
+
+            // case when no newline char at the end of the file
+            if (colNum > 0 || dataBuilder.length() > 0) {
+                colNum++;
+                String value = dataBuilder.toString().trim();
+                dataBuilder.delete(0, dataBuilder.length());
+
+                if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
+                    numOfData++;
+
+                    // ensure we don't go out of bound
+                    if (numOfData > numOfVars) {
+                        String errMsg = String.format(
+                                "Line %d, column %d: Excess data.  Expect %d value(s) but encounter %d.",
+                                lineNum, colNum, numOfVars, numOfData);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
+                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
+                        validationResults.add(result);
+                    } else if (numOfData < numOfVars) {
+                        String errMsg = String.format(
+                                "Line %d, column %d: Insufficient data.  Expect %d value(s) but encounter %d.",
+                                lineNum, colNum, numOfVars, numOfData);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
+                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
+                        validationResults.add(result);
+                    } else {
+                        if (value.length() == 0) {
+                            String errMsg = String.format("Line %d, column %d: Missing value.  No missing marker was found. Assumed value is missing.", lineNum, colNum);
+                            ValidationResult result = new ValidationResult(ValidationCode.WARNING, MessageType.FILE_MISSING_VALUE, errMsg);
+                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                            validationResults.add(result);
+                        } else if (!value.equals(missingValueMarker) && mixedVarInfos[col].isContinuous()) {
+                            try {
+                                Double.parseDouble(value);
+                            } catch (NumberFormatException exception) {
+                                String errMsg = String.format("Line %d, column %d: Invalid continuous number %s.", lineNum, colNum, value);
+                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
+                                result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                result.setAttribute(ValidationAttribute.VALUE, value);
+                                validationResults.add(result);
+                            }
+                        }
+                        col++;
+                    }
+                }
+            }
+        }
+
+        return numOfRows;
+    }
+
+    private MixedVarInfo[] analysMixedVariableValidation(MixedVarInfo[] mixedVarInfos, int[] excludedColumns) throws IOException {
+        int numOfVars = mixedVarInfos.length;
+        try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
+            long fileSize = fc.size();
+            long position = 0;
+            long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;
+
+            byte delimChar = delimiter.getDelimiterChar();
+
+            StringBuilder dataBuilder = new StringBuilder();
+            byte[] prefix = commentMarker.getBytes();
+            int index = 0;
+            int colNum = 0;
+            int numOfData = 0; // number of data read in per column
+            int numOfExCols = excludedColumns.length;
+            int excludedIndex = 0;
+            int varInfoIndex = 0;
+            boolean skipHeader = hasHeader;
+            boolean reqCheck = prefix.length > 0;
+            boolean skipLine = false;
+            boolean hasQuoteChar = false;
+            byte prevNonBlankChar = SPACE_CHAR;
+            byte prevChar = -1;
+            do {
+                MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
+
+                // skip header, if any
+                if (skipHeader) {
+                    while (buffer.hasRemaining() && skipHeader) {
+                        byte currChar = buffer.get();
+                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                            skipLine = false;
+                            if (prevNonBlankChar > SPACE_CHAR) {
+                                prevNonBlankChar = SPACE_CHAR;
+                                skipHeader = false;
+                            }
+                        } else if (!skipLine) {
+                            if (currChar > SPACE_CHAR) {
+                                prevNonBlankChar = currChar;
+                            }
+
+                            if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
+                                if (currChar == prefix[index]) {
+                                    index++;
+                                    if (index == prefix.length) {
+                                        index = 0;
+                                        skipLine = true;
+                                        prevNonBlankChar = SPACE_CHAR;
+                                    }
+                                } else {
+                                    index = 0;
+                                    skipLine = true;
+                                }
+                            }
+                        }
+
+                        prevChar = currChar;
+                    }
+                }
+
+                // read in data
+                while (buffer.hasRemaining()) {
+                    byte currChar = buffer.get();
+
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        if (colNum > 0 || dataBuilder.length() > 0) {
+                            colNum++;
+                            String value = dataBuilder.toString().trim();
+                            dataBuilder.delete(0, dataBuilder.length());
+
+                            if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
+                                numOfData++;
+
+                                // ensure we don't go out of bound
+                                if (numOfData == numOfVars) {
+                                    if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                                        MixedVarInfo mixedVarInfo = mixedVarInfos[varInfoIndex];
+                                        if (!mixedVarInfo.isContinuous()) {
+                                            mixedVarInfo.setValue(value);
+                                            if (mixedVarInfo.getNumberOfValues() > numberOfDiscreteCategories) {
+                                                mixedVarInfo.setContinuous(true);
+                                            }
+                                        }
+                                    }
+                                    varInfoIndex++;
+                                }
+                            }
+                        }
+
+                        skipLine = false;
+                        colNum = 0;
+                        numOfData = 0;
+                        excludedIndex = 0;
+                        varInfoIndex = 0;
+                        reqCheck = prefix.length > 0;
+                        prevNonBlankChar = SPACE_CHAR;
+                    } else if (!skipLine) {
+                        if (currChar > SPACE_CHAR) {
+                            prevNonBlankChar = currChar;
+                        }
+
+                        if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
+                            if (currChar == prefix[index]) {
+                                index++;
+                                if (index == prefix.length) {
+                                    index = 0;
+                                    skipLine = true;
+                                    prevNonBlankChar = SPACE_CHAR;
+                                    dataBuilder.delete(0, dataBuilder.length());
+
+                                    prevChar = currChar;
+                                    continue;
+                                }
+                            } else {
+                                index = 0;
+                                reqCheck = false;
+                            }
+                        }
+
+                        if (currChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else if (hasQuoteChar) {
+                            dataBuilder.append((char) currChar);
+                        } else {
+                            boolean isDelimiter;
+                            switch (delimiter) {
+                                case WHITESPACE:
+                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
+                                    break;
+                                default:
+                                    isDelimiter = (currChar == delimChar);
+                            }
+
+                            if (isDelimiter) {
+                                colNum++;
+                                String value = dataBuilder.toString().trim();
+                                dataBuilder.delete(0, dataBuilder.length());
+
+                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
+                                    excludedIndex++;
+                                } else {
+                                    numOfData++;
+
+                                    // ensure we don't go out of bound
+                                    if (numOfData <= numOfVars) {
                                         if (value.length() > 0 && !value.equals(missingValueMarker)) {
                                             MixedVarInfo mixedVarInfo = mixedVarInfos[varInfoIndex];
                                             if (!mixedVarInfo.isContinuous()) {
@@ -277,27 +557,7 @@ public class MixedTabularDataFileValidation extends AbstractTabularDataValidatio
                     numOfData++;
 
                     // ensure we don't go out of bound
-                    if (numOfData > numOfVars) {
-                        String errMsg = String.format(
-                                "Line %d, column %d: Excess data.  Expect %d value(s) but encounter %d.",
-                                lineNum, colNum, numOfVars, numOfData);
-                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
-                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
-                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
-                        validationResults.add(result);
-                    } else if (numOfData < numOfVars) {
-                        String errMsg = String.format(
-                                "Line %d, column %d: Insufficient data.  Expect %d value(s) but encounter %d.",
-                                lineNum, colNum, numOfVars, numOfData);
-                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
-                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
-                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
-                        validationResults.add(result);
-                    } else {
+                    if (numOfData == numOfVars) {
                         if (value.length() > 0 && !value.equals(missingValueMarker)) {
                             MixedVarInfo mixedVarInfo = mixedVarInfos[varInfoIndex];
                             if (!mixedVarInfo.isContinuous()) {
@@ -311,6 +571,11 @@ public class MixedTabularDataFileValidation extends AbstractTabularDataValidatio
                     }
                 }
             }
+        }
+
+        // clear all the values since we are not doing any value encoding
+        for (MixedVarInfo var : mixedVarInfos) {
+            var.clearValues();
         }
 
         return mixedVarInfos;
