@@ -50,6 +50,19 @@ public class MixedTabularDataFileValidation extends AbstractTabularDataValidatio
         MixedVarInfo[] varInfos = validateMixedVariables(excludedColumns);
         varInfos = analysMixedVariableValidation(varInfos, excludedColumns);
 
+        int numOfDiscrete = 0;
+        int numOfContinuous = 0;
+        for (MixedVarInfo var : varInfos) {
+            if (var.isContinuous()) {
+                numOfContinuous++;
+            } else {
+                numOfDiscrete++;
+            }
+
+            // clear all the values since we are not doing any value encoding
+            var.clearValues();
+        }
+
         int numOfVars = varInfos.length;
         int numOfRows = validateData(varInfos, excludedColumns);
 
@@ -57,6 +70,12 @@ public class MixedTabularDataFileValidation extends AbstractTabularDataValidatio
         ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_SUMMARY, infoMsg);
         result.setAttribute(ValidationAttribute.ROW_NUMBER, numOfRows);
         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, numOfVars);
+        validationResults.add(result);
+
+        infoMsg = String.format("There are %d discrete and %d continuous variables.", numOfDiscrete, numOfContinuous);
+        result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_SUMMARY, infoMsg);
+        result.setAttribute(ValidationAttribute.DISCRETE_VAR_COUNT, numOfDiscrete);
+        result.setAttribute(ValidationAttribute.CONTINUOUS_VAR_COUNT, numOfContinuous);
         validationResults.add(result);
     }
 
@@ -571,11 +590,6 @@ public class MixedTabularDataFileValidation extends AbstractTabularDataValidatio
                     }
                 }
             }
-        }
-
-        // clear all the values since we are not doing any value encoding
-        for (MixedVarInfo var : mixedVarInfos) {
-            var.clearValues();
         }
 
         return mixedVarInfos;

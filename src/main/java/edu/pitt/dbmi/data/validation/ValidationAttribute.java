@@ -26,6 +26,8 @@ package edu.pitt.dbmi.data.validation;
  */
 public enum ValidationAttribute {
 
+    CONTINUOUS_VAR_COUNT,
+    DISCRETE_VAR_COUNT,
     LINE_NUMBER,
     COLUMN_NUMBER,
     ROW_NUMBER,
