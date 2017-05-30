@@ -16,27 +16,41 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation;
+package edu.pitt.dbmi.data.reader.tabular;
 
 /**
  *
- * Feb 16, 2017 1:49:30 PM
+ * Apr 5, 2017 5:04:17 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public enum ValidationAttribute {
+public class MixedVarInfo extends DiscreteVarInfo {
 
-    CONTINUOUS_VAR_COUNT,
-    DISCRETE_VAR_COUNT,
-    LINE_NUMBER,
-    COLUMN_NUMBER,
-    ROW_NUMBER,
-    EXPECTED_COUNT,
-    ACTUAL_COUNT,
-    LINE_COUNT,
-    COLUMN_COUNT,
-    ROW_COUNT,
-    FILE_NAME,
-    VALUE
+    protected boolean continuous;
+
+    public MixedVarInfo(String name) {
+        super(name);
+    }
+
+    @Override
+    public String toString() {
+        return "MixedVarInfo{" + "name=" + name + ", values=" + values + ", categories=" + categories + ", continuous=" + continuous + '}';
+    }
+
+    public boolean isContinuous() {
+        return continuous;
+    }
+
+    public void setContinuous(boolean continuous) {
+        this.continuous = continuous;
+    }
+
+    public int getNumberOfValues() {
+        return values.size();
+    }
+
+    public void clearValues() {
+        values.clear();
+    }
 
 }
