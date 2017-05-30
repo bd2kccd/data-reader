@@ -33,9 +33,9 @@ import java.util.TreeMap;
  */
 public class DiscreteVarInfo {
 
-    private final String name;
-    private final Map<String, Integer> values;
-    private List<String> categories;
+    protected final String name;
+    protected final Map<String, Integer> values;
+    protected List<String> categories;
 
     public DiscreteVarInfo(String name) {
         this.name = name;
