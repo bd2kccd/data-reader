@@ -243,6 +243,8 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
                             }
                         }
                     }
+
+                    prevChar = currChar;
                 }
 
                 position += size;
@@ -423,6 +425,8 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
                             }
                         }
                     }
+
+                    prevChar = currChar;
                 }
 
                 position += size;
