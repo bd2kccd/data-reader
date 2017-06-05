@@ -282,6 +282,8 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
                             }
                         }
                     }
+
+                    prevChar = currChar;
                 }
 
                 position += size;
@@ -486,6 +488,8 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
                             }
                         }
                     }
+
+                    prevChar = currChar;
                 }
 
                 position += size;
