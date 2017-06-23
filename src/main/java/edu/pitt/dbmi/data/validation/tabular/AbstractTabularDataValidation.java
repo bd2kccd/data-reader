@@ -36,6 +36,11 @@ import java.util.Set;
  */
 public abstract class AbstractTabularDataValidation extends AbstractTabularDataFileValidation implements TabularDataValidation {
 
+    protected int markedMissing;
+    protected int assumedMissing;
+    protected int numOfRowsWithMissingValues;
+    protected int numOfColsWithMissingValues;
+
     public AbstractTabularDataValidation(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
@@ -44,6 +49,10 @@ public abstract class AbstractTabularDataValidation extends AbstractTabularDataF
 
     @Override
     public void validate(Set<String> excludedVariables) {
+        markedMissing = 0;
+        assumedMissing = 0;
+        numOfRowsWithMissingValues = 0;
+        numOfColsWithMissingValues = 0;
         try {
             validateDataFromFile(getColumnNumbers(excludedVariables));
         } catch (IOException exception) {

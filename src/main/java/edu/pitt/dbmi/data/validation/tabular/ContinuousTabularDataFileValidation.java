@@ -51,6 +51,21 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataVali
         result.setAttribute(ValidationAttribute.ROW_NUMBER, numOfRows);
         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, numOfVars);
         validationResults.add(result);
+
+        int totalMissingValues = markedMissing + assumedMissing;
+        if (totalMissingValues > 0) {
+            infoMsg = String.format("There are %d missing values, %d marked missing and %d assumed missing.", totalMissingValues, markedMissing, assumedMissing);
+            result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_SUMMARY, infoMsg);
+            result.setAttribute(ValidationAttribute.ASSUMED_MISSING_COUNT, assumedMissing);
+            result.setAttribute(ValidationAttribute.LABELED_MISSING_COUNT, markedMissing);
+            validationResults.add(result);
+
+            infoMsg = String.format("There are %d rows and %d columns with missing values.", numOfRowsWithMissingValues, numOfColsWithMissingValues);
+            result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_SUMMARY, infoMsg);
+            result.setAttribute(ValidationAttribute.ROW_WITH_MISSING_VALUE_COUNT, numOfRowsWithMissingValues);
+            result.setAttribute(ValidationAttribute.COLUMN_WITH_MISSING_VALUE_COUNT, numOfColsWithMissingValues);
+            validationResults.add(result);
+        }
     }
 
     private int validateData(int numOfVars, int[] excludedColumns) throws IOException {
@@ -75,6 +90,8 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataVali
             boolean reqCheck = prefix.length > 0;
             boolean skipLine = false;
             boolean hasQuoteChar = false;
+            boolean reqRowMissingCount = true;
+            boolean[] hasCountMissingCols = new boolean[numOfVars + 1];
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
             do {
@@ -154,22 +171,42 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataVali
                                     result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
                                     validationResults.add(result);
                                 } else {
-                                    if (value.length() == 0) {
+                                    if (value.length() > 0) {
+                                        if (value.equals(missingValueMarker)) {
+                                            markedMissing++;
+                                            if (reqRowMissingCount) {
+                                                numOfRowsWithMissingValues++;
+                                            }
+                                            if (!hasCountMissingCols[colNum]) {
+                                                hasCountMissingCols[colNum] = true;
+                                                numOfColsWithMissingValues++;
+                                            }
+                                        } else {
+                                            try {
+                                                Double.parseDouble(value);
+                                            } catch (NumberFormatException exception) {
+                                                String errMsg = String.format("Line %d, column %d: Invalid number %s.", lineNum, colNum, value);
+                                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
+                                                result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                                result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                                result.setAttribute(ValidationAttribute.VALUE, value);
+                                                validationResults.add(result);
+                                            }
+                                        }
+                                    } else {
                                         String errMsg = String.format("Line %d, column %d: Missing value.  No missing marker was found. Assumed value is missing.", lineNum, colNum);
                                         ValidationResult result = new ValidationResult(ValidationCode.WARNING, MessageType.FILE_MISSING_VALUE, errMsg);
                                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                         validationResults.add(result);
-                                    } else if (!value.equals(missingValueMarker)) {
-                                        try {
-                                            Double.parseDouble(value);
-                                        } catch (NumberFormatException exception) {
-                                            String errMsg = String.format("Line %d, column %d: Invalid number %s.", lineNum, colNum, value);
-                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
-                                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                            result.setAttribute(ValidationAttribute.VALUE, value);
-                                            validationResults.add(result);
+
+                                        assumedMissing++;
+                                        if (reqRowMissingCount) {
+                                            numOfRowsWithMissingValues++;
+                                        }
+                                        if (!hasCountMissingCols[colNum]) {
+                                            hasCountMissingCols[colNum] = true;
+                                            numOfColsWithMissingValues++;
                                         }
                                     }
                                 }
@@ -182,6 +219,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataVali
                         numOfData = 0;
                         excludedIndex = 0;
                         reqCheck = prefix.length > 0;
+                        reqRowMissingCount = true;
                         prevNonBlankChar = SPACE_CHAR;
                         skipLine = false;
 
@@ -248,22 +286,44 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataVali
                                         result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
                                         validationResults.add(result);
                                     } else {
-                                        if (value.length() == 0) {
+                                        if (value.length() > 0) {
+                                            if (value.equals(missingValueMarker)) {
+                                                markedMissing++;
+                                                if (reqRowMissingCount) {
+                                                    reqRowMissingCount = false;
+                                                    numOfRowsWithMissingValues++;
+                                                }
+                                                if (!hasCountMissingCols[colNum]) {
+                                                    hasCountMissingCols[colNum] = true;
+                                                    numOfColsWithMissingValues++;
+                                                }
+                                            } else {
+                                                try {
+                                                    Double.parseDouble(value);
+                                                } catch (NumberFormatException exception) {
+                                                    String errMsg = String.format("Line %d, column %d: Invalid number %s.", lineNum, colNum, value);
+                                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
+                                                    result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                                    result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                                    result.setAttribute(ValidationAttribute.VALUE, value);
+                                                    validationResults.add(result);
+                                                }
+                                            }
+                                        } else {
                                             String errMsg = String.format("Line %d, column %d: Missing value.  No missing marker was found. Assumed value is missing.", lineNum, colNum);
                                             ValidationResult result = new ValidationResult(ValidationCode.WARNING, MessageType.FILE_MISSING_VALUE, errMsg);
                                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                             validationResults.add(result);
-                                        } else if (!value.equals(missingValueMarker)) {
-                                            try {
-                                                Double.parseDouble(value);
-                                            } catch (NumberFormatException exception) {
-                                                String errMsg = String.format("Line %d, column %d: Invalid number %s.", lineNum, colNum, value);
-                                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
-                                                result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                                result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                                result.setAttribute(ValidationAttribute.VALUE, value);
-                                                validationResults.add(result);
+
+                                            assumedMissing++;
+                                            if (reqRowMissingCount) {
+                                                reqRowMissingCount = false;
+                                                numOfRowsWithMissingValues++;
+                                            }
+                                            if (!hasCountMissingCols[colNum]) {
+                                                hasCountMissingCols[colNum] = true;
+                                                numOfColsWithMissingValues++;
                                             }
                                         }
                                     }
@@ -314,22 +374,42 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataVali
                         result.setAttribute(ValidationAttribute.ACTUAL_COUNT, numOfData);
                         validationResults.add(result);
                     } else {
-                        if (value.length() == 0) {
+                        if (value.length() > 0) {
+                            if (value.equals(missingValueMarker)) {
+                                markedMissing++;
+                                if (reqRowMissingCount) {
+                                    numOfRowsWithMissingValues++;
+                                }
+                                if (!hasCountMissingCols[colNum]) {
+                                    hasCountMissingCols[colNum] = true;
+                                    numOfColsWithMissingValues++;
+                                }
+                            } else {
+                                try {
+                                    Double.parseDouble(value);
+                                } catch (NumberFormatException exception) {
+                                    String errMsg = String.format("Line %d, column %d: Invalid number %s.", lineNum, colNum, value);
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
+                                    result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                    result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                    result.setAttribute(ValidationAttribute.VALUE, value);
+                                    validationResults.add(result);
+                                }
+                            }
+                        } else {
                             String errMsg = String.format("Line %d, column %d: Missing value.  No missing marker was found. Assumed value is missing.", lineNum, colNum);
                             ValidationResult result = new ValidationResult(ValidationCode.WARNING, MessageType.FILE_MISSING_VALUE, errMsg);
                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                             validationResults.add(result);
-                        } else if (!value.equals(missingValueMarker)) {
-                            try {
-                                Double.parseDouble(value);
-                            } catch (NumberFormatException exception) {
-                                String errMsg = String.format("Line %d, column %d: Invalid number %s.", lineNum, colNum, value);
-                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
-                                result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                result.setAttribute(ValidationAttribute.VALUE, value);
-                                validationResults.add(result);
+
+                            assumedMissing++;
+                            if (reqRowMissingCount) {
+                                numOfRowsWithMissingValues++;
+                            }
+                            if (!hasCountMissingCols[colNum]) {
+                                hasCountMissingCols[colNum] = true;
+                                numOfColsWithMissingValues++;
                             }
                         }
                     }
