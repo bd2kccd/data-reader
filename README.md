@@ -10,7 +10,7 @@ In order to use this data reader as a dependency in your project, you'll first n
 <dependency>
     <groupId>edu.pitt.dbmi</groupId>
     <artifactId>data-reader</artifactId>
-    <version>0.2.1</version>
+    <version>0.2.2</version>
 </dependency>
 ````
 Currently, CMU's [Tetrad](https://github.com/cmu-phil/tetrad) project uses this data reader to handle the data validation and loading in their GUI application. Our [causal-cmd](https://github.com/bd2kccd/causal-cmd) command line tool also uses it.
