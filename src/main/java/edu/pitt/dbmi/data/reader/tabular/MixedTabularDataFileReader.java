@@ -67,6 +67,10 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
 
         int mixedVarInfoIndex = 0;
         for (MixedVarInfo mixedVarInfo : mixedVarInfos) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
+
             if (mixedVarInfo.isContinuous()) {
                 mixedVarInfo.clearValues();
                 continuousData[mixedVarInfoIndex++] = new double[numOfRows];
@@ -105,7 +109,7 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
 
                 // skip header, if any
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && skipHeader) {
+                    while (buffer.hasRemaining() && skipHeader && !Thread.currentThread().isInterrupted()) {
                         byte currChar = buffer.get();
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                             skipLine = false;
@@ -143,7 +147,7 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
                 }
 
                 // read in data
-                while (buffer.hasRemaining()) {
+                while (buffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -296,7 +300,7 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !Thread.currentThread().isInterrupted());
 
             // case when no newline char at the end of the file
             if (colNum > 0 || dataBuilder.length() > 0) {
@@ -376,7 +380,7 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
 
                 // skip header, if any
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && skipHeader) {
+                    while (buffer.hasRemaining() && skipHeader && !Thread.currentThread().isInterrupted()) {
                         byte currChar = buffer.get();
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                             skipLine = false;
@@ -414,7 +418,7 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
                 }
 
                 // read in data
-                while (buffer.hasRemaining()) {
+                while (buffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -540,7 +544,7 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !Thread.currentThread().isInterrupted());
 
             // case when no newline at end of file
             if (colNum > 0 || dataBuilder.length() > 0) {
@@ -607,7 +611,7 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
             byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !taskFinished) {
+                while (buffer.hasRemaining() && !taskFinished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -689,7 +693,7 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && !taskFinished);
+            } while (position < fileSize && !taskFinished && !Thread.currentThread().isInterrupted());
 
             // data at the end of line
             if (colNum > 0 || dataBuilder.length() > 0) {
@@ -733,7 +737,7 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
         int exColIndex = 0;
         int varInfoIndex = 0;
         MixedVarInfo[] varInfos = new MixedVarInfo[size];
-        for (int colNum = 1; colNum <= numOfCols; colNum++) {
+        for (int colNum = 1; colNum <= numOfCols && !Thread.currentThread().isInterrupted(); colNum++) {
             if (numOfExCols > 0 && (exColIndex < numOfExCols && colNum == excludedColumns[exColIndex])) {
                 exColIndex++;
             } else {

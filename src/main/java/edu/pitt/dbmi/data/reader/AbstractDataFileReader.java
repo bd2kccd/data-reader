@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
 /**
@@ -79,7 +80,7 @@ public abstract class AbstractDataFileReader {
             byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !finished) {
+                while (buffer.hasRemaining() && !finished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -137,7 +138,7 @@ public abstract class AbstractDataFileReader {
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && !finished);
+            } while ((position < fileSize) && !finished && !Thread.currentThread().isInterrupted());
 
             if (delimiter != Delimiter.WHITESPACE) {
                 if (prevNonBlankChar > SPACE_CHAR) {
@@ -163,7 +164,7 @@ public abstract class AbstractDataFileReader {
             boolean skipLine = false;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining()) {
+                while (buffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -200,7 +201,7 @@ public abstract class AbstractDataFileReader {
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while ((position < fileSize) && !Thread.currentThread().isInterrupted());
 
             // case where no newline at end of file
             if (index > 0) {
@@ -242,7 +243,11 @@ public abstract class AbstractDataFileReader {
 
     public int getNumberOfLines() throws IOException {
         if (numberOfLines == -1) {
-            numberOfLines = countNumberOfLines();
+            try {
+                numberOfLines = countNumberOfLines();
+            } catch (ClosedByInterruptException exception) {
+                numberOfLines = -1;
+            }
         }
 
         return numberOfLines;
@@ -250,7 +255,11 @@ public abstract class AbstractDataFileReader {
 
     public int getNumberOfColumns() throws IOException {
         if (numberOfColumns == -1) {
-            numberOfColumns = countNumberOfColumns();
+            try {
+                numberOfColumns = countNumberOfColumns();
+            } catch (ClosedByInterruptException exception) {
+                numberOfColumns = -1;
+            }
         }
 
         return numberOfColumns;

@@ -67,7 +67,7 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
             byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !taskFinished) {
+                while (buffer.hasRemaining() && !taskFinished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -132,7 +132,7 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && !taskFinished);
+            } while (position < fileSize && !taskFinished && !Thread.currentThread().isInterrupted());
 
             // data at the end of line
             if (colNum > 0 || dataBuilder.length() > 0) {
@@ -161,6 +161,10 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
         Set<Integer> indices = new TreeSet<>();
         int numOfVars = getNumberOfColumns();
         for (int colNum : columnNumbers) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
+
             if (colNum > 0 && colNum <= numOfVars) {
                 indices.add(colNum);
             }
@@ -187,7 +191,7 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
         int numOfCols = getNumberOfColumns();
         int length = excludedColumns.length;
         int excludedIndex = 0;
-        for (int colNum = 1; colNum <= numOfCols; colNum++) {
+        for (int colNum = 1; colNum <= numOfCols && !Thread.currentThread().isInterrupted(); colNum++) {
             if (length > 0 && (excludedIndex < length && colNum == excludedColumns[excludedIndex])) {
                 excludedIndex++;
             } else {

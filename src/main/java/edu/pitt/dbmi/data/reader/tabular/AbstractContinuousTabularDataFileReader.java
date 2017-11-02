@@ -83,7 +83,7 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
 
                 // skip header, if any
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && skipHeader) {
+                    while (buffer.hasRemaining() && skipHeader && !Thread.currentThread().isInterrupted()) {
                         byte currChar = buffer.get();
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                             skipLine = false;
@@ -121,7 +121,7 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
                 }
 
                 // read in data
-                while (buffer.hasRemaining()) {
+                while (buffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -250,7 +250,7 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !Thread.currentThread().isInterrupted());
 
             // case when there is no newline at end of file
             if (colNum > 0 || dataBuilder.length() > 0) {
@@ -315,7 +315,7 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
             byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !finished) {
+                while (buffer.hasRemaining() && !finished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -397,7 +397,7 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && !finished);
+            } while (position < fileSize && !finished && !Thread.currentThread().isInterrupted());
 
             // data at the end of line
             if (colNum > 0 || dataBuilder.length() > 0) {
