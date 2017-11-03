@@ -25,8 +25,11 @@ import edu.pitt.dbmi.data.validation.ValidationCode;
 import edu.pitt.dbmi.data.validation.ValidationResult;
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.Collections;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -35,6 +38,8 @@ import java.util.Set;
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
 public abstract class AbstractTabularDataValidation extends AbstractTabularDataFileValidation implements TabularDataValidation {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTabularDataValidation.class);
 
     protected int markedMissing;
     protected int assumedMissing;
@@ -55,11 +60,14 @@ public abstract class AbstractTabularDataValidation extends AbstractTabularDataF
         numOfColsWithMissingValues = 0;
         try {
             validateDataFromFile(getColumnNumbers(excludedVariables));
+        } catch (ClosedByInterruptException exception) {
+            LOGGER.error("", exception);
         } catch (IOException exception) {
             String errMsg = String.format("Unable to read file %s.", dataFile.getName());
             ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
             result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getName());
             validationResults.add(result);
+            LOGGER.error("Validation failed.", exception);
         }
     }
 
@@ -67,11 +75,14 @@ public abstract class AbstractTabularDataValidation extends AbstractTabularDataF
     public void validate(int[] excludedColumns) {
         try {
             validateDataFromFile(filterValidColumnNumbers(excludedColumns));
+        } catch (ClosedByInterruptException exception) {
+            LOGGER.error("", exception);
         } catch (IOException exception) {
             String errMsg = String.format("Unable to read file %s.", dataFile.getName());
             ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
             result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getName());
             validationResults.add(result);
+            LOGGER.error("Validation failed.", exception);
         }
     }
 

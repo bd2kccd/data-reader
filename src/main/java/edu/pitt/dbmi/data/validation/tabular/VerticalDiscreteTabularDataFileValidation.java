@@ -99,7 +99,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
 
                 // skip header, if any
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && skipHeader) {
+                    while (buffer.hasRemaining() && skipHeader && !Thread.currentThread().isInterrupted()) {
                         byte currChar = buffer.get();
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                             skipLine = false;
@@ -136,7 +136,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                     }
                 }
 
-                while (buffer.hasRemaining()) {
+                while (buffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -318,7 +318,7 @@ public class VerticalDiscreteTabularDataFileValidation extends AbstractTabularDa
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !Thread.currentThread().isInterrupted());
 
             // case when no newline char at the end of the file
             if (colNum > 0 || dataBuilder.length() > 0) {
