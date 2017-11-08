@@ -37,7 +37,8 @@ public abstract class AbstractDataFileReader {
     protected static final byte LINE_FEED = '\n';
     protected static final byte CARRIAGE_RETURN = '\r';
 
-    protected static final byte SPACE_CHAR = ' ';
+    protected static final byte SPACE_CHAR = Delimiter.SPACE.getDelimiterChar();
+    protected static final String EMPTY_STRING = "";
 
     protected byte quoteCharacter;
     protected String missingValueMarker;
@@ -53,9 +54,9 @@ public abstract class AbstractDataFileReader {
         this.dataFile = dataFile;
         this.delimiter = delimiter;
 
+        this.missingValueMarker = EMPTY_STRING;
+        this.commentMarker = EMPTY_STRING;
         this.quoteCharacter = -1;
-        this.commentMarker = "";
-
         this.numberOfLines = -1;
         this.numberOfColumns = -1;
     }
@@ -72,61 +73,74 @@ public abstract class AbstractDataFileReader {
 
             byte[] prefix = commentMarker.getBytes();
             int index = 0;
-            boolean reqCheck = prefix.length > 0;
+            boolean reqCmntCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
             boolean hasQuoteChar = false;
-            byte prevNonBlankChar = SPACE_CHAR;
+            boolean finished = false;
+            boolean eol = true;
             byte prevChar = -1;
+            byte prevNonBlankChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
                 while (buffer.hasRemaining() && !finished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
-
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        if ((prevChar == CARRIAGE_RETURN || prevChar == LINE_FEED) && prevChar != currChar) {
+                            prevChar = currChar;
+                            continue;
+                        }
+
+                        finished = !skipLine;
+                        if (finished) {
+                            count++;
+                        }
+
                         skipLine = false;
-                        finished = prevNonBlankChar > SPACE_CHAR;
-                    } else if (!skipLine) {
-                        if (currChar > SPACE_CHAR) {
-                            prevNonBlankChar = currChar;
-                        }
+                        reqCmntCheck = prefix.length > 0;
+                        index = 0;
+                        prevNonBlankChar = -1;
+                        eol = true;
+                    } else {
+                        eol = false;
 
-                        if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
-                            if (currChar == prefix[index]) {
-                                index++;
-
-                                // all the comment chars are matched
-                                if (index == prefix.length) {
-                                    index = 0;
-                                    skipLine = true;
-                                    count = 0;
-                                    prevNonBlankChar = SPACE_CHAR;
-
-                                    prevChar = currChar;
-                                    continue;
-                                }
-                            } else {
-                                reqCheck = false;
+                        if (!skipLine) {
+                            // save any non-blank char encountered
+                            if (currChar > SPACE_CHAR) {
+                                prevNonBlankChar = currChar;
                             }
-                        }
 
-                        if (currChar == quoteCharacter) {
-                            hasQuoteChar = !hasQuoteChar;
-                        } else if (!hasQuoteChar) {
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    if (currChar > SPACE_CHAR && prevChar <= SPACE_CHAR) {
-                                        if (!hasQuoteChar) {
+                            // skip any blank chars at the begining of the line
+                            if (currChar <= SPACE_CHAR && prevNonBlankChar <= SPACE_CHAR) {
+                                continue;
+                            }
+
+                            if (reqCmntCheck) {
+                                if (currChar == prefix[index]) {
+                                    index++;
+                                    if (index == prefix.length) {
+                                        skipLine = true;
+                                        prevChar = currChar;
+                                        continue;
+                                    }
+                                } else {
+                                    reqCmntCheck = false;
+                                }
+                            }
+
+                            if (currChar == quoteCharacter) {
+                                hasQuoteChar = !hasQuoteChar;
+                            } else if (!hasQuoteChar) {
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        if (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR) {
                                             count++;
                                         }
-                                    }
-                                    break;
-                                default:
-                                    if (currChar == delimChar) {
-                                        if (!hasQuoteChar) {
+                                        break;
+                                    default:
+                                        if (currChar == delimChar) {
                                             count++;
                                         }
-                                    }
+                                }
                             }
                         }
                     }
@@ -140,10 +154,8 @@ public abstract class AbstractDataFileReader {
                 }
             } while ((position < fileSize) && !finished && !Thread.currentThread().isInterrupted());
 
-            if (delimiter != Delimiter.WHITESPACE) {
-                if (prevNonBlankChar > SPACE_CHAR) {
-                    count++;
-                }
+            if (!(eol || skipLine)) {
+                count++;
             }
         }
 
@@ -160,41 +172,54 @@ public abstract class AbstractDataFileReader {
 
             byte[] prefix = commentMarker.getBytes();
             int index = 0;
-            boolean reqCheck = prefix.length > 0;
+            boolean reqCmntCheck = prefix.length > 0;
             boolean skipLine = false;
+            boolean moveToEOL = false;
+            byte prevChar = -1;
+            byte prevNonBlankChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
                 while (buffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
-
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                        skipLine = false;
-                        if (index > 0) {
-                            index = 0;
-                            count++;
-                        }
-                    } else if (!skipLine) {
-                        if (currChar <= SPACE_CHAR && index == 0) {
+                        if ((prevChar == CARRIAGE_RETURN || prevChar == LINE_FEED) && prevChar != currChar) {
                             continue;
                         }
 
-                        if (reqCheck) {
+                        if (!skipLine) {
+                            count++;
+                        }
+                        index = 0;
+                        moveToEOL = false;
+                        skipLine = false;
+                        prevNonBlankChar = -1;
+                    } else if (!moveToEOL) {
+                        // save any non-blank char encountered
+                        if (currChar > SPACE_CHAR) {
+                            prevNonBlankChar = currChar;
+                        }
+
+                        // skip any blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && prevNonBlankChar <= SPACE_CHAR) {
+                            continue;
+                        }
+
+                        if (reqCmntCheck) {
                             if (currChar == prefix[index]) {
                                 index++;
                                 if (index == prefix.length) {
-                                    index = 0;
+                                    moveToEOL = true;
                                     skipLine = true;
                                 }
                             } else {
-                                index = 0;
-                                skipLine = true;
-                                count++;
+                                moveToEOL = true;
                             }
                         } else {
-                            skipLine = true;
-                            count++;
+                            moveToEOL = true;
                         }
                     }
+
+                    prevChar = currChar;
                 }
 
                 position += size;
@@ -203,9 +228,7 @@ public abstract class AbstractDataFileReader {
                 }
             } while ((position < fileSize) && !Thread.currentThread().isInterrupted());
 
-            // case where no newline at end of file
-            if (index > 0) {
-                index = 0;
+            if (!(prevChar == CARRIAGE_RETURN || prevChar == LINE_FEED) && !skipLine) {
                 count++;
             }
         }
@@ -226,8 +249,8 @@ public abstract class AbstractDataFileReader {
     }
 
     public void setMissingValueMarker(String missingValueMarker) {
-        this.missingValueMarker = (missingValueMarker) == null
-                ? missingValueMarker
+        this.missingValueMarker = (missingValueMarker == null)
+                ? EMPTY_STRING
                 : missingValueMarker.trim();
     }
 
@@ -236,9 +259,9 @@ public abstract class AbstractDataFileReader {
     }
 
     public void setCommentMarker(String commentMarker) {
-        if (commentMarker != null) {
-            this.commentMarker = commentMarker.trim();
-        }
+        this.commentMarker = (commentMarker == null)
+                ? EMPTY_STRING
+                : commentMarker.trim();
     }
 
     public int getNumberOfLines() throws IOException {
