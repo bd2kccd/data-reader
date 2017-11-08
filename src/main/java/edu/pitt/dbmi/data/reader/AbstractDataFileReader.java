@@ -100,6 +100,7 @@ public abstract class AbstractDataFileReader {
                         index = 0;
                         prevNonBlankChar = -1;
                         eol = true;
+                        hasQuoteChar = false;
                     } else {
                         eol = false;
 
