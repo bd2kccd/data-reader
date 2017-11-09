@@ -77,7 +77,6 @@ public abstract class AbstractDataFileReader {
             boolean skipLine = false;
             boolean hasQuoteChar = false;
             boolean finished = false;
-            boolean eol = true;
             byte prevChar = -1;
             byte prevNonBlankChar = -1;
             do {
@@ -99,49 +98,43 @@ public abstract class AbstractDataFileReader {
                         reqCmntCheck = prefix.length > 0;
                         index = 0;
                         prevNonBlankChar = -1;
-                        eol = true;
-                        hasQuoteChar = false;
-                    } else {
-                        eol = false;
+                    } else if (!skipLine) {
+                        // save any non-blank char encountered
+                        if (currChar > SPACE_CHAR) {
+                            prevNonBlankChar = currChar;
+                        }
 
-                        if (!skipLine) {
-                            // save any non-blank char encountered
-                            if (currChar > SPACE_CHAR) {
-                                prevNonBlankChar = currChar;
+                        // skip any blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && prevNonBlankChar <= SPACE_CHAR) {
+                            continue;
+                        }
+
+                        if (reqCmntCheck) {
+                            if (currChar == prefix[index]) {
+                                index++;
+                                if (index == prefix.length) {
+                                    skipLine = true;
+                                    prevChar = currChar;
+                                    continue;
+                                }
+                            } else {
+                                reqCmntCheck = false;
                             }
+                        }
 
-                            // skip any blank chars at the begining of the line
-                            if (currChar <= SPACE_CHAR && prevNonBlankChar <= SPACE_CHAR) {
-                                continue;
-                            }
-
-                            if (reqCmntCheck) {
-                                if (currChar == prefix[index]) {
-                                    index++;
-                                    if (index == prefix.length) {
-                                        skipLine = true;
-                                        prevChar = currChar;
-                                        continue;
+                        if (currChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else if (!hasQuoteChar) {
+                            switch (delimiter) {
+                                case WHITESPACE:
+                                    if (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR) {
+                                        count++;
                                     }
-                                } else {
-                                    reqCmntCheck = false;
-                                }
-                            }
-
-                            if (currChar == quoteCharacter) {
-                                hasQuoteChar = !hasQuoteChar;
-                            } else if (!hasQuoteChar) {
-                                switch (delimiter) {
-                                    case WHITESPACE:
-                                        if (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR) {
-                                            count++;
-                                        }
-                                        break;
-                                    default:
-                                        if (currChar == delimChar) {
-                                            count++;
-                                        }
-                                }
+                                    break;
+                                default:
+                                    if (currChar == delimChar) {
+                                        count++;
+                                    }
                             }
                         }
                     }
@@ -155,7 +148,7 @@ public abstract class AbstractDataFileReader {
                 }
             } while ((position < fileSize) && !finished && !Thread.currentThread().isInterrupted());
 
-            if (!(eol || skipLine)) {
+            if (!finished) {
                 count++;
             }
         }

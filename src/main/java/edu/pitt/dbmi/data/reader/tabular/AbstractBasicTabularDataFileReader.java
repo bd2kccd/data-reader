@@ -63,7 +63,6 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
             boolean skipLine = false;
             boolean hasQuoteChar = false;
             boolean finished = false;
-            boolean eol = true;
             byte prevChar = -1;
             byte prevNonBlankChar = -1;
             do {
@@ -95,60 +94,56 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
                         reqCmntCheck = prefix.length > 0;
                         index = 0;
                         prevNonBlankChar = -1;
-                        eol = true;
                         hasQuoteChar = false;
-                    } else {
-                        eol = false;
-                        if (!skipLine) {
-                            // save any non-blank char encountered
-                            if (currChar > SPACE_CHAR) {
-                                prevNonBlankChar = currChar;
-                            }
+                    } else if (!skipLine) {
+                        // save any non-blank char encountered
+                        if (currChar > SPACE_CHAR) {
+                            prevNonBlankChar = currChar;
+                        }
 
-                            // skip any blank chars at the begining of the line
-                            if (currChar <= SPACE_CHAR && prevNonBlankChar <= SPACE_CHAR) {
-                                continue;
-                            }
+                        // skip any blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && prevNonBlankChar <= SPACE_CHAR) {
+                            continue;
+                        }
 
-                            if (reqCmntCheck) {
-                                if (currChar == prefix[index]) {
-                                    index++;
-                                    if (index == prefix.length) {
-                                        skipLine = true;
-                                        prevChar = currChar;
-                                        continue;
-                                    }
-                                } else {
-                                    reqCmntCheck = false;
+                        if (reqCmntCheck) {
+                            if (currChar == prefix[index]) {
+                                index++;
+                                if (index == prefix.length) {
+                                    skipLine = true;
+                                    prevChar = currChar;
+                                    continue;
                                 }
-                            }
-
-                            if (currChar == quoteCharacter) {
-                                hasQuoteChar = !hasQuoteChar;
                             } else {
-                                if (hasQuoteChar) {
-                                    dataBuilder.append((char) currChar);
+                                reqCmntCheck = false;
+                            }
+                        }
+
+                        if (currChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
+                                }
+
+                                if (isDelimiter) {
+                                    colNum++;
+                                    String value = dataBuilder.toString().trim();
+                                    dataBuilder.delete(0, dataBuilder.length());
+
+                                    if (variables.contains(value)) {
+                                        indexList.add(colNum);
+                                    }
                                 } else {
-                                    boolean isDelimiter;
-                                    switch (delimiter) {
-                                        case WHITESPACE:
-                                            isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
-                                            break;
-                                        default:
-                                            isDelimiter = (currChar == delimChar);
-                                    }
-
-                                    if (isDelimiter) {
-                                        colNum++;
-                                        String value = dataBuilder.toString().trim();
-                                        dataBuilder.delete(0, dataBuilder.length());
-
-                                        if (variables.contains(value)) {
-                                            indexList.add(colNum);
-                                        }
-                                    } else {
-                                        dataBuilder.append((char) currChar);
-                                    }
+                                    dataBuilder.append((char) currChar);
                                 }
                             }
                         }
@@ -163,7 +158,7 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
                 }
             } while ((position < fileSize) && !finished && !Thread.currentThread().isInterrupted());
 
-            if (!(eol || skipLine)) {
+            if (!finished) {
                 colNum++;
                 String value = dataBuilder.toString().trim();
                 dataBuilder.delete(0, dataBuilder.length());

@@ -302,90 +302,113 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
 
             StringBuilder dataBuilder = new StringBuilder();
             byte[] prefix = commentMarker.getBytes();
-            int index = 0;
+            int prefixIndex = 0;
+            int excludedIndex = 0;
+            int numOfExCols = excludedColumns.length;
             int colNum = 0;
             int lineNum = 1;
-            int numOfExCols = excludedColumns.length;
-            int excludedIndex = 0;
-            boolean reqCheck = prefix.length > 0;
+            boolean reqCmntCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
             boolean hasQuoteChar = false;
-            byte prevNonBlankChar = SPACE_CHAR;
+            boolean finished = false;
             byte prevChar = -1;
+            byte prevNonBlankChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
                 while (buffer.hasRemaining() && !finished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                        skipLine = false;
-                        if (prevNonBlankChar > SPACE_CHAR) {
-                            finished = true;
+                        if ((prevChar == CARRIAGE_RETURN || prevChar == LINE_FEED) && prevChar != currChar) {
+                            prevChar = currChar;
+                            continue;
+                        }
+
+                        if (skipLine) {
+                            dataBuilder.delete(0, dataBuilder.length());
                         } else {
-                            lineNum++;
-                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
-                                lineNum--;
+                            finished = true;
+
+                            colNum++;
+                            String value = dataBuilder.toString().trim();
+                            dataBuilder.delete(0, dataBuilder.length());
+
+                            if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
+                                if (value.length() > 0) {
+                                    variables.add(value);
+                                } else {
+                                    String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                }
                             }
                         }
+
+                        lineNum++;
+                        skipLine = false;
+                        reqCmntCheck = prefix.length > 0;
+                        prefixIndex = 0;
+                        prevNonBlankChar = -1;
+                        hasQuoteChar = false;
                     } else if (!skipLine) {
+                        // save any non-blank char encountered
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
                         }
 
-                        if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
-                            if (currChar == prefix[index]) {
-                                index++;
+                        // skip any blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && prevNonBlankChar <= SPACE_CHAR) {
+                            prevChar = currChar;
+                            continue;
+                        }
 
-                                // all the comment chars are matched
-                                if (index == prefix.length) {
-                                    index = 0;
+                        if (reqCmntCheck) {
+                            if (currChar == prefix[prefixIndex]) {
+                                prefixIndex++;
+                                if (prefixIndex == prefix.length) {
                                     skipLine = true;
-                                    colNum = 0;
-                                    prevNonBlankChar = SPACE_CHAR;
-                                    dataBuilder.delete(0, dataBuilder.length());
-
                                     prevChar = currChar;
                                     continue;
                                 }
                             } else {
-                                index = 0;
-                                reqCheck = false;
+                                reqCmntCheck = false;
                             }
                         }
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else if (hasQuoteChar) {
-                            dataBuilder.append((char) currChar);
                         } else {
-                            boolean isDelimiter;
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
-                                    break;
-                                default:
-                                    isDelimiter = (currChar == delimChar);
-                            }
-
-                            if (isDelimiter) {
-                                colNum++;
-                                String value = dataBuilder.toString().trim();
-                                dataBuilder.delete(0, dataBuilder.length());
-
-                                if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
-                                    excludedIndex++;
-                                } else {
-                                    if (value.length() > 0) {
-                                        variables.add(value);
-                                    } else {
-                                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
-                                    }
-                                }
-                            } else {
+                            if (hasQuoteChar) {
                                 dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
+                                }
+
+                                if (isDelimiter) {
+                                    colNum++;
+                                    String value = dataBuilder.toString().trim();
+                                    dataBuilder.delete(0, dataBuilder.length());
+
+                                    if (numOfExCols > 0 && (excludedIndex < numOfExCols && colNum == excludedColumns[excludedIndex])) {
+                                        excludedIndex++;
+                                    } else {
+                                        if (value.length() > 0) {
+                                            variables.add(value);
+                                        } else {
+                                            String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
+                                            LOGGER.error(errMsg);
+                                            throw new DataReaderException(errMsg);
+                                        }
+                                    }
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
                             }
                         }
                     }
@@ -397,29 +420,20 @@ public abstract class AbstractContinuousTabularDataFileReader extends AbstractTa
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && !finished && !Thread.currentThread().isInterrupted());
+            } while ((position < fileSize) && !finished && !Thread.currentThread().isInterrupted());
 
-            // data at the end of line
-            if (colNum > 0 || dataBuilder.length() > 0) {
+            if (!finished) {
                 colNum++;
                 String value = dataBuilder.toString().trim();
                 dataBuilder.delete(0, dataBuilder.length());
 
                 if (numOfExCols == 0 || excludedIndex >= numOfExCols || colNum != excludedColumns[excludedIndex]) {
-                    switch (delimiter) {
-                        case WHITESPACE:
-                            if (value.length() > 0) {
-                                variables.add(value);
-                            }
-                            break;
-                        default:
-                            if (value.length() > 0) {
-                                variables.add(value);
-                            } else {
-                                String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
-                                LOGGER.error(errMsg);
-                                throw new DataReaderException(errMsg);
-                            }
+                    if (value.length() > 0) {
+                        variables.add(value);
+                    } else {
+                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
+                        LOGGER.error(errMsg);
+                        throw new DataReaderException(errMsg);
                     }
                 }
             }
