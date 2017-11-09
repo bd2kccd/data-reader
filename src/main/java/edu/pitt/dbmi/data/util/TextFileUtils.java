@@ -89,7 +89,7 @@ public class TextFileUtils {
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
 
-                while (buffer.hasRemaining() && lineCount < n) {
+                while (buffer.hasRemaining() && lineCount < n && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (skipLine) {
@@ -137,7 +137,7 @@ public class TextFileUtils {
                                 } else {
                                     if (byteBuffer.position() > 0) {
                                         byteBuffer.flip();
-                                        while (byteBuffer.hasRemaining()) {
+                                        while (byteBuffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                                             byte c = byteBuffer.get();
                                             if (c == quoteChar) {
                                                 hasQuoteChar = !hasQuoteChar;
@@ -165,10 +165,10 @@ public class TextFileUtils {
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && lineCount < n);
+            } while (position < fileSize && lineCount < n && !Thread.currentThread().isInterrupted());
 
             int maxIndex = 0;
-            for (int i = 1; i < delims.length; i++) {
+            for (int i = 1; i < delims.length && !Thread.currentThread().isInterrupted(); i++) {
                 if (characters[delims[maxIndex]] < characters[delims[i]]) {
                     maxIndex = i;
                 }

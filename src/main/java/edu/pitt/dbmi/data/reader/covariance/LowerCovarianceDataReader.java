@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
@@ -49,11 +50,19 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
 
     @Override
     public Dataset readInData() throws IOException {
-        int numberOfCases = getNumberOfCases();
-        List<String> variables = extractVariables();
-        double[][] data = extractCovarianceData(variables.size());
+        Dataset dataset;
+        try {
+            int numberOfCases = getNumberOfCases();
+            List<String> variables = extractVariables();
+            double[][] data = extractCovarianceData(variables.size());
 
-        return new CovarianceDataset(numberOfCases, variables, data);
+            dataset = new CovarianceDataset(numberOfCases, variables, data);
+        } catch (ClosedByInterruptException exception) {
+            dataset = null;
+            LOGGER.error("", exception);
+        }
+
+        return dataset;
     }
 
     private double[][] extractCovarianceData(int matrixSize) throws IOException {
@@ -84,7 +93,7 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
 
                 if (skipToData) {
-                    while (buffer.hasRemaining() && skipToData) {
+                    while (buffer.hasRemaining() && skipToData && !Thread.currentThread().isInterrupted()) {
                         byte currChar = buffer.get();
 
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -123,7 +132,7 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
                     }
                 }
 
-                while (buffer.hasRemaining()) {
+                while (buffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -251,7 +260,7 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !Thread.currentThread().isInterrupted());
 
             // case where no newline at end of file
             if (colNum > 0 || dataBuilder.length() > 0) {
@@ -316,7 +325,7 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
 
                 if (skipCaseNum) {
-                    while (buffer.hasRemaining() && skipCaseNum) {
+                    while (buffer.hasRemaining() && skipCaseNum && !Thread.currentThread().isInterrupted()) {
                         byte currChar = buffer.get();
 
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -354,7 +363,7 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
                     }
                 }
 
-                while (buffer.hasRemaining() && !doneExtractVars) {
+                while (buffer.hasRemaining() && !doneExtractVars && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -433,7 +442,7 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && !doneExtractVars);
+            } while (position < fileSize && !doneExtractVars && !Thread.currentThread().isInterrupted());
 
             // data at the end of line
             if (colNum > 0 || dataBuilder.length() > 0) {
@@ -473,7 +482,7 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
             byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !finished) {
+                while (buffer.hasRemaining() && !finished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -522,7 +531,7 @@ public class LowerCovarianceDataReader extends AbstractDataFileReader implements
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while ((position < fileSize) && !finished);
+            } while ((position < fileSize) && !finished && !Thread.currentThread().isInterrupted());
 
             if (dataBuilder.length() > 0) {
                 String value = dataBuilder.toString().trim();
