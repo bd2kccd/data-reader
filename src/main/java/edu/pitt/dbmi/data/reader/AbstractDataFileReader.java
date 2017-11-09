@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
 /**
@@ -36,7 +37,8 @@ public abstract class AbstractDataFileReader {
     protected static final byte LINE_FEED = '\n';
     protected static final byte CARRIAGE_RETURN = '\r';
 
-    protected static final byte SPACE_CHAR = ' ';
+    protected static final byte SPACE_CHAR = Delimiter.SPACE.getDelimiterChar();
+    protected static final String EMPTY_STRING = "";
 
     protected byte quoteCharacter;
     protected String missingValueMarker;
@@ -52,9 +54,9 @@ public abstract class AbstractDataFileReader {
         this.dataFile = dataFile;
         this.delimiter = delimiter;
 
+        this.missingValueMarker = EMPTY_STRING;
+        this.commentMarker = EMPTY_STRING;
         this.quoteCharacter = -1;
-        this.commentMarker = "";
-
         this.numberOfLines = -1;
         this.numberOfColumns = -1;
     }
@@ -71,41 +73,52 @@ public abstract class AbstractDataFileReader {
 
             byte[] prefix = commentMarker.getBytes();
             int index = 0;
-            boolean reqCheck = prefix.length > 0;
+            boolean reqCmntCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean finished = false;
             boolean hasQuoteChar = false;
-            byte prevNonBlankChar = SPACE_CHAR;
+            boolean finished = false;
             byte prevChar = -1;
+            byte prevNonBlankChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !finished) {
+                while (buffer.hasRemaining() && !finished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
-
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        if ((prevChar == CARRIAGE_RETURN || prevChar == LINE_FEED) && prevChar != currChar) {
+                            prevChar = currChar;
+                            continue;
+                        }
+
+                        finished = !skipLine;
+                        if (finished) {
+                            count++;
+                        }
+
                         skipLine = false;
-                        finished = prevNonBlankChar > SPACE_CHAR;
+                        reqCmntCheck = prefix.length > 0;
+                        index = 0;
+                        prevNonBlankChar = -1;
                     } else if (!skipLine) {
+                        // save any non-blank char encountered
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
                         }
 
-                        if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
+                        // skip any blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && prevNonBlankChar <= SPACE_CHAR) {
+                            continue;
+                        }
+
+                        if (reqCmntCheck) {
                             if (currChar == prefix[index]) {
                                 index++;
-
-                                // all the comment chars are matched
                                 if (index == prefix.length) {
-                                    index = 0;
                                     skipLine = true;
-                                    count = 0;
-                                    prevNonBlankChar = SPACE_CHAR;
-
                                     prevChar = currChar;
                                     continue;
                                 }
                             } else {
-                                reqCheck = false;
+                                reqCmntCheck = false;
                             }
                         }
 
@@ -114,17 +127,13 @@ public abstract class AbstractDataFileReader {
                         } else if (!hasQuoteChar) {
                             switch (delimiter) {
                                 case WHITESPACE:
-                                    if (currChar > SPACE_CHAR && prevChar <= SPACE_CHAR) {
-                                        if (!hasQuoteChar) {
-                                            count++;
-                                        }
+                                    if (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR) {
+                                        count++;
                                     }
                                     break;
                                 default:
                                     if (currChar == delimChar) {
-                                        if (!hasQuoteChar) {
-                                            count++;
-                                        }
+                                        count++;
                                     }
                             }
                         }
@@ -137,12 +146,10 @@ public abstract class AbstractDataFileReader {
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && !finished);
+            } while ((position < fileSize) && !finished && !Thread.currentThread().isInterrupted());
 
-            if (delimiter != Delimiter.WHITESPACE) {
-                if (prevNonBlankChar > SPACE_CHAR) {
-                    count++;
-                }
+            if (!finished) {
+                count++;
             }
         }
 
@@ -159,52 +166,63 @@ public abstract class AbstractDataFileReader {
 
             byte[] prefix = commentMarker.getBytes();
             int index = 0;
-            boolean reqCheck = prefix.length > 0;
+            boolean reqCmntCheck = prefix.length > 0;
             boolean skipLine = false;
+            boolean moveToEOL = false;
+            byte prevChar = -1;
+            byte prevNonBlankChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining()) {
+                while (buffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
-
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                        skipLine = false;
-                        if (index > 0) {
-                            index = 0;
-                            count++;
-                        }
-                    } else if (!skipLine) {
-                        if (currChar <= SPACE_CHAR && index == 0) {
+                        if ((prevChar == CARRIAGE_RETURN || prevChar == LINE_FEED) && prevChar != currChar) {
                             continue;
                         }
 
-                        if (reqCheck) {
+                        if (!skipLine) {
+                            count++;
+                        }
+                        index = 0;
+                        moveToEOL = false;
+                        skipLine = false;
+                        prevNonBlankChar = -1;
+                    } else if (!moveToEOL) {
+                        // save any non-blank char encountered
+                        if (currChar > SPACE_CHAR) {
+                            prevNonBlankChar = currChar;
+                        }
+
+                        // skip any blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && prevNonBlankChar <= SPACE_CHAR) {
+                            continue;
+                        }
+
+                        if (reqCmntCheck) {
                             if (currChar == prefix[index]) {
                                 index++;
                                 if (index == prefix.length) {
-                                    index = 0;
+                                    moveToEOL = true;
                                     skipLine = true;
                                 }
                             } else {
-                                index = 0;
-                                skipLine = true;
-                                count++;
+                                moveToEOL = true;
                             }
                         } else {
-                            skipLine = true;
-                            count++;
+                            moveToEOL = true;
                         }
                     }
+
+                    prevChar = currChar;
                 }
 
                 position += size;
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while ((position < fileSize) && !Thread.currentThread().isInterrupted());
 
-            // case where no newline at end of file
-            if (index > 0) {
-                index = 0;
+            if (!(prevChar == CARRIAGE_RETURN || prevChar == LINE_FEED) && !skipLine) {
                 count++;
             }
         }
@@ -225,8 +243,8 @@ public abstract class AbstractDataFileReader {
     }
 
     public void setMissingValueMarker(String missingValueMarker) {
-        this.missingValueMarker = (missingValueMarker) == null
-                ? missingValueMarker
+        this.missingValueMarker = (missingValueMarker == null)
+                ? EMPTY_STRING
                 : missingValueMarker.trim();
     }
 
@@ -235,14 +253,18 @@ public abstract class AbstractDataFileReader {
     }
 
     public void setCommentMarker(String commentMarker) {
-        if (commentMarker != null) {
-            this.commentMarker = commentMarker.trim();
-        }
+        this.commentMarker = (commentMarker == null)
+                ? EMPTY_STRING
+                : commentMarker.trim();
     }
 
     public int getNumberOfLines() throws IOException {
         if (numberOfLines == -1) {
-            numberOfLines = countNumberOfLines();
+            try {
+                numberOfLines = countNumberOfLines();
+            } catch (ClosedByInterruptException exception) {
+                numberOfLines = -1;
+            }
         }
 
         return numberOfLines;
@@ -250,7 +272,11 @@ public abstract class AbstractDataFileReader {
 
     public int getNumberOfColumns() throws IOException {
         if (numberOfColumns == -1) {
-            numberOfColumns = countNumberOfColumns();
+            try {
+                numberOfColumns = countNumberOfColumns();
+            } catch (ClosedByInterruptException exception) {
+                numberOfColumns = -1;
+            }
         }
 
         return numberOfColumns;

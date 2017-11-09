@@ -59,68 +59,92 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
             byte[] prefix = commentMarker.getBytes();
             int index = 0;
             int colNum = 0;
-            boolean reqCheck = prefix.length > 0;
+            boolean reqCmntCheck = prefix.length > 0;
             boolean skipLine = false;
-            boolean taskFinished = false;
             boolean hasQuoteChar = false;
-            byte prevNonBlankChar = SPACE_CHAR;
+            boolean finished = false;
             byte prevChar = -1;
+            byte prevNonBlankChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !taskFinished) {
+                while (buffer.hasRemaining() && !finished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        if ((prevChar == CARRIAGE_RETURN || prevChar == LINE_FEED) && prevChar != currChar) {
+                            prevChar = currChar;
+                            continue;
+                        }
+
+                        if (skipLine) {
+                            dataBuilder.delete(0, dataBuilder.length());
+                        } else {
+                            finished = true;
+
+                            colNum++;
+                            String value = dataBuilder.toString().trim();
+                            dataBuilder.delete(0, dataBuilder.length());
+
+                            if (variables.contains(value)) {
+                                indexList.add(colNum);
+                            }
+                        }
+
                         skipLine = false;
-                        taskFinished = prevNonBlankChar > SPACE_CHAR;
+                        reqCmntCheck = prefix.length > 0;
+                        index = 0;
+                        prevNonBlankChar = -1;
+                        hasQuoteChar = false;
                     } else if (!skipLine) {
+                        // save any non-blank char encountered
                         if (currChar > SPACE_CHAR) {
                             prevNonBlankChar = currChar;
                         }
 
-                        if (reqCheck && prevNonBlankChar > SPACE_CHAR) {
+                        // skip any blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && prevNonBlankChar <= SPACE_CHAR) {
+                            continue;
+                        }
+
+                        if (reqCmntCheck) {
                             if (currChar == prefix[index]) {
                                 index++;
                                 if (index == prefix.length) {
-                                    index = 0;
                                     skipLine = true;
-                                    colNum = 0;
-                                    prevNonBlankChar = SPACE_CHAR;
-                                    dataBuilder.delete(0, dataBuilder.length());
-
                                     prevChar = currChar;
                                     continue;
                                 }
                             } else {
-                                index = 0;
-                                reqCheck = false;
+                                reqCmntCheck = false;
                             }
                         }
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else if (hasQuoteChar) {
-                            dataBuilder.append((char) currChar);
                         } else {
-                            boolean isDelimiter;
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
-                                    break;
-                                default:
-                                    isDelimiter = (currChar == delimChar);
-                            }
-
-                            if (isDelimiter) {
-                                colNum++;
-                                String value = dataBuilder.toString().trim();
-                                dataBuilder.delete(0, dataBuilder.length());
-
-                                if (variables.contains(value)) {
-                                    indexList.add(colNum);
-                                }
-                            } else {
+                            if (hasQuoteChar) {
                                 dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
+                                }
+
+                                if (isDelimiter) {
+                                    colNum++;
+                                    String value = dataBuilder.toString().trim();
+                                    dataBuilder.delete(0, dataBuilder.length());
+
+                                    if (variables.contains(value)) {
+                                        indexList.add(colNum);
+                                    }
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
                             }
                         }
                     }
@@ -132,10 +156,9 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && !taskFinished);
+            } while ((position < fileSize) && !finished && !Thread.currentThread().isInterrupted());
 
-            // data at the end of line
-            if (colNum > 0 || dataBuilder.length() > 0) {
+            if (!finished) {
                 colNum++;
                 String value = dataBuilder.toString().trim();
                 dataBuilder.delete(0, dataBuilder.length());
@@ -147,7 +170,7 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
         }
 
         int[] indices = new int[indexList.size()];
-        if (indices.length > 0) {
+        if (!indexList.isEmpty()) {
             int i = 0;
             for (Integer index : indexList) {
                 indices[i++] = index;
@@ -161,6 +184,10 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
         Set<Integer> indices = new TreeSet<>();
         int numOfVars = getNumberOfColumns();
         for (int colNum : columnNumbers) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
+
             if (colNum > 0 && colNum <= numOfVars) {
                 indices.add(colNum);
             }
@@ -187,7 +214,7 @@ public abstract class AbstractBasicTabularDataFileReader extends AbstractDataFil
         int numOfCols = getNumberOfColumns();
         int length = excludedColumns.length;
         int excludedIndex = 0;
-        for (int colNum = 1; colNum <= numOfCols; colNum++) {
+        for (int colNum = 1; colNum <= numOfCols && !Thread.currentThread().isInterrupted(); colNum++) {
             if (length > 0 && (excludedIndex < length && colNum == excludedColumns[excludedIndex])) {
                 excludedIndex++;
             } else {

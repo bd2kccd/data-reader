@@ -72,7 +72,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractBasicTab
             byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !taskFinished) {
+                while (buffer.hasRemaining() && !taskFinished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -155,7 +155,7 @@ public abstract class AbstractTabularDataFileValidation extends AbstractBasicTab
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && !taskFinished);
+            } while (position < fileSize && !taskFinished && !Thread.currentThread().isInterrupted());
 
             // data at the end of line
             if (colNum > 0 || dataBuilder.length() > 0) {

@@ -22,10 +22,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -34,6 +37,8 @@ import java.util.List;
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
 public class BasicDataPreviewer extends AbstractDataPreviewer implements DataPreviewer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BasicDataPreviewer.class);
 
     public BasicDataPreviewer(File dataFile) {
         super(dataFile);
@@ -49,6 +54,16 @@ public class BasicDataPreviewer extends AbstractDataPreviewer implements DataPre
         }
 
         List<String> linePreviews = new LinkedList<>();
+        try {
+            getPreviews(fromLine, toLine, numOfCharacters, linePreviews);
+        } catch (ClosedByInterruptException exception) {
+            LOGGER.error("", exception);
+        }
+
+        return linePreviews;
+    }
+
+    protected void getPreviews(int fromLine, int toLine, int numOfCharacters, List<String> list) throws IOException {
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
             long position = 0;
@@ -63,7 +78,7 @@ public class BasicDataPreviewer extends AbstractDataPreviewer implements DataPre
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
 
-                while (buffer.hasRemaining() && !isDone) {
+                while (buffer.hasRemaining() && !isDone && !Thread.currentThread().isInterrupted()) {
                     byte currentChar = buffer.get();
                     if (skipLine) {
                         if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
@@ -71,7 +86,7 @@ public class BasicDataPreviewer extends AbstractDataPreviewer implements DataPre
 
                             if (charCount > 0) {
                                 charCount = 0;
-                                linePreviews.add(lineBuilder.toString());
+                                list.add(lineBuilder.toString());
                                 lineBuilder.delete(0, lineBuilder.length());
                             }
 
@@ -88,7 +103,7 @@ public class BasicDataPreviewer extends AbstractDataPreviewer implements DataPre
                         if (currentChar == CARRIAGE_RETURN || currentChar == LINE_FEED) {
                             if (charCount > 0) {
                                 charCount = 0;
-                                linePreviews.add(lineBuilder.toString());
+                                list.add(lineBuilder.toString());
                                 lineBuilder.delete(0, lineBuilder.length());
                             }
 
@@ -114,11 +129,9 @@ public class BasicDataPreviewer extends AbstractDataPreviewer implements DataPre
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !Thread.currentThread().isInterrupted());
 
         }
-
-        return linePreviews;
     }
 
 }

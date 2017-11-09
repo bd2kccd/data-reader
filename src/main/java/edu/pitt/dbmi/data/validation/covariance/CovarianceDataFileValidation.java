@@ -29,9 +29,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -40,6 +43,8 @@ import java.util.List;
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
 public class CovarianceDataFileValidation extends AbstractDataFileReader implements DataFileValidation {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CovarianceDataFileValidation.class);
 
     private final List<ValidationResult> validationResults;
 
@@ -60,15 +65,18 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
             result.setAttribute(ValidationAttribute.ROW_NUMBER, numberOfCases);
             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, numberOfVariables);
             validationResults.add(result);
+        } catch (ClosedByInterruptException exception) {
+            LOGGER.error("", exception);
         } catch (IOException exception) {
             String errMsg = String.format("Unable to read file %s.", dataFile.getName());
             ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
             result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getName());
             validationResults.add(result);
+            LOGGER.error("Validation failed.", exception);
         }
     }
 
-    public void validateCovarianceData(int numberOfVariables) throws IOException {
+    protected void validateCovarianceData(int numberOfVariables) throws IOException {
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
             long fileSize = fc.size();
             long position = 0;
@@ -93,7 +101,7 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
 
                 if (skipToData) {
-                    while (buffer.hasRemaining() && skipToData) {
+                    while (buffer.hasRemaining() && skipToData && !Thread.currentThread().isInterrupted()) {
                         byte currChar = buffer.get();
 
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -132,7 +140,7 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
                     }
                 }
 
-                while (buffer.hasRemaining()) {
+                while (buffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -290,7 +298,7 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !Thread.currentThread().isInterrupted());
 
             // case where no newline at end of file
             if (colNum > 0 || dataBuilder.length() > 0) {
@@ -352,7 +360,7 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
         }
     }
 
-    public int validateVariables() throws IOException {
+    protected int validateVariables() throws IOException {
         int count = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
@@ -378,7 +386,7 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
 
                 if (skipCaseNum) {
-                    while (buffer.hasRemaining() && skipCaseNum) {
+                    while (buffer.hasRemaining() && skipCaseNum && !Thread.currentThread().isInterrupted()) {
                         byte currChar = buffer.get();
 
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -416,7 +424,7 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
                     }
                 }
 
-                while (buffer.hasRemaining() && !doneExtractVars) {
+                while (buffer.hasRemaining() && !doneExtractVars && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -496,7 +504,7 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize && !doneExtractVars);
+            } while (position < fileSize && !doneExtractVars && !Thread.currentThread().isInterrupted());
 
             // data at the end of line
             // data at the end of line
@@ -520,7 +528,7 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
         return count;
     }
 
-    public int validateNumberOfCases() throws IOException {
+    protected int validateNumberOfCases() throws IOException {
         int count = 0;
 
         try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
@@ -539,7 +547,7 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
             byte prevChar = -1;
             do {
                 MappedByteBuffer buffer = fc.map(FileChannel.MapMode.READ_ONLY, position, size);
-                while (buffer.hasRemaining() && !finished) {
+                while (buffer.hasRemaining() && !finished && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -588,7 +596,7 @@ public class CovarianceDataFileValidation extends AbstractDataFileReader impleme
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while ((position < fileSize) && !finished);
+            } while ((position < fileSize) && !finished && !Thread.currentThread().isInterrupted());
 
             if (dataBuilder.length() > 0) {
                 String value = dataBuilder.toString().trim();

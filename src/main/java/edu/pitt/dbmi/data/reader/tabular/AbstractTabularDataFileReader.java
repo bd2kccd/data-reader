@@ -22,8 +22,11 @@ import edu.pitt.dbmi.data.Dataset;
 import edu.pitt.dbmi.data.Delimiter;
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.Collections;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -33,6 +36,8 @@ import java.util.Set;
  */
 public abstract class AbstractTabularDataFileReader extends AbstractBasicTabularDataFileReader implements TabularDataReader {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTabularDataFileReader.class);
+
     public AbstractTabularDataFileReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
@@ -41,19 +46,42 @@ public abstract class AbstractTabularDataFileReader extends AbstractBasicTabular
 
     @Override
     public Dataset readInData(Set<String> excludedVariables) throws IOException {
-        int[] excludedColumns = hasHeader ? getColumnNumbers(excludedVariables) : new int[0];
+        Dataset dataset;
+        try {
+            int[] excludedColumns = hasHeader ? getColumnNumbers(excludedVariables) : new int[0];
+            dataset = readInDataFromFile(excludedColumns);
+        } catch (ClosedByInterruptException exception) {
+            dataset = null;
+            LOGGER.error("", exception);
+        }
 
-        return readInDataFromFile(excludedColumns);
+        return dataset;
     }
 
     @Override
     public Dataset readInData(int[] excludedColumns) throws IOException {
-        return readInDataFromFile(filterValidColumnNumbers(excludedColumns));
+        Dataset dataset;
+        try {
+            dataset = readInDataFromFile(filterValidColumnNumbers(excludedColumns));
+        } catch (ClosedByInterruptException exception) {
+            dataset = null;
+            LOGGER.error("", exception);
+        }
+
+        return dataset;
     }
 
     @Override
     public Dataset readInData() throws IOException {
-        return readInData(Collections.EMPTY_SET);
+        Dataset dataset;
+        try {
+            dataset = readInData(Collections.EMPTY_SET);
+        } catch (ClosedByInterruptException exception) {
+            dataset = null;
+            LOGGER.error("", exception);
+        }
+
+        return dataset;
     }
 
 }

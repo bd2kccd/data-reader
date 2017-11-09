@@ -99,7 +99,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataVali
 
                 // skip header, if any
                 if (skipHeader) {
-                    while (buffer.hasRemaining() && skipHeader) {
+                    while (buffer.hasRemaining() && skipHeader && !Thread.currentThread().isInterrupted()) {
                         byte currChar = buffer.get();
                         if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
                             skipLine = false;
@@ -137,7 +137,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataVali
                 }
 
                 // read in data
-                while (buffer.hasRemaining()) {
+                while (buffer.hasRemaining() && !Thread.currentThread().isInterrupted()) {
                     byte currChar = buffer.get();
 
                     if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
@@ -341,7 +341,7 @@ public class ContinuousTabularDataFileValidation extends AbstractTabularDataVali
                 if ((position + size) > fileSize) {
                     size = fileSize - position;
                 }
-            } while (position < fileSize);
+            } while (position < fileSize && !Thread.currentThread().isInterrupted());
 
             // case when no newline char at end of file
             if (colNum > 0 || dataBuilder.length() > 0) {
