@@ -149,7 +149,7 @@ public class MixedTabularDataFileValidation extends AbstractTabularDataValidatio
             boolean skipLine = false;
             boolean hasQuoteChar = false;
             boolean reqRowMissingCount = true;
-            boolean[] hasCountMissingCols = new boolean[numOfVars + 1];
+            boolean[] hasCountMissingCols = new boolean[numOfVars + numOfExCols + 1];
             byte prevNonBlankChar = SPACE_CHAR;
             byte prevChar = -1;
             mixedVarInfoIndex = 0;
