@@ -18,6 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
+import edu.pitt.dbmi.data.reader.DataColumn;
 import edu.pitt.dbmi.data.reader.Delimiter;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -46,7 +47,7 @@ public class SimpleTabularDataReaderTest {
         final String commentMarker = "//";
         final boolean hasHeader = true;
 
-        TabularDataReader dataReader = new SimpleTabularDataReader(dataFile, delimiter);
+        SimpleTabularDataReader dataReader = new SimpleTabularDataReader(dataFile, delimiter);
         dataReader.setCommentMarker(commentMarker);
         dataReader.setMissingValueMarker(missingValueMarker);
         dataReader.setQuoteCharacter(quoteCharacter);
@@ -54,7 +55,11 @@ public class SimpleTabularDataReaderTest {
 
         System.out.println("================================================================================");
         try {
-            System.out.printf("Cols: %d, Rows: %d%n", dataReader.getNumberOfColumns(), dataReader.getNumberOfRows());
+            int[] excludedColumns = {0, 5, -2, 10, 8, -5, 9, 100, 1};
+            DataColumn[] dataColumns = dataReader.extractDataColumns(excludedColumns);
+            for (DataColumn dataColumn : dataColumns) {
+                System.out.println(dataColumn);
+            }
         } catch (IOException exception) {
             exception.printStackTrace(System.err);
         }

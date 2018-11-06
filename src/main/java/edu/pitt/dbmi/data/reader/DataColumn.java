@@ -36,6 +36,11 @@ public class DataColumn {
         this.columnNumber = columnNumber;
     }
 
+    @Override
+    public String toString() {
+        return "DataColumn{" + "discrete=" + discrete + ", name=" + name + ", columnNumber=" + columnNumber + '}';
+    }
+
     public boolean isDiscrete() {
         return discrete;
     }
