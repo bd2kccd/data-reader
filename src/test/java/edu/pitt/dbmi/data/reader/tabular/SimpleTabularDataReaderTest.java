@@ -18,8 +18,8 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.pitt.dbmi.data.reader.DataColumn;
 import edu.pitt.dbmi.data.reader.Delimiter;
+import edu.pitt.dbmi.data.reader.tabular.TabularColumnFileReader.DataColumn;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,27 +38,52 @@ public class SimpleTabularDataReaderTest {
 
     @Test
     public void testSomeMethod() {
-        String dataFileName = getClass().getResource("/data/test_data.txt").getFile();
+        String[] files = {
+            "/data/dos_test_data.csv",
+            "/data/mac_test_data.csv",
+            "/data/test_data.csv"
+        };
+        String dataFileName = getClass().getResource(files[2]).getFile();
         Path dataFile = Paths.get(dataFileName);
 
-        final Delimiter delimiter = Delimiter.TAB;
+        final Delimiter delimiter = Delimiter.COMMA;
         final char quoteCharacter = '"';
         final String missingValueMarker = "*";
         final String commentMarker = "//";
         final boolean hasHeader = true;
 
-        SimpleTabularDataReader dataReader = new SimpleTabularDataReader(dataFile, delimiter);
-        dataReader.setCommentMarker(commentMarker);
-        dataReader.setMissingValueMarker(missingValueMarker);
-        dataReader.setQuoteCharacter(quoteCharacter);
-        dataReader.setHasHeader(hasHeader);
-
         System.out.println("================================================================================");
         try {
-            int[] excludedColumns = {0, 5, -2, 10, 8, -5, 9, 100, 1};
-            DataColumn[] dataColumns = dataReader.extractDataColumns(excludedColumns);
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnFileReader.setCommentMarker(commentMarker);
+            columnFileReader.setMissingValueMarker(missingValueMarker);
+            columnFileReader.setQuoteCharacter(quoteCharacter);
+            columnFileReader.setHasHeader(hasHeader);
+
+            DataColumn[] dataColumns = columnFileReader.readInDataColumns(new int[]{1, 5});
             for (DataColumn dataColumn : dataColumns) {
                 System.out.println(dataColumn);
+            }
+
+            System.out.println("--------------------------------------------------------------------------------");
+
+            TabularDataFileReader dataFileReader = new TabularDataFileReader(dataFile, delimiter);
+            dataFileReader.setCommentMarker(commentMarker);
+            dataFileReader.setMissingValueMarker(missingValueMarker);
+            dataFileReader.setQuoteCharacter(quoteCharacter);
+            dataFileReader.setHasHeader(hasHeader);
+
+            TabularData tabData = dataFileReader.readInData(dataColumns);
+            if (tabData instanceof ContinuousTabularDataset) {
+                ContinuousTabularDataset contData = (ContinuousTabularDataset) tabData;
+
+                for (double[] rowData : contData.getData()) {
+                    int lastIndex = rowData.length - 1;
+                    for (int i = 0; i < lastIndex; i++) {
+                        System.out.printf("%f\t", rowData[i]);
+                    }
+                    System.out.println(rowData[lastIndex]);
+                }
             }
         } catch (IOException exception) {
             exception.printStackTrace(System.err);

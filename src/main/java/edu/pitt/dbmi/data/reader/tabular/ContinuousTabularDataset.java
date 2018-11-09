@@ -16,45 +16,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.tabular;
+
+import java.util.List;
 
 /**
  *
- * Nov 5, 2018 5:37:06 PM
+ * Nov 7, 2018 3:54:28 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class DataColumn {
+public class ContinuousTabularDataset implements TabularData {
 
-    private boolean discrete;
+    private final List<String> variables;
+    private final double[][] data;
 
-    private final String name;
-    private final int columnNumber;
-
-    public DataColumn(String name, int columnNumber) {
-        this.name = name;
-        this.columnNumber = columnNumber;
+    public ContinuousTabularDataset(List<String> variables, double[][] data) {
+        this.variables = variables;
+        this.data = data;
     }
 
-    @Override
-    public String toString() {
-        return "DataColumn{" + "discrete=" + discrete + ", name=" + name + ", columnNumber=" + columnNumber + '}';
+    public List<String> getVariables() {
+        return variables;
     }
 
-    public boolean isDiscrete() {
-        return discrete;
-    }
-
-    public void setDiscrete(boolean discrete) {
-        this.discrete = discrete;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public int getColumnNumber() {
-        return columnNumber;
+    public double[][] getData() {
+        return data;
     }
 
 }
