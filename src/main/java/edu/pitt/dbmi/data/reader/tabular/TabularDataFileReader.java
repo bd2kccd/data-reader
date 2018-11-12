@@ -338,11 +338,229 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
     }
 
     public TabularData readInDiscreteData(DataColumn[] dataColumns) throws IOException {
-        return null;
+        int numOfCols = dataColumns.length;
+        int numOfRows = getNumberOfRows();
+        int[][] data = new int[numOfCols][numOfRows];
+
+        // convert data columns to discrete variables
+        DiscreteVarInfo[] varInfos = new DiscreteVarInfo[dataColumns.length];
+        for (int i = 0; i < dataColumns.length; i++) {
+            varInfos[i] = new DiscreteVarInfo(dataColumns[i]);
+        }
+
+        // extract all the discrete categories for each variable
+        getDiscreteCategorizes(varInfos);
+
+        // recategorize values
+        for (DiscreteVarInfo varInfo : varInfos) {
+            varInfo.recategorize();
+        }
+
+        return new VerticalDiscreteTabularDataset(varInfos, data);
     }
 
     public TabularData readInMixedData(DataColumn[] dataColumns) throws IOException {
         return null;
+    }
+
+    protected DiscreteVarInfo[] getDiscreteCategorizes(DiscreteVarInfo[] varInfos) throws IOException {
+        int numOfVars = varInfos.length;
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+            boolean skipHeader = hasHeader;
+            boolean skip = false;
+            boolean hasSeenNonblankChar = false;
+            boolean hasQuoteChar = false;
+
+            byte delimChar = delimiter.getByteValue();
+
+            // comment marker check
+            byte[] comment = commentMarker.getBytes();
+            int cmntIndex = 0;
+            boolean checkForComment = comment.length > 0;
+
+            int colNum = 0;
+            int lineNum = 1;
+
+            int varIndex = 0;
+
+            StringBuilder dataBuilder = new StringBuilder();
+            byte prevChar = -1;
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int len;
+            while ((len = in.read(buffer)) != -1 && !Thread.currentThread().isInterrupted()) {
+                int i = 0; // buffer array index
+
+                if (skipHeader) {
+                    boolean finished = false;
+                    for (; i < len && !finished && !Thread.currentThread().isInterrupted(); i++) {
+                        byte currChar = buffer[i];
+
+                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                                prevChar = currChar;
+                                continue;
+                            }
+
+                            finished = hasSeenNonblankChar && !skip;
+                            if (finished) {
+                                skipHeader = false;
+                            }
+
+                            lineNum++;
+
+                            // reset states
+                            skip = false;
+                            hasSeenNonblankChar = false;
+                            cmntIndex = 0;
+                            checkForComment = comment.length > 0;
+                        } else if (!skip) {
+                            if (currChar > SPACE_CHAR) {
+                                hasSeenNonblankChar = true;
+                            }
+
+                            // skip blank chars at the begining of the line
+                            if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                                continue;
+                            }
+
+                            // check for comment marker to skip line
+                            if (checkForComment) {
+                                if (currChar == comment[cmntIndex]) {
+                                    cmntIndex++;
+                                    if (cmntIndex == comment.length) {
+                                        skip = true;
+                                        prevChar = currChar;
+                                        continue;
+                                    }
+                                } else {
+                                    checkForComment = false;
+                                }
+                            }
+                        }
+
+                        prevChar = currChar;
+                    }
+                }
+
+                for (; i < len && !Thread.currentThread().isInterrupted(); i++) {
+                    byte currChar = buffer[i];
+
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                            prevChar = currChar;
+                            continue;
+                        }
+
+                        if (hasSeenNonblankChar && !skip) {
+                            colNum++;
+
+                            // ensure we don't go out of bound
+                            if (varIndex < numOfVars) {
+                                DiscreteVarInfo varInfo = varInfos[varIndex];
+                                if (varInfo.getDataColumn().getColumnNumber() == colNum) {
+                                    String value = dataBuilder.toString().trim();
+                                    if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                                        varInfo.setValue(value);
+                                    }
+
+                                    varIndex++;
+                                }
+
+                                // ensure we have enough data
+                                if (varIndex < numOfVars) {
+                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, varIndex, numOfVars);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                }
+                            } else {
+                                String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfVars + 1, numOfVars);
+                                LOGGER.error(errMsg);
+                                throw new DataReaderException(errMsg);
+                            }
+                        }
+
+                        lineNum++;
+
+                        // clear data
+                        dataBuilder.delete(0, dataBuilder.length());
+
+                        // reset states
+                        skip = false;
+                        hasSeenNonblankChar = false;
+                        cmntIndex = 0;
+                        checkForComment = comment.length > 0;
+                        varIndex = 0;
+                        colNum = 0;
+                    } else if (!skip) {
+                        if (currChar > SPACE_CHAR) {
+                            hasSeenNonblankChar = true;
+                        }
+
+                        // skip blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                            continue;
+                        }
+
+                        // check for comment marker to skip line
+                        if (checkForComment) {
+                            if (currChar == comment[cmntIndex]) {
+                                cmntIndex++;
+                                if (cmntIndex == comment.length) {
+                                    skip = true;
+                                    prevChar = currChar;
+                                    continue;
+                                }
+                            } else {
+                                checkForComment = false;
+                            }
+                        }
+
+                        if (currChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else if (!hasQuoteChar) {
+                            boolean isDelimiter;
+                            switch (delimiter) {
+                                case WHITESPACE:
+                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                    break;
+                                default:
+                                    isDelimiter = (currChar == delimChar);
+                            }
+
+                            if (isDelimiter) {
+                                colNum++;
+
+                                // ensure we don't go out of bound
+                                if (varIndex < numOfVars) {
+                                    DiscreteVarInfo varInfo = varInfos[varIndex];
+                                    if (varInfo.getDataColumn().getColumnNumber() == colNum) {
+                                        String value = dataBuilder.toString().trim();
+                                        if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                                            varInfo.setValue(value);
+                                        }
+
+                                        varIndex++;
+                                    }
+                                } else {
+                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfVars + 1, numOfVars);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                }
+
+                                // clear data
+                                dataBuilder.delete(0, dataBuilder.length());
+                            } else {
+                                dataBuilder.append((char) currChar);
+                            }
+                        }
+                    }
+
+                    prevChar = currChar;
+                }
+            }
+        }
+
+        return varInfos;
     }
 
 }
