@@ -49,19 +49,23 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
         super(dataFile, delimiter);
     }
 
-    public DataColumn[] readInDataColumns(Set<String> excludedVariables) throws IOException {
+    public DataColumn[] readInDataColumns(boolean isContinuous) throws IOException {
+        return readInDataColumns(Collections.EMPTY_SET, isContinuous);
+    }
+
+    public DataColumn[] readInDataColumns(Set<String> excludedVariables, boolean isContinuous) throws IOException {
         Set<String> excludedVars = (excludedVariables == null)
                 ? Collections.EMPTY_SET
                 : excludedVariables.stream().map(String::trim).collect(Collectors.toSet());
 
         if (hasHeader) {
-            return getDataColumns(toColumnNumbers(excludedVars));
+            return getDataColumns(toColumnNumbers(excludedVars), isContinuous);
         } else {
-            return generateDataColumns(getNumberOfColumns(), new int[0]);
+            return generateDataColumns(getNumberOfColumns(), new int[0], isContinuous);
         }
     }
 
-    public DataColumn[] readInDataColumns(int[] excludedColumns) throws IOException {
+    public DataColumn[] readInDataColumns(int[] excludedColumns, boolean isContinuous) throws IOException {
         int size = (excludedColumns == null) ? 0 : excludedColumns.length;
         int[] excludedCols = new int[size];
         if (size > 0) {
@@ -72,7 +76,7 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
         int numOfCols = getNumberOfColumns();
         int[] validCols = extractValidColumnNumbers(numOfCols, excludedCols);
 
-        return hasHeader ? getDataColumns(validCols) : generateDataColumns(numOfCols, validCols);
+        return hasHeader ? getDataColumns(validCols, isContinuous) : generateDataColumns(numOfCols, validCols, isContinuous);
     }
 
     protected int[] toColumnNumbers(Set<String> columnNames) throws IOException {
@@ -192,7 +196,7 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
         return colNums.stream().mapToInt(e -> e).toArray();
     }
 
-    protected DataColumn[] getDataColumns(int[] excludedColumns) throws IOException {
+    protected DataColumn[] getDataColumns(int[] excludedColumns, boolean isContinuous) throws IOException {
         List<DataColumn> dataColumns = new LinkedList<>();
 
         try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
@@ -232,7 +236,7 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
                             colNum++;
                             if (numOfExCols == 0 || exColsIndex >= numOfExCols || colNum != excludedColumns[exColsIndex]) {
                                 if (value.length() > 0) {
-                                    dataColumns.add(new DataColumn(value, colNum));
+                                    dataColumns.add(new DataColumn(value, colNum, isContinuous));
                                 } else {
                                     String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
                                     LOGGER.error(errMsg);
@@ -295,7 +299,7 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
                                     exColsIndex++;
                                 } else {
                                     if (value.length() > 0) {
-                                        dataColumns.add(new DataColumn(value, colNum));
+                                        dataColumns.add(new DataColumn(value, colNum, isContinuous));
                                     } else {
                                         String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
                                         LOGGER.error(errMsg);
@@ -321,7 +325,7 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
                 colNum++;
                 if (numOfExCols == 0 || exColsIndex >= numOfExCols || colNum != excludedColumns[exColsIndex]) {
                     if (value.length() > 0) {
-                        dataColumns.add(new DataColumn(value, colNum));
+                        dataColumns.add(new DataColumn(value, colNum, isContinuous));
                     } else {
                         String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
                         LOGGER.error(errMsg);
@@ -359,9 +363,10 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
      *
      * @param numOfCols number of column names to generate
      * @param excludedCols sorted array of column numbers to exclude
+     * @param isContinuous indicate the data is continuous
      * @return list of column names
      */
-    protected DataColumn[] generateDataColumns(int numOfCols, int[] excludedCols) {
+    protected DataColumn[] generateDataColumns(int numOfCols, int[] excludedCols, boolean isContinuous) {
         List<DataColumn> dataColumns = new LinkedList<>();
 
         String prefix = "V";
@@ -372,7 +377,7 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
             if (checkForExcludedCols && (index < len && col == excludedCols[index])) {
                 index++;
             } else {
-                dataColumns.add(new DataColumn(prefix + col, col));
+                dataColumns.add(new DataColumn(prefix + col, col, isContinuous));
             }
         }
 
@@ -381,35 +386,40 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
 
     public final class DataColumn {
 
-        protected boolean discrete;
+        private boolean continuous;
 
-        protected final String name;
-        protected final int columnNumber;
+        private final String name;
+        private final int columnNumber;
 
         private DataColumn(String name, int columnNumber) {
             this.name = name;
             this.columnNumber = columnNumber;
         }
 
+        public DataColumn(String name, int columnNumber, boolean continuous) {
+            this(name, columnNumber);
+            this.continuous = continuous;
+        }
+
         @Override
         public String toString() {
-            return "DataColumn{" + "discrete=" + discrete + ", name=" + name + ", columnNumber=" + columnNumber + '}';
+            return "DataColumn{" + "continuous=" + continuous + ", name=" + name + ", columnNumber=" + columnNumber + '}';
         }
 
-        public boolean isDiscrete() {
-            return discrete;
+        public boolean isContinuous() {
+            return continuous;
         }
 
-        public void setDiscrete(boolean discrete) {
-            this.discrete = discrete;
-        }
-
-        public String getName() {
-            return name;
+        public void setContinuous(boolean continuous) {
+            this.continuous = continuous;
         }
 
         public int getColumnNumber() {
             return columnNumber;
+        }
+
+        public String getName() {
+            return name;
         }
 
     }

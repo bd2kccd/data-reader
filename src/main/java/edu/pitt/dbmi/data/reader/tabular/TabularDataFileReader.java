@@ -52,10 +52,10 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         boolean isDiscrete = false;
         boolean isContinuous = false;
         for (DataColumn dataColumn : dataColumns) {
-            if (dataColumn.isDiscrete()) {
-                isDiscrete = true;
-            } else {
+            if (dataColumn.isContinuous()) {
                 isContinuous = true;
+            } else {
+                isDiscrete = true;
             }
 
             if (isDiscrete && isContinuous) {
