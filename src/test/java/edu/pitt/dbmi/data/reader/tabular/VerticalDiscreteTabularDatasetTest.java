@@ -42,8 +42,8 @@ public class VerticalDiscreteTabularDatasetTest {
     @Test
     public void testReadInAllVariables() throws IOException {
         String[] files = {
-            //            "/data/discrete/dos_sim_test_data.csv",
-            //            "/data/discrete/mac_sim_test_data.csv",
+            "/data/discrete/dos_sim_test_data.csv",
+            "/data/discrete/mac_sim_test_data.csv",
             "/data/discrete/sim_test_data.csv"
         };
 
