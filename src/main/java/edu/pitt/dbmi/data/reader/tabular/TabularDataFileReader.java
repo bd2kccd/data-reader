@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,10 +81,6 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         int numOfCols = dataColumns.length;
         int numOfRows = getNumberOfRows();
         double[][] data = new double[numOfRows][numOfCols];
-
-        List<String> variables = Arrays.stream(dataColumns)
-                .map(DataColumn::getName)
-                .collect(Collectors.toList());
 
         try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
@@ -340,22 +335,22 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
             }
         }
 
-        return new ContinuousTabularDataset(variables, data);
+        return new ContinuousTabularDataset(dataColumns, data);
     }
 
     public TabularData readInDiscreteData(DataColumn[] dataColumns) throws IOException {
-        DiscreteVarInfo[] varInfos = getDiscreteCategorizes(dataColumns);
-        int[][] data = getDiscreteData(varInfos);
+        DiscreteDataColumn[] discreteDataColumns = getDiscreteCategorizes(dataColumns);
+        int[][] data = getDiscreteData(discreteDataColumns);
 
-        return new VerticalDiscreteTabularDataset(varInfos, data);
+        return new VerticalDiscreteTabularDataset(discreteDataColumns, data);
     }
 
     public TabularData readInMixedData(DataColumn[] dataColumns) throws IOException {
         return null;
     }
 
-    protected int[][] getDiscreteData(DiscreteVarInfo[] varInfos) throws IOException {
-        int numOfCols = varInfos.length;
+    protected int[][] getDiscreteData(DiscreteDataColumn[] discreteDataColumns) throws IOException {
+        int numOfCols = discreteDataColumns.length;
         int numOfRows = getNumberOfRows();
         int[][] data = new int[numOfCols][numOfRows];
 
@@ -453,7 +448,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
                             // ensure we don't go out of bound
                             if (varInfoIndex < numOfCols) {
-                                DiscreteVarInfo varInfo = varInfos[varInfoIndex];
+                                DiscreteDataColumn varInfo = discreteDataColumns[varInfoIndex];
                                 if (varInfo.getDataColumn().getColumnNumber() == colNum) {
                                     varInfoIndex++;
 
@@ -534,7 +529,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
                                 // ensure we don't go out of bound
                                 if (varInfoIndex < numOfCols) {
-                                    DiscreteVarInfo varInfo = varInfos[varInfoIndex];
+                                    DiscreteDataColumn varInfo = discreteDataColumns[varInfoIndex];
                                     if (varInfo.getDataColumn().getColumnNumber() == colNum) {
                                         varInfoIndex++;
 
@@ -568,7 +563,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
                 // ensure we don't go out of bound
                 if (varInfoIndex < numOfCols) {
-                    DiscreteVarInfo varInfo = varInfos[varInfoIndex];
+                    DiscreteDataColumn varInfo = discreteDataColumns[varInfoIndex];
                     if (varInfo.getDataColumn().getColumnNumber() == colNum) {
                         varInfoIndex++;
 
@@ -597,13 +592,13 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         return data;
     }
 
-    protected DiscreteVarInfo[] getDiscreteCategorizes(DataColumn[] dataColumns) throws IOException {
-        // convert data columns to discrete variables
-        DiscreteVarInfo[] varInfos = Arrays.stream(dataColumns)
-                .map(DiscreteVarInfo::new)
-                .toArray(DiscreteVarInfo[]::new);
+    protected DiscreteDataColumn[] getDiscreteCategorizes(DataColumn[] dataColumns) throws IOException {
+        // convert data columns to discrete columns
+        DiscreteDataColumn[] discreteDataColumns = Arrays.stream(dataColumns)
+                .map(DiscreteDataColumn::new)
+                .toArray(DiscreteDataColumn[]::new);
 
-        int numOfVars = varInfos.length;
+        int numOfVars = discreteDataColumns.length;
         try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
             boolean skip = false;
@@ -620,7 +615,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
             int colNum = 0;
             int lineNum = 1;
 
-            int varIndex = 0;
+            int dataColumnIndex = 0;
 
             StringBuilder dataBuilder = new StringBuilder();
             byte prevChar = -1;
@@ -694,20 +689,20 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                             colNum++;
 
                             // ensure we don't go out of bound
-                            if (varIndex < numOfVars) {
-                                DiscreteVarInfo varInfo = varInfos[varIndex];
+                            if (dataColumnIndex < numOfVars) {
+                                DiscreteDataColumn varInfo = discreteDataColumns[dataColumnIndex];
                                 if (varInfo.getDataColumn().getColumnNumber() == colNum) {
                                     String value = dataBuilder.toString().trim();
                                     if (value.length() > 0 && !value.equals(missingValueMarker)) {
                                         varInfo.setValue(value);
                                     }
 
-                                    varIndex++;
+                                    dataColumnIndex++;
                                 }
 
                                 // ensure we have enough data
-                                if (varIndex < numOfVars) {
-                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, varIndex, numOfVars);
+                                if (dataColumnIndex < numOfVars) {
+                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, dataColumnIndex, numOfVars);
                                     LOGGER.error(errMsg);
                                     throw new DataReaderException(errMsg);
                                 }
@@ -728,7 +723,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                         hasSeenNonblankChar = false;
                         cmntIndex = 0;
                         checkForComment = comment.length > 0;
-                        varIndex = 0;
+                        dataColumnIndex = 0;
                         colNum = 0;
                     } else if (!skip) {
                         if (currChar > SPACE_CHAR) {
@@ -770,15 +765,15 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                                 colNum++;
 
                                 // ensure we don't go out of bound
-                                if (varIndex < numOfVars) {
-                                    DiscreteVarInfo varInfo = varInfos[varIndex];
+                                if (dataColumnIndex < numOfVars) {
+                                    DiscreteDataColumn varInfo = discreteDataColumns[dataColumnIndex];
                                     if (varInfo.getDataColumn().getColumnNumber() == colNum) {
                                         String value = dataBuilder.toString().trim();
                                         if (value.length() > 0 && !value.equals(missingValueMarker)) {
                                             varInfo.setValue(value);
                                         }
 
-                                        varIndex++;
+                                        dataColumnIndex++;
                                     }
                                 } else {
                                     String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfVars + 1, numOfVars);
@@ -802,20 +797,20 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                 colNum++;
 
                 // ensure we don't go out of bound
-                if (varIndex < numOfVars) {
-                    DiscreteVarInfo varInfo = varInfos[varIndex];
+                if (dataColumnIndex < numOfVars) {
+                    DiscreteDataColumn varInfo = discreteDataColumns[dataColumnIndex];
                     if (varInfo.getDataColumn().getColumnNumber() == colNum) {
                         String value = dataBuilder.toString().trim();
                         if (value.length() > 0 && !value.equals(missingValueMarker)) {
                             varInfo.setValue(value);
                         }
 
-                        varIndex++;
+                        dataColumnIndex++;
                     }
 
                     // ensure we have enough data
-                    if (varIndex < numOfVars) {
-                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, varIndex, numOfVars);
+                    if (dataColumnIndex < numOfVars) {
+                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, dataColumnIndex, numOfVars);
                         LOGGER.error(errMsg);
                         throw new DataReaderException(errMsg);
                     }
@@ -828,27 +823,27 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         }
 
         // recategorize values
-        for (DiscreteVarInfo varInfo : varInfos) {
+        for (DiscreteDataColumn varInfo : discreteDataColumns) {
             varInfo.recategorize();
         }
 
-        return varInfos;
+        return discreteDataColumns;
     }
 
-    public class DiscreteVarInfo {
+    public class DiscreteDataColumn {
 
         protected final DataColumn dataColumn;
         protected final Map<String, Integer> values;
         protected List<String> categories;
 
-        private DiscreteVarInfo(DataColumn dataColumn) {
+        private DiscreteDataColumn(DataColumn dataColumn) {
             this.dataColumn = dataColumn;
             this.values = new TreeMap<>();
         }
 
         @Override
         public String toString() {
-            return "DiscreteVarInfo{" + "dataColumn=" + dataColumn + ", values=" + values + ", categories=" + categories + '}';
+            return "DiscreteDataColumn{" + "dataColumn=" + dataColumn + ", values=" + values + ", categories=" + categories + '}';
         }
 
         public void recategorize() {
@@ -881,17 +876,16 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
     public class VerticalDiscreteTabularDataset implements TabularData {
 
-        private final DiscreteVarInfo[] variableInfos;
-
+        private final DiscreteDataColumn[] discreteDataColumns;
         private final int[][] data;
 
-        private VerticalDiscreteTabularDataset(DiscreteVarInfo[] variableInfos, int[][] data) {
-            this.variableInfos = variableInfos;
+        public VerticalDiscreteTabularDataset(DiscreteDataColumn[] discreteDataColumns, int[][] data) {
+            this.discreteDataColumns = discreteDataColumns;
             this.data = data;
         }
 
-        public DiscreteVarInfo[] getVariableInfos() {
-            return variableInfos;
+        public DiscreteDataColumn[] getDiscreteDataColumns() {
+            return discreteDataColumns;
         }
 
         public int[][] getData() {
@@ -902,16 +896,16 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
     public class ContinuousTabularDataset implements TabularData {
 
-        private final List<String> variables;
+        private final DataColumn[] dataColumns;
         private final double[][] data;
 
-        private ContinuousTabularDataset(List<String> variables, double[][] data) {
-            this.variables = variables;
+        public ContinuousTabularDataset(DataColumn[] dataColumns, double[][] data) {
+            this.dataColumns = dataColumns;
             this.data = data;
         }
 
-        public List<String> getVariables() {
-            return variables;
+        public DataColumn[] getDataColumns() {
+            return dataColumns;
         }
 
         public double[][] getData() {

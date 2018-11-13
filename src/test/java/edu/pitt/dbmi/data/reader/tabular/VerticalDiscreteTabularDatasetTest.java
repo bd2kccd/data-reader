@@ -20,7 +20,7 @@ package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
 import edu.pitt.dbmi.data.reader.tabular.TabularColumnFileReader.DataColumn;
-import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.DiscreteVarInfo;
+import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.DiscreteDataColumn;
 import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.VerticalDiscreteTabularDataset;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -81,7 +81,6 @@ public class VerticalDiscreteTabularDatasetTest {
 
             if (tabData instanceof VerticalDiscreteTabularDataset) {
                 VerticalDiscreteTabularDataset dataset = (VerticalDiscreteTabularDataset) tabData;
-                DiscreteVarInfo[] varInfos = dataset.getVariableInfos();
                 int[][] data = dataset.getData();
 
                 expected = 10;
@@ -105,8 +104,8 @@ public class VerticalDiscreteTabularDatasetTest {
         }
     }
 
-    private void printDataColumns(DiscreteVarInfo[] varInfos) {
-        for (DiscreteVarInfo varInfo : varInfos) {
+    private void printDataColumns(DiscreteDataColumn[] varInfos) {
+        for (DiscreteDataColumn varInfo : varInfos) {
             System.out.println(varInfo);
         }
     }
