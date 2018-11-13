@@ -26,8 +26,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +48,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
     private static final Logger LOGGER = LoggerFactory.getLogger(TabularDataFileReader.class);
 
     private static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
+    private static final int DISCRETE_MISSING_VALUE = -99;
 
     public TabularDataFileReader(Path dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
@@ -338,23 +344,8 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
     }
 
     public TabularData readInDiscreteData(DataColumn[] dataColumns) throws IOException {
-        int numOfCols = dataColumns.length;
-        int numOfRows = getNumberOfRows();
-        int[][] data = new int[numOfCols][numOfRows];
-
-        // convert data columns to discrete variables
-        DiscreteVarInfo[] varInfos = new DiscreteVarInfo[dataColumns.length];
-        for (int i = 0; i < dataColumns.length; i++) {
-            varInfos[i] = new DiscreteVarInfo(dataColumns[i]);
-        }
-
-        // extract all the discrete categories for each variable
-        getDiscreteCategorizes(varInfos);
-
-        // recategorize values
-        for (DiscreteVarInfo varInfo : varInfos) {
-            varInfo.recategorize();
-        }
+        DiscreteVarInfo[] varInfos = getDiscreteCategorizes(dataColumns);
+        int[][] data = getDiscreteData(varInfos);
 
         return new VerticalDiscreteTabularDataset(varInfos, data);
     }
@@ -363,7 +354,255 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         return null;
     }
 
-    protected DiscreteVarInfo[] getDiscreteCategorizes(DiscreteVarInfo[] varInfos) throws IOException {
+    protected int[][] getDiscreteData(DiscreteVarInfo[] varInfos) throws IOException {
+        int numOfCols = varInfos.length;
+        int numOfRows = getNumberOfRows();
+        int[][] data = new int[numOfCols][numOfRows];
+
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+            boolean skipHeader = hasHeader;
+            boolean skip = false;
+            boolean hasSeenNonblankChar = false;
+            boolean hasQuoteChar = false;
+
+            byte delimChar = delimiter.getByteValue();
+
+            // comment marker check
+            byte[] comment = commentMarker.getBytes();
+            int cmntIndex = 0;
+            boolean checkForComment = comment.length > 0;
+
+            int colNum = 0;
+            int lineNum = 1;
+
+            int varInfoIndex = 0;
+
+            int row = 0;  // array row number
+            int col = 0;  // array column number
+
+            StringBuilder dataBuilder = new StringBuilder();
+            byte prevChar = -1;
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int len;
+            while ((len = in.read(buffer)) != -1 && !Thread.currentThread().isInterrupted()) {
+                int i = 0; // buffer array index
+
+                if (skipHeader) {
+                    boolean finished = false;
+                    for (; i < len && !finished && !Thread.currentThread().isInterrupted(); i++) {
+                        byte currChar = buffer[i];
+
+                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                                prevChar = currChar;
+                                continue;
+                            }
+
+                            finished = hasSeenNonblankChar && !skip;
+                            if (finished) {
+                                skipHeader = false;
+                            }
+
+                            lineNum++;
+
+                            // reset states
+                            skip = false;
+                            hasSeenNonblankChar = false;
+                            cmntIndex = 0;
+                            checkForComment = comment.length > 0;
+                        } else if (!skip) {
+                            if (currChar > SPACE_CHAR) {
+                                hasSeenNonblankChar = true;
+                            }
+
+                            // skip blank chars at the begining of the line
+                            if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                                continue;
+                            }
+
+                            // check for comment marker to skip line
+                            if (checkForComment) {
+                                if (currChar == comment[cmntIndex]) {
+                                    cmntIndex++;
+                                    if (cmntIndex == comment.length) {
+                                        skip = true;
+                                        prevChar = currChar;
+                                        continue;
+                                    }
+                                } else {
+                                    checkForComment = false;
+                                }
+                            }
+                        }
+
+                        prevChar = currChar;
+                    }
+                }
+
+                for (; i < len && !Thread.currentThread().isInterrupted(); i++) {
+                    byte currChar = buffer[i];
+
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                            prevChar = currChar;
+                            continue;
+                        }
+
+                        if (hasSeenNonblankChar && !skip) {
+                            colNum++;
+
+                            // ensure we don't go out of bound
+                            if (varInfoIndex < numOfCols) {
+                                DiscreteVarInfo varInfo = varInfos[varInfoIndex];
+                                if (varInfo.getDataColumn().getColumnNumber() == colNum) {
+                                    varInfoIndex++;
+
+                                    String value = dataBuilder.toString().trim();
+                                    if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                                        data[col++][row] = varInfo.getEncodeValue(value);
+                                    } else {
+                                        data[col++][row] = DISCRETE_MISSING_VALUE;
+                                    }
+                                }
+
+                                // ensure we have enough data
+                                if (varInfoIndex < numOfCols) {
+                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, varInfoIndex, numOfCols);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                }
+                            } else {
+                                String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                LOGGER.error(errMsg);
+                                throw new DataReaderException(errMsg);
+                            }
+
+                            row++;
+                        }
+
+                        lineNum++;
+
+                        // clear data
+                        dataBuilder.delete(0, dataBuilder.length());
+
+                        // reset states
+                        skip = false;
+                        hasSeenNonblankChar = false;
+                        cmntIndex = 0;
+                        checkForComment = comment.length > 0;
+                        varInfoIndex = 0;
+                        colNum = 0;
+                        col = 0;
+                    } else if (!skip) {
+                        if (currChar > SPACE_CHAR) {
+                            hasSeenNonblankChar = true;
+                        }
+
+                        // skip blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                            continue;
+                        }
+
+                        // check for comment marker to skip line
+                        if (checkForComment) {
+                            if (currChar == comment[cmntIndex]) {
+                                cmntIndex++;
+                                if (cmntIndex == comment.length) {
+                                    skip = true;
+                                    prevChar = currChar;
+                                    continue;
+                                }
+                            } else {
+                                checkForComment = false;
+                            }
+                        }
+
+                        if (currChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else if (!hasQuoteChar) {
+                            boolean isDelimiter;
+                            switch (delimiter) {
+                                case WHITESPACE:
+                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                    break;
+                                default:
+                                    isDelimiter = (currChar == delimChar);
+                            }
+
+                            if (isDelimiter) {
+                                colNum++;
+
+                                // ensure we don't go out of bound
+                                if (varInfoIndex < numOfCols) {
+                                    DiscreteVarInfo varInfo = varInfos[varInfoIndex];
+                                    if (varInfo.getDataColumn().getColumnNumber() == colNum) {
+                                        varInfoIndex++;
+
+                                        String value = dataBuilder.toString().trim();
+                                        if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                                            data[col++][row] = varInfo.getEncodeValue(value);
+                                        } else {
+                                            data[col++][row] = DISCRETE_MISSING_VALUE;
+                                        }
+                                    }
+                                } else {
+                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                }
+
+                                // clear data
+                                dataBuilder.delete(0, dataBuilder.length());
+                            } else {
+                                dataBuilder.append((char) currChar);
+                            }
+                        }
+                    }
+
+                    prevChar = currChar;
+                }
+            }
+
+            if (!skipHeader && hasSeenNonblankChar && !skip) {
+                colNum++;
+
+                // ensure we don't go out of bound
+                if (varInfoIndex < numOfCols) {
+                    DiscreteVarInfo varInfo = varInfos[varInfoIndex];
+                    if (varInfo.getDataColumn().getColumnNumber() == colNum) {
+                        varInfoIndex++;
+
+                        String value = dataBuilder.toString().trim();
+                        if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                            data[col++][row] = varInfo.getEncodeValue(value);
+                        } else {
+                            data[col++][row] = DISCRETE_MISSING_VALUE;
+                        }
+                    }
+
+                    // ensure we have enough data
+                    if (varInfoIndex < numOfCols) {
+                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, varInfoIndex, numOfCols);
+                        LOGGER.error(errMsg);
+                        throw new DataReaderException(errMsg);
+                    }
+                } else {
+                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                    LOGGER.error(errMsg);
+                    throw new DataReaderException(errMsg);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    protected DiscreteVarInfo[] getDiscreteCategorizes(DataColumn[] dataColumns) throws IOException {
+        // convert data columns to discrete variables
+        DiscreteVarInfo[] varInfos = Arrays.stream(dataColumns)
+                .map(DiscreteVarInfo::new)
+                .toArray(DiscreteVarInfo[]::new);
+
         int numOfVars = varInfos.length;
         try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
@@ -558,9 +797,127 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                     prevChar = currChar;
                 }
             }
+
+            if (!skipHeader && hasSeenNonblankChar && !skip) {
+                colNum++;
+
+                // ensure we don't go out of bound
+                if (varIndex < numOfVars) {
+                    DiscreteVarInfo varInfo = varInfos[varIndex];
+                    if (varInfo.getDataColumn().getColumnNumber() == colNum) {
+                        String value = dataBuilder.toString().trim();
+                        if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                            varInfo.setValue(value);
+                        }
+
+                        varIndex++;
+                    }
+
+                    // ensure we have enough data
+                    if (varIndex < numOfVars) {
+                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, varIndex, numOfVars);
+                        LOGGER.error(errMsg);
+                        throw new DataReaderException(errMsg);
+                    }
+                } else {
+                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfVars + 1, numOfVars);
+                    LOGGER.error(errMsg);
+                    throw new DataReaderException(errMsg);
+                }
+            }
+        }
+
+        // recategorize values
+        for (DiscreteVarInfo varInfo : varInfos) {
+            varInfo.recategorize();
         }
 
         return varInfos;
+    }
+
+    public class DiscreteVarInfo {
+
+        protected final DataColumn dataColumn;
+        protected final Map<String, Integer> values;
+        protected List<String> categories;
+
+        private DiscreteVarInfo(DataColumn dataColumn) {
+            this.dataColumn = dataColumn;
+            this.values = new TreeMap<>();
+        }
+
+        @Override
+        public String toString() {
+            return "DiscreteVarInfo{" + "dataColumn=" + dataColumn + ", values=" + values + ", categories=" + categories + '}';
+        }
+
+        public void recategorize() {
+            Set<String> keyset = values.keySet();
+            categories = new ArrayList<>(keyset.size());
+            int count = 0;
+            for (String key : keyset) {
+                values.put(key, count++);
+                categories.add(key);
+            }
+        }
+
+        public void setValue(String value) {
+            this.values.put(value, null);
+        }
+
+        public Integer getEncodeValue(String value) {
+            return values.get(value);
+        }
+
+        public DataColumn getDataColumn() {
+            return dataColumn;
+        }
+
+        public List<String> getCategories() {
+            return (categories == null) ? Collections.EMPTY_LIST : categories;
+        }
+
+    }
+
+    public class VerticalDiscreteTabularDataset implements TabularData {
+
+        private final DiscreteVarInfo[] variableInfos;
+
+        private final int[][] data;
+
+        private VerticalDiscreteTabularDataset(DiscreteVarInfo[] variableInfos, int[][] data) {
+            this.variableInfos = variableInfos;
+            this.data = data;
+        }
+
+        public DiscreteVarInfo[] getVariableInfos() {
+            return variableInfos;
+        }
+
+        public int[][] getData() {
+            return data;
+        }
+
+    }
+
+    public class ContinuousTabularDataset implements TabularData {
+
+        private final List<String> variables;
+        private final double[][] data;
+
+        private ContinuousTabularDataset(List<String> variables, double[][] data) {
+            this.variables = variables;
+            this.data = data;
+        }
+
+        public List<String> getVariables() {
+            return variables;
+        }
+
+        public double[][] getData() {
+            return data;
+        }
+
     }
 
 }

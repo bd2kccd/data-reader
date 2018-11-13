@@ -20,6 +20,8 @@ package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
 import edu.pitt.dbmi.data.reader.tabular.TabularColumnFileReader.DataColumn;
+import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.DiscreteVarInfo;
+import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.VerticalDiscreteTabularDataset;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -74,12 +76,38 @@ public class VerticalDiscreteTabularDatasetTest {
             dataFileReader.setHasHeader(hasHeader);
 
             TabularData tabData = dataFileReader.readInData(dataColumns);
+
+            Assert.assertTrue(tabData instanceof VerticalDiscreteTabularDataset);
+
+            if (tabData instanceof VerticalDiscreteTabularDataset) {
+                VerticalDiscreteTabularDataset dataset = (VerticalDiscreteTabularDataset) tabData;
+                DiscreteVarInfo[] varInfos = dataset.getVariableInfos();
+                int[][] data = dataset.getData();
+
+                expected = 10;
+                actual = data.length;
+                Assert.assertEquals(expected, actual);
+
+                expected = 19;
+                actual = data[0].length;
+                Assert.assertEquals(expected, actual);
+            }
         }
     }
 
-    private void printDataColumns(DataColumn[] dataColumns) {
-        for (DataColumn dataColumn : dataColumns) {
-            System.out.println(dataColumn);
+    private void printData(int[][] data) {
+        for (int[] rowData : data) {
+            int lastIndex = rowData.length - 1;
+            for (int i = 0; i < lastIndex; i++) {
+                System.out.printf("%d ", rowData[i]);
+            }
+            System.out.println(rowData[lastIndex]);
+        }
+    }
+
+    private void printDataColumns(DiscreteVarInfo[] varInfos) {
+        for (DiscreteVarInfo varInfo : varInfos) {
+            System.out.println(varInfo);
         }
     }
 
