@@ -879,7 +879,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         private final DiscreteDataColumn[] discreteDataColumns;
         private final int[][] data;
 
-        public VerticalDiscreteTabularDataset(DiscreteDataColumn[] discreteDataColumns, int[][] data) {
+        private VerticalDiscreteTabularDataset(DiscreteDataColumn[] discreteDataColumns, int[][] data) {
             this.discreteDataColumns = discreteDataColumns;
             this.data = data;
         }
@@ -899,7 +899,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         private final DataColumn[] dataColumns;
         private final double[][] data;
 
-        public ContinuousTabularDataset(DataColumn[] dataColumns, double[][] data) {
+        private ContinuousTabularDataset(DataColumn[] dataColumns, double[][] data) {
             this.dataColumns = dataColumns;
             this.data = data;
         }
