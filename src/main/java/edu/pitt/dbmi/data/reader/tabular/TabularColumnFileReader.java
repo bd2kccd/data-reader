@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -77,6 +78,264 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
         int[] validCols = extractValidColumnNumbers(numOfCols, excludedCols);
 
         return hasHeader ? getDataColumns(validCols, isContinuous) : generateDataColumns(numOfCols, validCols, isContinuous);
+    }
+
+    /**
+     * Analyze the column data to determine if it contains discrete data based
+     * on the number of categories. If the number of categories of a column is
+     * equal to or less than the given number of categories, it will be
+     * considered to have discrete data. Else, it is considered to have
+     * continuous data.
+     *
+     * @param dataColumns
+     * @param numOfCategories maximum number of categories to be consider
+     * discrete
+     * @throws IOException
+     */
+    public void determineDiscreteDataColumns(DataColumn[] dataColumns, int numOfCategories) throws IOException {
+        int numOfCols = dataColumns.length;
+        Set<String>[] columnCategories = new Set[numOfCols];
+        for (int i = 0; i < numOfCols; i++) {
+            columnCategories[i] = new HashSet<>();
+        }
+
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+            boolean skipHeader = hasHeader;
+            boolean skip = false;
+            boolean hasSeenNonblankChar = false;
+            boolean hasQuoteChar = false;
+
+            byte delimChar = delimiter.getByteValue();
+
+            // comment marker check
+            byte[] comment = commentMarker.getBytes();
+            int cmntIndex = 0;
+            boolean checkForComment = comment.length > 0;
+
+            int colNum = 0;
+            int lineNum = 1;
+
+            int dataColIndex = 0;
+
+            int maxCategoryToAdd = numOfCategories + 1;
+
+            StringBuilder dataBuilder = new StringBuilder();
+            byte prevChar = -1;
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int len;
+            while ((len = in.read(buffer)) != -1 && !Thread.currentThread().isInterrupted()) {
+                int i = 0; // buffer array index
+
+                if (skipHeader) {
+                    boolean finished = false;
+                    for (; i < len && !finished && !Thread.currentThread().isInterrupted(); i++) {
+                        byte currChar = buffer[i];
+
+                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                                prevChar = currChar;
+                                continue;
+                            }
+
+                            finished = hasSeenNonblankChar && !skip;
+                            if (finished) {
+                                skipHeader = false;
+                            }
+
+                            lineNum++;
+
+                            // reset states
+                            skip = false;
+                            hasSeenNonblankChar = false;
+                            cmntIndex = 0;
+                            checkForComment = comment.length > 0;
+                        } else if (!skip) {
+                            if (currChar > SPACE_CHAR) {
+                                hasSeenNonblankChar = true;
+                            }
+
+                            // skip blank chars at the begining of the line
+                            if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                                continue;
+                            }
+
+                            // check for comment marker to skip line
+                            if (checkForComment) {
+                                if (currChar == comment[cmntIndex]) {
+                                    cmntIndex++;
+                                    if (cmntIndex == comment.length) {
+                                        skip = true;
+                                        prevChar = currChar;
+                                        continue;
+                                    }
+                                } else {
+                                    checkForComment = false;
+                                }
+                            }
+                        }
+
+                        prevChar = currChar;
+                    }
+                }
+
+                for (; i < len && !Thread.currentThread().isInterrupted(); i++) {
+                    byte currChar = buffer[i];
+
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                            prevChar = currChar;
+                            continue;
+                        }
+
+                        if (hasSeenNonblankChar && !skip) {
+                            colNum++;
+
+                            // ensure we don't go out of bound
+                            if (dataColIndex < numOfCols) {
+                                DataColumn dataColumn = dataColumns[dataColIndex];
+                                if (dataColumn.getColumnNumber() == colNum) {
+                                    String value = dataBuilder.toString().trim();
+                                    if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                                        Set<String> categories = columnCategories[dataColIndex];
+                                        if (categories.size() < maxCategoryToAdd) {
+                                            categories.add(value);
+                                        }
+                                    }
+
+                                    dataColIndex++;
+                                }
+
+                                // ensure we have enough data
+                                if (dataColIndex < numOfCols) {
+                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, dataColIndex, numOfCols);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                }
+                            } else {
+                                String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                LOGGER.error(errMsg);
+                                throw new DataReaderException(errMsg);
+                            }
+                        }
+
+                        lineNum++;
+
+                        // clear data
+                        dataBuilder.delete(0, dataBuilder.length());
+
+                        // reset states
+                        skip = false;
+                        hasSeenNonblankChar = false;
+                        cmntIndex = 0;
+                        checkForComment = comment.length > 0;
+                        dataColIndex = 0;
+                        colNum = 0;
+                    } else if (!skip) {
+                        if (currChar > SPACE_CHAR) {
+                            hasSeenNonblankChar = true;
+                        }
+
+                        // skip blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                            continue;
+                        }
+
+                        // check for comment marker to skip line
+                        if (checkForComment) {
+                            if (currChar == comment[cmntIndex]) {
+                                cmntIndex++;
+                                if (cmntIndex == comment.length) {
+                                    skip = true;
+                                    prevChar = currChar;
+                                    continue;
+                                }
+                            } else {
+                                checkForComment = false;
+                            }
+                        }
+
+                        if (currChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else if (!hasQuoteChar) {
+                            boolean isDelimiter;
+                            switch (delimiter) {
+                                case WHITESPACE:
+                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                    break;
+                                default:
+                                    isDelimiter = (currChar == delimChar);
+                            }
+
+                            if (isDelimiter) {
+                                colNum++;
+
+                                // ensure we don't go out of bound
+                                if (dataColIndex < numOfCols) {
+                                    DataColumn dataColumn = dataColumns[dataColIndex];
+                                    if (dataColumn.getColumnNumber() == colNum) {
+                                        String value = dataBuilder.toString().trim();
+                                        if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                                            Set<String> categories = columnCategories[dataColIndex];
+                                            if (categories.size() < maxCategoryToAdd) {
+                                                categories.add(value);
+                                            }
+                                        }
+
+                                        dataColIndex++;
+                                    }
+                                } else {
+                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                    LOGGER.error(errMsg);
+                                    throw new DataReaderException(errMsg);
+                                }
+
+                                // clear data
+                                dataBuilder.delete(0, dataBuilder.length());
+                            } else {
+                                dataBuilder.append((char) currChar);
+                            }
+                        }
+                    }
+
+                    prevChar = currChar;
+                }
+            }
+
+            if (!skipHeader && hasSeenNonblankChar && !skip) {
+                colNum++;
+
+                // ensure we don't go out of bound
+                if (dataColIndex < numOfCols) {
+                    DataColumn dataColumn = dataColumns[dataColIndex];
+                    if (dataColumn.getColumnNumber() == colNum) {
+                        String value = dataBuilder.toString().trim();
+                        if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                            Set<String> categories = columnCategories[dataColIndex];
+                            if (categories.size() < maxCategoryToAdd) {
+                                categories.add(value);
+                            }
+                        }
+
+                        dataColIndex++;
+                    }
+
+                    // ensure we have enough data
+                    if (dataColIndex < numOfCols) {
+                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, dataColIndex, numOfCols);
+                        LOGGER.error(errMsg);
+                        throw new DataReaderException(errMsg);
+                    }
+                } else {
+                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                    LOGGER.error(errMsg);
+                    throw new DataReaderException(errMsg);
+                }
+            }
+        }
+
+        for (int i = 0; i < numOfCols; i++) {
+            dataColumns[i].setContinuous(columnCategories[i].size() > numOfCategories);
+        }
     }
 
     protected int[] toColumnNumbers(Set<String> columnNames) throws IOException {
