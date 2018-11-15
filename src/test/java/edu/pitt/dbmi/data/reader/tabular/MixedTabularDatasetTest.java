@@ -19,6 +19,8 @@
 package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
+import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.MixedDataColumn;
+import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.MixedTabularDataset;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -75,6 +77,37 @@ public class MixedTabularDatasetTest {
             dataFileReader.setHasHeader(hasHeader);
 
             TabularData tabData = dataFileReader.readInData(dataColumns);
+
+            Assert.assertTrue(tabData instanceof MixedTabularDataset);
+
+            if (tabData instanceof MixedTabularDataset) {
+                MixedTabularDataset tabularDataset = (MixedTabularDataset) tabData;
+                MixedDataColumn[] columns = tabularDataset.getMixedDataColumns();
+
+                double[][] continuousData = tabularDataset.getContinuousData();
+                int[][] discreteData = tabularDataset.getDiscreteData();
+
+                int numOfContinuousCols = 0;
+                int numOfDiscreteCols = 0;
+                int numOfRows = tabularDataset.getNumOfRows();
+                int numOfCols = continuousData.length;
+                for (int c = 0; c < numOfCols; c++) {
+                    if (continuousData[c] != null) {
+                        numOfContinuousCols++;
+                    }
+                    if (discreteData[c] != null) {
+                        numOfDiscreteCols++;
+                    }
+                }
+
+                expected = 5;
+                actual = numOfContinuousCols;
+                Assert.assertEquals(expected, actual);
+
+                expected = 5;
+                actual = numOfDiscreteCols;
+                Assert.assertEquals(expected, actual);
+            }
         }
     }
 
