@@ -19,10 +19,12 @@
 package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
-import edu.pitt.dbmi.data.reader.tabular.TabularColumnFileReader.DataColumn;
+import edu.pitt.dbmi.data.reader.tabular.TabularColumnFileReader.TabularDataColumn;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.Assert;
@@ -42,128 +44,222 @@ public class TabularColumnFileReaderTest {
     private final String commentMarker = "//";
     private final boolean hasHeader = true;
 
+    private final Path[] dataFiles = {
+        Paths.get(getClass().getResource("/data/mixed/dos_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/mixed/mac_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/mixed/sim_test_data.csv").getFile())
+    };
+
     public TabularColumnFileReaderTest() {
     }
 
+    /**
+     * Test of readInDataColumns method, of class TabularColumnFileReader.
+     *
+     * @throws IOException
+     */
     @Test
-    public void testMixedVariables() throws Exception {
-        String[] files = {
-            "/data/mixed/dos_sim_test_data.csv",
-            "/data/mixed/mac_sim_test_data.csv",
-            "/data/mixed/sim_test_data.csv"
-        };
-
-        for (String file : files) {
-            String dataFileName = getClass().getResource(file).getFile();
-            Path dataFile = Paths.get(dataFileName);
-
+    public void testReadInDataColumns() throws IOException {
+        for (Path dataFile : dataFiles) {
             TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
             columnFileReader.setHasHeader(hasHeader);
 
-            DataColumn[] dataColumns = columnFileReader.readInDataColumns(false);
-
+            boolean isDiscrete = false;
+            TabularDataColumn[] columns = columnFileReader.readInDataColumns(isDiscrete);
             long expected = 10;
-            long actual = dataColumns.length;
+            long actual = columns.length;
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Test of readInDataColumns method, of class TabularColumnFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataColumns1() throws IOException {
+        for (Path dataFile : dataFiles) {
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnFileReader.setCommentMarker(commentMarker);
+            columnFileReader.setMissingValueMarker(missingValueMarker);
+            columnFileReader.setQuoteCharacter(quoteCharacter);
+            columnFileReader.setHasHeader(hasHeader);
+
+            Set<String> excludedVariables = new HashSet<>(Arrays.asList("X2", "X10", "X3"));
+            boolean isDiscrete = false;
+            TabularDataColumn[] columns = columnFileReader.readInDataColumns(excludedVariables, isDiscrete);
+            long expected = 7;
+            long actual = columns.length;
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Test of readInDataColumns method, of class TabularColumnFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataColumns2() throws IOException {
+        for (Path dataFile : dataFiles) {
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnFileReader.setCommentMarker(commentMarker);
+            columnFileReader.setMissingValueMarker(missingValueMarker);
+            columnFileReader.setQuoteCharacter(quoteCharacter);
+            columnFileReader.setHasHeader(hasHeader);
+
+            int[] excludedColumns = {2, 1, 12, 10, 8};
+            boolean isDiscrete = false;
+            TabularDataColumn[] columns = columnFileReader.readInDataColumns(excludedColumns, isDiscrete);
+            long expected = 6;
+            long actual = columns.length;
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Test of determineDiscreteDataColumns method, of class
+     * TabularColumnFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testDetermineDiscreteDataColumns() throws IOException {
+        for (Path dataFile : dataFiles) {
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnFileReader.setCommentMarker(commentMarker);
+            columnFileReader.setMissingValueMarker(missingValueMarker);
+            columnFileReader.setQuoteCharacter(quoteCharacter);
+            columnFileReader.setHasHeader(hasHeader);
+
+            boolean isDiscrete = false;
+            TabularDataColumn[] columns = columnFileReader.readInDataColumns(isDiscrete);
+            long expected = 10;
+            long actual = columns.length;
             Assert.assertEquals(expected, actual);
 
-            columnFileReader.determineDiscreteDataColumns(dataColumns, 4);
-            int numOfContinuous = 0;
-            int numOfDiscrete = 0;
-            for (DataColumn dataColumn : dataColumns) {
-                if (dataColumn.isContinuous()) {
-                    numOfContinuous++;
-                } else {
-                    numOfDiscrete++;
-                }
-            }
+            int numOfCategories = 4;
+            columnFileReader.determineDiscreteDataColumns(columns, numOfCategories);
             expected = 5;
-            Assert.assertEquals(expected, numOfContinuous);
-            Assert.assertEquals(expected, numOfDiscrete);
+            actual = Arrays.stream(columns).filter(TabularDataColumn::isDiscrete).count();
+            Assert.assertEquals(expected, actual);
+        }
+    }
 
-            final Set<String> excludeVars = new HashSet<>(Arrays.asList("X1", "X3", "X5", "X7", "X9"));
-            dataColumns = columnFileReader.readInDataColumns(excludeVars, false);
-            expected = 5;
-            actual = dataColumns.length;
+    /**
+     * Test of getColumns method, of class TabularColumnFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testGetColumns() throws IOException {
+        for (Path dataFile : dataFiles) {
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnFileReader.setCommentMarker(commentMarker);
+            columnFileReader.setMissingValueMarker(missingValueMarker);
+            columnFileReader.setQuoteCharacter(quoteCharacter);
+            columnFileReader.setHasHeader(hasHeader);
+
+            int[] excludedColumns = new int[0];
+            boolean isDiscrete = false;
+            TabularDataColumn[] columns = columnFileReader.getColumns(excludedColumns, isDiscrete);
+            long expected = 10;
+            long actual = columns.length;
             Assert.assertEquals(expected, actual);
 
-            columnFileReader.determineDiscreteDataColumns(dataColumns, 4);
-            numOfContinuous = 0;
-            numOfDiscrete = 0;
-            for (DataColumn dataColumn : dataColumns) {
-                if (dataColumn.isContinuous()) {
-                    numOfContinuous++;
-                } else {
-                    numOfDiscrete++;
-                }
-            }
-            expected = 2;
-            Assert.assertEquals(expected, numOfContinuous);
+            excludedColumns = new int[]{1, 3, 5, 7};
+            columns = columnFileReader.getColumns(excludedColumns, isDiscrete);
+            expected = 6;
+            actual = columns.length;
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Test of toColumnNumbers method, of class TabularColumnFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testToColumnNumbers() throws IOException {
+        for (Path dataFile : dataFiles) {
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnFileReader.setCommentMarker(commentMarker);
+            columnFileReader.setMissingValueMarker(missingValueMarker);
+            columnFileReader.setQuoteCharacter(quoteCharacter);
+            columnFileReader.setHasHeader(hasHeader);
+
+            int[] columns = columnFileReader.toColumnNumbers(Collections.EMPTY_SET);
+            long expected = 0;
+            long actual = columns.length;
+            Assert.assertEquals(expected, actual);
+
+            columns = columnFileReader.toColumnNumbers(new HashSet<>(Arrays.asList("X1", "X10", "X5", "X11")));
             expected = 3;
-            Assert.assertEquals(expected, numOfDiscrete);
+            actual = columns.length;
+            Assert.assertEquals(expected, actual);
         }
     }
 
+    /**
+     * Test of extractValidColumnNumbers method, of class
+     * TabularColumnFileReader.
+     *
+     * @throws IOException
+     */
     @Test
-    public void testDiscreteVariables() throws Exception {
-        String[] files = {
-            "/data/discrete/dos_sim_test_data.csv",
-            "/data/discrete/mac_sim_test_data.csv",
-            "/data/discrete/sim_test_data.csv"
-        };
-
-        for (String file : files) {
-            String dataFileName = getClass().getResource(file).getFile();
-            Path dataFile = Paths.get(dataFileName);
-
+    public void testExtractValidColumnNumbers() throws IOException {
+        for (Path dataFile : dataFiles) {
             TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
             columnFileReader.setHasHeader(hasHeader);
 
-            DataColumn[] dataColumns = columnFileReader.readInDataColumns(false);
-            long expected = 10;
-            long actual = dataColumns.length;
+            int numOfCols = 10;
+            int[] cols = new int[0];
+            int[] columns = columnFileReader.extractValidColumnNumbers(numOfCols, cols);
+            long expected = 0;
+            long actual = columns.length;
             Assert.assertEquals(expected, actual);
 
-            final Set<String> excludeVars = new HashSet<>(Arrays.asList("X1", "X3", "X5", "X7", "X9"));
-            dataColumns = columnFileReader.readInDataColumns(excludeVars, false);
-            expected = 5;
-            actual = dataColumns.length;
+            cols = new int[]{1, 1, 3, 5, 5, 7};
+            columns = columnFileReader.extractValidColumnNumbers(numOfCols, cols);
+            expected = 4;
+            actual = columns.length;
             Assert.assertEquals(expected, actual);
         }
     }
 
+    /**
+     * Test of generateColumns method, of class TabularColumnFileReader.
+     *
+     * @throws IOException
+     */
     @Test
-    public void testContinuousVariables() throws Exception {
-        String[] files = {
-            "/data/continuous/dos_sim_test_data.csv",
-            "/data/continuous/mac_sim_test_data.csv",
-            "/data/continuous/sim_test_data.csv"
-        };
-
-        for (String file : files) {
-            String dataFileName = getClass().getResource(file).getFile();
-            Path dataFile = Paths.get(dataFileName);
-
+    public void testGenerateColumns() throws IOException {
+        for (Path dataFile : dataFiles) {
             TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
-            columnFileReader.setHasHeader(hasHeader);
 
-            DataColumn[] dataColumns = columnFileReader.readInDataColumns(true);
+            int numOfCols = 10;
+            int[] excludedColumns = new int[0];
+            boolean isDiscrete = false;
+            TabularDataColumn[] columns = columnFileReader.generateColumns(numOfCols, excludedColumns, isDiscrete);
             long expected = 10;
-            long actual = dataColumns.length;
+            long actual = columns.length;
             Assert.assertEquals(expected, actual);
 
-            final Set<String> excludeVars = new HashSet<>(Arrays.asList("X1", "X3", "X5", "X7", "X9"));
-            dataColumns = columnFileReader.readInDataColumns(excludeVars, true);
-            expected = 5;
-            actual = dataColumns.length;
+            excludedColumns = new int[]{1, 3, 5, 7};
+            columns = columnFileReader.generateColumns(numOfCols, excludedColumns, isDiscrete);
+            expected = 6;
+            actual = columns.length;
             Assert.assertEquals(expected, actual);
         }
     }
