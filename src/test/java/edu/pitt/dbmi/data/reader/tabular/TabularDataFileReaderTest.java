@@ -27,6 +27,7 @@ import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.VerticalDiscreteT
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import org.junit.Test;
 
 /**
@@ -77,9 +78,13 @@ public class TabularDataFileReaderTest {
             columnFileReader.setQuoteCharacter(quoteCharacter);
             columnFileReader.setHasHeader(hasHeader);
 
-            boolean isDiscrete = true;
+            boolean isDiscrete = false;
             TabularDataColumn[] columns = columnFileReader.readInDataColumns(isDiscrete);
-            columnFileReader.determineDiscreteDataColumns(columns, 4);
+//            columns[1].setDiscrete(false);
+//            Arrays.stream(columns).forEach(System.out::println);
+            int numOfCategories = 4;
+            columnFileReader.determineDiscreteDataColumns(columns, numOfCategories);
+            columns[1].setDiscrete(false);
 
             TabularDataFileReader dataFileReader = new TabularDataFileReader(dataFile, delimiter);
             dataFileReader.setCommentMarker(commentMarker);
@@ -89,49 +94,58 @@ public class TabularDataFileReaderTest {
 
             TabularData tabData = dataFileReader.readInData(columns);
             if (tabData instanceof ContinuousTabularDataset) {
-                ContinuousTabularDataset contData = (ContinuousTabularDataset) tabData;
-                double[][] data = contData.getData();
+                ContinuousTabularDataset tabularDataset = (ContinuousTabularDataset) tabData;
+
+                System.out.println("================================================================================");
+                Arrays.stream(tabularDataset.getColumns()).forEach(System.out::println);
+                System.out.println("--------------------------------------------------------------------------------");
+                double[][] data = tabularDataset.getData();
                 for (double[] rowData : data) {
                     int lastIndex = rowData.length - 1;
                     for (int i = 0; i < lastIndex; i++) {
                         System.out.printf("%f\t", rowData[i]);
                     }
-                    System.out.println(rowData[lastIndex]);
+                    System.out.printf("%f%n", rowData[lastIndex]);
                 }
+                System.out.println("================================================================================");
             } else if (tabData instanceof VerticalDiscreteTabularDataset) {
                 VerticalDiscreteTabularDataset tabularDataset = (VerticalDiscreteTabularDataset) tabData;
+                System.out.println("================================================================================");
+                Arrays.stream(tabularDataset.getColumns()).forEach(System.out::println);
+                System.out.println("--------------------------------------------------------------------------------");
                 int[][] data = tabularDataset.getData();
-                for (int[] rowData : data) {
-                    int lastIndex = rowData.length - 1;
-                    for (int i = 0; i < lastIndex; i++) {
-                        System.out.printf("%d ", rowData[i]);
+                int numOfCols = data.length;
+                int numOfRows = data[0].length;
+                for (int row = 0; row < numOfRows; row++) {
+                    for (int col = 0; col < numOfCols; col++) {
+                        System.out.printf("%d\t", data[col][row]);
                     }
-                    System.out.println(rowData[lastIndex]);
+                    System.out.println();
                 }
+                System.out.println("================================================================================");
             } else if (tabData instanceof MixedTabularDataset) {
                 MixedTabularDataset tabularDataset = (MixedTabularDataset) tabData;
 
                 MixedDataColumn[] mixedCols = tabularDataset.getColumns();
-
-//                Arrays.stream(tabularDataset.getColumns()).forEach(System.out::println);
+                System.out.println("================================================================================");
+                Arrays.stream(tabularDataset.getColumns()).forEach(System.out::println);
+                System.out.println("--------------------------------------------------------------------------------");
                 double[][] continuousData = tabularDataset.getContinuousData();
                 int[][] discreteData = tabularDataset.getDiscreteData();
-
-//                System.out.println("================================================================================");
-//                int numOfRows = tabularDataset.getNumOfRows();
-//                int numOfCols = mixedCols.length;
-//                for (int row = 0; row < numOfRows; row++) {
-//                    for (int col = 0; col < numOfCols; col++) {
-//                        if (continuousData[col] != null) {
-//                            System.out.printf("%f\t", continuousData[col][row]);
-//                        }
-//                        if (discreteData[col] != null) {
-//                            System.out.printf("%d\t", discreteData[col][row]);
-//                        }
-//                    }
-//                    System.out.println();
-//                }
-//                System.out.println("================================================================================");
+                int numOfRows = tabularDataset.getNumOfRows();
+                int numOfCols = mixedCols.length;
+                for (int row = 0; row < numOfRows; row++) {
+                    for (int col = 0; col < numOfCols; col++) {
+                        if (continuousData[col] != null) {
+                            System.out.printf("%f\t", continuousData[col][row]);
+                        }
+                        if (discreteData[col] != null) {
+                            System.out.printf("%d\t", discreteData[col][row]);
+                        }
+                    }
+                    System.out.println();
+                }
+                System.out.println("================================================================================");
             }
         }
     }
