@@ -23,6 +23,9 @@ import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.ContinuousTabular
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,9 +43,7 @@ public class ContinuousTabularDataFileReaderTest {
     private final String commentMarker = "//";
     private final boolean hasHeader = true;
 
-    private final String[] excludeVariables = {
-        "X1", "X3", "X5", "X7", "X9"
-    };
+    private final Set<String> excludeVariables = new HashSet<>(Arrays.asList("X1", "X12", "X3", "X5", "X7", "X9"));
 
     private final Path[] dataFiles = {
         Paths.get(getClass().getResource("/data/continuous/dos_sim_test_data.csv").getFile()),
@@ -78,9 +79,47 @@ public class ContinuousTabularDataFileReaderTest {
             Assert.assertEquals(expected, actual);
 
             double[][] data = tabularDataset.getData();
+
             int numOfRows = data.length;
             expected = 18;
             actual = numOfRows;
+            Assert.assertEquals(expected, actual);
+
+            int numOfCols = data[0].length;
+            expected = 10;
+            actual = numOfCols;
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    @Test
+    public void testReadInSelectedData() throws IOException {
+        for (Path dataFile : dataFiles) {
+            ContinuousTabularDataFileReader dataFileReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
+            dataFileReader.setCommentMarker(commentMarker);
+            dataFileReader.setMissingValueMarker(missingValueMarker);
+            dataFileReader.setQuoteCharacter(quoteCharacter);
+            dataFileReader.setHasHeader(hasHeader);
+
+            TabularData tabularData = dataFileReader.readInData(excludeVariables);
+            Assert.assertTrue(tabularData instanceof ContinuousTabularDataset);
+
+            ContinuousTabularDataset tabularDataset = (ContinuousTabularDataset) tabularData;
+            TabularColumnFileReader.TabularDataColumn[] columns = tabularDataset.getColumns();
+            long expected = 5;
+            long actual = columns.length;
+            Assert.assertEquals(expected, actual);
+
+            double[][] data = tabularDataset.getData();
+
+            int numOfRows = data.length;
+            expected = 18;
+            actual = numOfRows;
+            Assert.assertEquals(expected, actual);
+
+            int numOfCols = data[0].length;
+            expected = 5;
+            actual = numOfCols;
             Assert.assertEquals(expected, actual);
         }
     }
