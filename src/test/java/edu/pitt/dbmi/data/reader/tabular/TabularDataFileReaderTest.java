@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -69,6 +70,7 @@ public class TabularDataFileReaderTest {
     public TabularDataFileReaderTest() {
     }
 
+    @Ignore
     @Test
     public void testReadInData() throws IOException {
         for (Path dataFile : mixedDataFiles) {
