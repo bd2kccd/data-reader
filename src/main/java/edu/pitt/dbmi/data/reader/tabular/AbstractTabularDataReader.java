@@ -20,8 +20,8 @@ package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.AbstractDataReader;
 import edu.pitt.dbmi.data.reader.Delimiter;
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 
 /**
  *
@@ -33,7 +33,7 @@ public abstract class AbstractTabularDataReader extends AbstractDataReader imple
 
     protected boolean hasHeader;
 
-    public AbstractTabularDataReader(Path dataFile, Delimiter delimiter) {
+    public AbstractTabularDataReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 

@@ -61,7 +61,7 @@ public class TabularColumnFileReaderTest {
     @Test
     public void testReadInDataColumns() throws IOException {
         for (Path dataFile : dataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
@@ -83,7 +83,7 @@ public class TabularColumnFileReaderTest {
     @Test
     public void testReadInDataColumns1() throws IOException {
         for (Path dataFile : dataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
@@ -106,7 +106,7 @@ public class TabularColumnFileReaderTest {
     @Test
     public void testReadInDataColumns2() throws IOException {
         for (Path dataFile : dataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
@@ -130,7 +130,7 @@ public class TabularColumnFileReaderTest {
     @Test
     public void testDetermineDiscreteDataColumns() throws IOException {
         for (Path dataFile : dataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
@@ -158,7 +158,7 @@ public class TabularColumnFileReaderTest {
     @Test
     public void testGetColumns() throws IOException {
         for (Path dataFile : dataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
@@ -187,7 +187,7 @@ public class TabularColumnFileReaderTest {
     @Test
     public void testToColumnNumbers() throws IOException {
         for (Path dataFile : dataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
@@ -214,7 +214,7 @@ public class TabularColumnFileReaderTest {
     @Test
     public void testExtractValidColumnNumbers() throws IOException {
         for (Path dataFile : dataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
@@ -243,7 +243,7 @@ public class TabularColumnFileReaderTest {
     @Test
     public void testGenerateColumns() throws IOException {
         for (Path dataFile : dataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);

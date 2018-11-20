@@ -51,7 +51,7 @@ public class LowerCovarianceDataFileReaderTest {
      */
     @Test
     public void testGetNumberOfCases() throws IOException {
-        CovarianceDataReader dataFileReader = new LowerCovarianceDataFileReader(dataFile, delimiter);
+        CovarianceDataReader dataFileReader = new LowerCovarianceDataFileReader(dataFile.toFile(), delimiter);
         dataFileReader.setCommentMarker(commentMarker);
         dataFileReader.setMissingValueMarker(missingValueMarker);
         dataFileReader.setQuoteCharacter(quoteCharacter);

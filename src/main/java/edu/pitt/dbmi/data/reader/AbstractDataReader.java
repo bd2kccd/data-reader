@@ -18,10 +18,10 @@
  */
 package edu.pitt.dbmi.data.reader;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 /**
@@ -44,10 +44,10 @@ public abstract class AbstractDataReader implements DataReader {
     protected String missingValueMarker;
     protected String commentMarker;
 
-    protected final Path dataFile;
+    protected final File dataFile;
     protected final Delimiter delimiter;
 
-    public AbstractDataReader(Path dataFile, Delimiter delimiter) {
+    public AbstractDataReader(File dataFile, Delimiter delimiter) {
         this.dataFile = dataFile;
         this.delimiter = delimiter;
         this.quoteCharacter = '"';
@@ -64,7 +64,7 @@ public abstract class AbstractDataReader implements DataReader {
     protected int countNumberOfColumns() throws IOException {
         int count = 0;
 
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
             boolean hasQuoteChar = false;
@@ -160,7 +160,7 @@ public abstract class AbstractDataReader implements DataReader {
     protected int countNumberOfLines() throws IOException {
         int count = 0;
 
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
 

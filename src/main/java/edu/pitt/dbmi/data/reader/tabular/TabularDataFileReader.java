@@ -21,10 +21,10 @@ package edu.pitt.dbmi.data.reader.tabular;
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import edu.pitt.dbmi.data.reader.Delimiter;
 import edu.pitt.dbmi.data.reader.tabular.TabularColumnFileReader.TabularDataColumn;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +49,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
     private static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
     private static final int DISCRETE_MISSING_VALUE = -99;
 
-    public TabularDataFileReader(Path dataFile, Delimiter delimiter) {
+    public TabularDataFileReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
@@ -119,7 +119,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
     protected void readInMixedData(DiscreteColumn[] columns, double[][] continuousData, int[][] discreteData) throws IOException {
         int numOfCols = columns.length;
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
@@ -404,7 +404,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         int numOfRows = getNumberOfRows();
         int[][] data = new int[numOfCols][numOfRows];
 
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
@@ -644,7 +644,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
     protected void readInDiscreteCategorizes(DiscreteColumn[] columns) throws IOException {
         int numOfCols = columns.length;
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
@@ -884,7 +884,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         int numOfRows = getNumberOfRows();
         double[][] data = new double[numOfRows][numOfCols];
 
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
             boolean skip = false;
             boolean hasSeenNonblankChar = false;

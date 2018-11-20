@@ -19,8 +19,8 @@
 package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Set;
 
@@ -35,7 +35,7 @@ public abstract class AbstractTabularDataFileReader implements TabularDataReader
     protected final TabularColumnFileReader columnFileReader;
     protected final TabularDataFileReader dataFileReader;
 
-    public AbstractTabularDataFileReader(Path dataFile, Delimiter delimiter) {
+    public AbstractTabularDataFileReader(File dataFile, Delimiter delimiter) {
         this.columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
         this.dataFileReader = new TabularDataFileReader(dataFile, delimiter);
     }

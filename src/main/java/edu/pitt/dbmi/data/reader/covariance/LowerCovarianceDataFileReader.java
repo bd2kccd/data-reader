@@ -21,10 +21,10 @@ package edu.pitt.dbmi.data.reader.covariance;
 import edu.pitt.dbmi.data.reader.AbstractDataReader;
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import edu.pitt.dbmi.data.reader.Delimiter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,7 +41,7 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LowerCovarianceDataFileReader.class);
 
-    public LowerCovarianceDataFileReader(Path dataFile, Delimiter delimiter) {
+    public LowerCovarianceDataFileReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
@@ -57,7 +57,7 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
     private double[][] getCovarianceData(int matrixSize) throws IOException {
         double[][] data = new double[matrixSize][matrixSize];
 
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
             boolean hasQuoteChar = false;
@@ -256,7 +256,7 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
     private List<String> getVariables() throws IOException {
         List<String> variables = new LinkedList<>();
 
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
             boolean hasQuoteChar = false;
@@ -399,7 +399,7 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
     private int getNumberOfCases() throws IOException {
         int numOfCases = 0;
 
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
             boolean hasQuoteChar = false;

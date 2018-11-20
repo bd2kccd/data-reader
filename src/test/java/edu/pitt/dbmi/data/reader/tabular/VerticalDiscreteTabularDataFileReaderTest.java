@@ -63,7 +63,7 @@ public class VerticalDiscreteTabularDataFileReaderTest {
     @Test
     public void testReadInData() throws IOException {
         for (Path dataFile : dataFiles) {
-            VerticalDiscreteTabularDataFileReader dataFileReader = new VerticalDiscreteTabularDataFileReader(dataFile, delimiter);
+            VerticalDiscreteTabularDataFileReader dataFileReader = new VerticalDiscreteTabularDataFileReader(dataFile.toFile(), delimiter);
             dataFileReader.setCommentMarker(commentMarker);
             dataFileReader.setMissingValueMarker(missingValueMarker);
             dataFileReader.setQuoteCharacter(quoteCharacter);
@@ -95,7 +95,7 @@ public class VerticalDiscreteTabularDataFileReaderTest {
     @Test
     public void testReadInSelectedData() throws IOException {
         for (Path dataFile : dataFiles) {
-            VerticalDiscreteTabularDataFileReader dataFileReader = new VerticalDiscreteTabularDataFileReader(dataFile, delimiter);
+            VerticalDiscreteTabularDataFileReader dataFileReader = new VerticalDiscreteTabularDataFileReader(dataFile.toFile(), delimiter);
             dataFileReader.setCommentMarker(commentMarker);
             dataFileReader.setMissingValueMarker(missingValueMarker);
             dataFileReader.setQuoteCharacter(quoteCharacter);

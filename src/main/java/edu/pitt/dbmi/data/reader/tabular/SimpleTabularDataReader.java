@@ -19,7 +19,7 @@
 package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
-import java.nio.file.Path;
+import java.io.File;
 
 /**
  *
@@ -29,7 +29,7 @@ import java.nio.file.Path;
  */
 public class SimpleTabularDataReader extends AbstractTabularDataReader {
 
-    public SimpleTabularDataReader(Path dataFile, Delimiter delimiter) {
+    public SimpleTabularDataReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 

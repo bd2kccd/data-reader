@@ -20,8 +20,8 @@ package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
 import edu.pitt.dbmi.data.reader.tabular.TabularColumnFileReader.TabularDataColumn;
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Set;
 
 /**
@@ -34,7 +34,7 @@ public class VerticalDiscreteTabularDataFileReader extends AbstractTabularDataFi
 
     private final boolean isDiscrete;
 
-    public VerticalDiscreteTabularDataFileReader(Path dataFile, Delimiter delimiter) {
+    public VerticalDiscreteTabularDataFileReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
         this.isDiscrete = true;
     }

@@ -74,7 +74,7 @@ public class TabularDataFileReaderTest {
     @Test
     public void testReadInData() throws IOException {
         for (Path dataFile : mixedDataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile, delimiter);
+            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
             columnFileReader.setCommentMarker(commentMarker);
             columnFileReader.setMissingValueMarker(missingValueMarker);
             columnFileReader.setQuoteCharacter(quoteCharacter);
@@ -88,7 +88,7 @@ public class TabularDataFileReaderTest {
             columnFileReader.determineDiscreteDataColumns(columns, numOfCategories);
             columns[1].setDiscrete(false);
 
-            TabularDataFileReader dataFileReader = new TabularDataFileReader(dataFile, delimiter);
+            TabularDataFileReader dataFileReader = new TabularDataFileReader(dataFile.toFile(), delimiter);
             dataFileReader.setCommentMarker(commentMarker);
             dataFileReader.setMissingValueMarker(missingValueMarker);
             dataFileReader.setQuoteCharacter(quoteCharacter);

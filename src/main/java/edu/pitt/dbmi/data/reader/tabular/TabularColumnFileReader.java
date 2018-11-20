@@ -20,10 +20,10 @@ package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import edu.pitt.dbmi.data.reader.Delimiter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,7 +45,7 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TabularColumnFileReader.class);
 
-    public TabularColumnFileReader(Path dataFile, Delimiter delimiter) {
+    public TabularColumnFileReader(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
@@ -97,7 +97,7 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
         for (int i = 0; i < numOfCols; i++) {
             columnCategories[i] = new HashSet<>();
         }
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
@@ -339,7 +339,7 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
     protected TabularDataColumn[] getColumns(int[] excludedColumns, boolean isDiscrete) throws IOException {
         List<TabularDataColumn> columns = new LinkedList<>();
 
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
             boolean hasQuoteChar = false;
@@ -484,7 +484,7 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
         }
 
         List<Integer> colNums = new LinkedList<>();
-        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
             boolean hasQuoteChar = false;

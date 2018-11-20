@@ -20,8 +20,8 @@ package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
 import edu.pitt.dbmi.data.reader.tabular.TabularColumnFileReader.TabularDataColumn;
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Set;
 
 /**
@@ -35,7 +35,7 @@ public class MixedTabularDataFileReader extends AbstractTabularDataFileReader {
     private final boolean isDiscrete;
     private final int numberOfDiscreteCategories;
 
-    public MixedTabularDataFileReader(int numberOfDiscreteCategories, Path dataFile, Delimiter delimiter) {
+    public MixedTabularDataFileReader(int numberOfDiscreteCategories, File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
         this.isDiscrete = false;
         this.numberOfDiscreteCategories = numberOfDiscreteCategories;

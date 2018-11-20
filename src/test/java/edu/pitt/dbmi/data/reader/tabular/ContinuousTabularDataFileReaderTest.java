@@ -62,7 +62,7 @@ public class ContinuousTabularDataFileReaderTest {
     @Test
     public void testReadInData() throws IOException {
         for (Path dataFile : dataFiles) {
-            ContinuousTabularDataFileReader dataFileReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
+            ContinuousTabularDataFileReader dataFileReader = new ContinuousTabularDataFileReader(dataFile.toFile(), delimiter);
             dataFileReader.setCommentMarker(commentMarker);
             dataFileReader.setMissingValueMarker(missingValueMarker);
             dataFileReader.setQuoteCharacter(quoteCharacter);
@@ -95,7 +95,7 @@ public class ContinuousTabularDataFileReaderTest {
     @Test
     public void testReadInSelectedData() throws IOException {
         for (Path dataFile : dataFiles) {
-            ContinuousTabularDataFileReader dataFileReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
+            ContinuousTabularDataFileReader dataFileReader = new ContinuousTabularDataFileReader(dataFile.toFile(), delimiter);
             dataFileReader.setCommentMarker(commentMarker);
             dataFileReader.setMissingValueMarker(missingValueMarker);
             dataFileReader.setQuoteCharacter(quoteCharacter);

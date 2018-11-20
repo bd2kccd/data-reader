@@ -65,7 +65,7 @@ public class MixedTabularDataFileReaderTest {
     @Test
     public void testReadInData() throws IOException {
         for (Path dataFile : dataFiles) {
-            MixedTabularDataFileReader dataFileReader = new MixedTabularDataFileReader(numberOfDiscreteCategories, dataFile, delimiter);
+            MixedTabularDataFileReader dataFileReader = new MixedTabularDataFileReader(numberOfDiscreteCategories, dataFile.toFile(), delimiter);
             dataFileReader.setCommentMarker(commentMarker);
             dataFileReader.setMissingValueMarker(missingValueMarker);
             dataFileReader.setQuoteCharacter(quoteCharacter);
@@ -92,7 +92,7 @@ public class MixedTabularDataFileReaderTest {
     @Test
     public void testReadInSelectedData() throws IOException {
         for (Path dataFile : dataFiles) {
-            MixedTabularDataFileReader dataFileReader = new MixedTabularDataFileReader(numberOfDiscreteCategories, dataFile, delimiter);
+            MixedTabularDataFileReader dataFileReader = new MixedTabularDataFileReader(numberOfDiscreteCategories, dataFile.toFile(), delimiter);
             dataFileReader.setCommentMarker(commentMarker);
             dataFileReader.setMissingValueMarker(missingValueMarker);
             dataFileReader.setQuoteCharacter(quoteCharacter);
