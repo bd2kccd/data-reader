@@ -393,6 +393,12 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
             }
         }
 
+        if (variables.isEmpty()) {
+            String errMsg = "Covariance file does not contain variable names.";
+            LOGGER.error(errMsg);
+            throw new DataReaderException(errMsg);
+        }
+
         return variables;
     }
 
@@ -427,29 +433,18 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
                         }
 
                         finished = hasSeenNonblankChar && !skip;
-                        if (finished) {
-                            String value = dataBuilder.toString().trim();
-                            if (!value.isEmpty()) {
-                                try {
-                                    numOfCases += Integer.parseInt(value);
-                                } catch (NumberFormatException exception) {
-                                    String errMsg = String.format("Invalid number %s on line %d.", value, lineNum);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
-                                }
-                            }
+                        if (!finished) {
+                            lineNum++;
+
+                            // clear data
+                            dataBuilder.delete(0, dataBuilder.length());
+
+                            // reset states
+                            skip = false;
+                            hasSeenNonblankChar = false;
+                            cmntIndex = 0;
+                            checkForComment = comment.length > 0;
                         }
-
-                        lineNum++;
-
-                        // clear data
-                        dataBuilder.delete(0, dataBuilder.length());
-
-                        // reset states
-                        skip = false;
-                        hasSeenNonblankChar = false;
-                        cmntIndex = 0;
-                        checkForComment = comment.length > 0;
                     } else if (!skip) {
                         if (currChar > SPACE_CHAR) {
                             hasSeenNonblankChar = true;
@@ -486,17 +481,18 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
                 }
             }
 
-            finished = hasSeenNonblankChar && !skip;
-            if (finished) {
-                String value = dataBuilder.toString().trim();
-                if (!value.isEmpty()) {
-                    try {
-                        numOfCases += Integer.parseInt(value);
-                    } catch (NumberFormatException exception) {
-                        String errMsg = String.format("Invalid number %s on line %d.", value, lineNum);
-                        LOGGER.error(errMsg);
-                        throw new DataReaderException(errMsg);
-                    }
+            String value = dataBuilder.toString().trim();
+            if (value.isEmpty()) {
+                String errMsg = String.format("Line %d: Missing number of cases.", lineNum);
+                LOGGER.error(errMsg);
+                throw new DataReaderException(errMsg);
+            } else {
+                try {
+                    numOfCases += Integer.parseInt(value);
+                } catch (NumberFormatException exception) {
+                    String errMsg = String.format("Invalid number %s on line %d.", value, lineNum);
+                    LOGGER.error(errMsg);
+                    throw new DataReaderException(errMsg);
                 }
             }
         }
