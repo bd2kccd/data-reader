@@ -16,16 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.tabular;
-
-import edu.pitt.dbmi.data.reader.Data;
+package edu.pitt.dbmi.data.reader;
 
 /**
  *
- * Nov 5, 2018 3:42:33 PM
+ * Nov 20, 2018 4:28:27 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularData extends Data {
+public interface Data {
 
 }

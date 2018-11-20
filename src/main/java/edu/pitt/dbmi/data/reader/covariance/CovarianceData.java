@@ -18,6 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.covariance;
 
+import edu.pitt.dbmi.data.reader.Data;
 import java.util.List;
 
 /**
@@ -26,7 +27,7 @@ import java.util.List;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface CovarianceData {
+public interface CovarianceData extends Data {
 
     public int getNumberOfCases();
 
