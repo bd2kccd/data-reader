@@ -1162,7 +1162,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         private final Map<String, Integer> values;
         private List<String> categories;
 
-        public MixedDataColumn(TabularDataColumn column) {
+        private MixedDataColumn(TabularDataColumn column) {
             if (column == null) {
                 throw new IllegalArgumentException("Column cannot be null.");
             }
@@ -1227,7 +1227,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         private final Map<String, Integer> values;
         private List<String> categories;
 
-        public DiscreteDataColumn(TabularDataColumn column) {
+        private DiscreteDataColumn(TabularDataColumn column) {
             if (column == null) {
                 throw new IllegalArgumentException("Column cannot be null.");
             }
@@ -1290,7 +1290,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         private final double[][] continuousData;
         private final int[][] discreteData;
 
-        public MixedTabularDataset(int numOfRows, MixedDataColumn[] columns, double[][] continuousData, int[][] discreteData) {
+        private MixedTabularDataset(int numOfRows, MixedDataColumn[] columns, double[][] continuousData, int[][] discreteData) {
             this.numOfRows = numOfRows;
             this.columns = columns;
             this.continuousData = continuousData;
@@ -1320,7 +1320,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         private final DiscreteDataColumn[] columns;
         private final int[][] data;
 
-        public VerticalDiscreteTabularDataset(DiscreteDataColumn[] columns, int[][] data) {
+        private VerticalDiscreteTabularDataset(DiscreteDataColumn[] columns, int[][] data) {
             this.columns = columns;
             this.data = data;
         }
@@ -1340,7 +1340,7 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         private final TabularDataColumn[] columns;
         private final double[][] data;
 
-        public ContinuousTabularDataset(TabularDataColumn[] columns, double[][] data) {
+        private ContinuousTabularDataset(TabularDataColumn[] columns, double[][] data) {
             this.columns = columns;
             this.data = data;
         }
