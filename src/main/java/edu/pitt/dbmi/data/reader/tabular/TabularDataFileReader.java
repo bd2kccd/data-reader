@@ -1154,6 +1154,8 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
         public int getColumnNumber();
 
+        public String getName();
+
     }
 
     public class MixedDataColumn implements DiscreteColumn {
@@ -1215,6 +1217,11 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
             return column.getColumnNumber();
         }
 
+        @Override
+        public String getName() {
+            return column.getName();
+        }
+
         public TabularDataColumn getColumn() {
             return column;
         }
@@ -1274,6 +1281,11 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         @Override
         public int getColumnNumber() {
             return column.getColumnNumber();
+        }
+
+        @Override
+        public String getName() {
+            return column.getName();
         }
 
         public TabularDataColumn getColumn() {
