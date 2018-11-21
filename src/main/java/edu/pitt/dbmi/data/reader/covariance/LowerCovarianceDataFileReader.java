@@ -512,14 +512,17 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
             this.data = data;
         }
 
+        @Override
         public int getNumberOfCases() {
             return numberOfCases;
         }
 
+        @Override
         public List<String> getVariables() {
             return variables;
         }
 
+        @Override
         public double[][] getData() {
             return data;
         }
