@@ -49,9 +49,9 @@ public class MixedTabularDataFileReaderTest {
     private final Set<String> excludeVariables = new HashSet<>(Arrays.asList("X1", "X12", "X3", "X5", "X7", "X9"));
 
     private final Path[] dataFiles = {
-        Paths.get(getClass().getResource("/data/mixed/dos_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/mixed/mac_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/mixed/sim_test_data.csv").getFile())
+        Paths.get(getClass().getResource("/data/tabular/mixed/dos_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/mixed/mac_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/mixed/sim_test_data.csv").getFile())
     };
 
     public MixedTabularDataFileReaderTest() {

@@ -46,9 +46,9 @@ public class ContinuousTabularDataFileReaderTest {
     private final Set<String> excludeVariables = new HashSet<>(Arrays.asList("X1", "X12", "X3", "X5", "X7", "X9"));
 
     private final Path[] dataFiles = {
-        Paths.get(getClass().getResource("/data/continuous/dos_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/continuous/mac_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/continuous/sim_test_data.csv").getFile())
+        Paths.get(getClass().getResource("/data/tabular/continuous/dos_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/continuous/mac_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/continuous/sim_test_data.csv").getFile())
     };
 
     public ContinuousTabularDataFileReaderTest() {
