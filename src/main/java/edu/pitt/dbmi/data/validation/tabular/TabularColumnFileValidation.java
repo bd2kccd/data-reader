@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 University of Pittsburgh.
+ * Copyright (C) 2018 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,22 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.validation;
-
-import java.util.List;
+package edu.pitt.dbmi.data.validation.tabular;
 
 /**
  *
- * Feb 6, 2017 5:44:56 PM
+ * Nov 28, 2018 11:02:32 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataValidation {
-
-    public void validate();
-
-    public void validate(int maximumNumberOfMessages);
-
-    public List<ValidationResult> getValidationResults();
+public class TabularColumnFileValidation {
 
 }
