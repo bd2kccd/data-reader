@@ -105,16 +105,14 @@ public class CovarianceDataFileValidation extends AbstractDataValidation {
 
                                 if (colNum > rowNum) {
                                     if (errors.size() <= maxNumOfMsg) {
-                                        if (errors.size() <= maxNumOfMsg) {
-                                            String errMsg = String.format(
-                                                    "Line %d: Excess data.  Expect %d column(s) but encounter %d.",
-                                                    lineNum, rowNum, colNum);
-                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
-                                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                            result.setAttribute(ValidationAttribute.EXPECTED_COUNT, rowNum);
-                                            result.setAttribute(ValidationAttribute.ACTUAL_COUNT, colNum);
-                                            errors.add(result);
-                                        }
+                                        String errMsg = String.format(
+                                                "Line %d: Excess data.  Expect %d value(s) but encounter %d.",
+                                                lineNum, rowNum, colNum);
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
+                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                        result.setAttribute(ValidationAttribute.EXPECTED_COUNT, rowNum);
+                                        result.setAttribute(ValidationAttribute.ACTUAL_COUNT, colNum);
+                                        errors.add(result);
                                     }
                                 } else if (colNum < rowNum) {
                                     if (errors.size() <= maxNumOfMsg) {
@@ -122,7 +120,6 @@ public class CovarianceDataFileValidation extends AbstractDataValidation {
                                                 "Line %d: Insufficient data.  Expect %d value(s) but encounter %d.",
                                                 lineNum, rowNum, colNum);
                                         ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
-                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                         result.setAttribute(ValidationAttribute.EXPECTED_COUNT, rowNum);
                                         result.setAttribute(ValidationAttribute.ACTUAL_COUNT, colNum);
@@ -215,7 +212,7 @@ public class CovarianceDataFileValidation extends AbstractDataValidation {
                                     if (colNum > rowNum) {
                                         if (errors.size() <= maxNumOfMsg) {
                                             String errMsg = String.format(
-                                                    "Line %d: Excess data.  Expect %d column(s) but encounter %d.",
+                                                    "Line %d: Excess data.  Expect %d value(s) but encounter %d.",
                                                     lineNum, rowNum, colNum);
                                             ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
@@ -266,7 +263,7 @@ public class CovarianceDataFileValidation extends AbstractDataValidation {
                     if (colNum > rowNum) {
                         if (errors.size() <= maxNumOfMsg) {
                             String errMsg = String.format(
-                                    "Line %d: Excess data.  Expect %d row(s) but encounter %d.",
+                                    "Line %d: Excess data.  Expect %d value(s) but encounter %d.",
                                     lineNum, rowNum, colNum);
                             ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
@@ -277,10 +274,9 @@ public class CovarianceDataFileValidation extends AbstractDataValidation {
                     } else if (colNum < rowNum) {
                         if (errors.size() <= maxNumOfMsg) {
                             String errMsg = String.format(
-                                    "Line %d, column %d: Insufficient data.  Expect %d value(s) but encounter %d.",
-                                    lineNum, colNum, rowNum, colNum);
+                                    "Line %d: Insufficient data.  Expect %d value(s) but encounter %d.",
+                                    lineNum, rowNum, colNum);
                             ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
-                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                             result.setAttribute(ValidationAttribute.EXPECTED_COUNT, rowNum);
                             result.setAttribute(ValidationAttribute.ACTUAL_COUNT, colNum);
@@ -312,6 +308,29 @@ public class CovarianceDataFileValidation extends AbstractDataValidation {
                     }
 
                     rowNum++;
+                }
+            }
+
+            rowNum--;  // minus the extra count for possibly the next line
+            if (rowNum > numOfVars) {
+                if (errors.size() <= maxNumOfMsg) {
+                    String errMsg = String.format(
+                            "Excess data.  Expect %d row(s) but encounter %d.",
+                            numOfVars, rowNum);
+                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
+                    result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                    result.setAttribute(ValidationAttribute.ACTUAL_COUNT, rowNum);
+                    errors.add(result);
+                }
+            } else if (rowNum < numOfVars) {
+                if (errors.size() <= maxNumOfMsg) {
+                    String errMsg = String.format(
+                            "Insufficient data.  Expect %d row(s) but encounter %d.",
+                            numOfVars, rowNum);
+                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_EXCESS_DATA, errMsg);
+                    result.setAttribute(ValidationAttribute.EXPECTED_COUNT, numOfVars);
+                    result.setAttribute(ValidationAttribute.ACTUAL_COUNT, rowNum);
+                    errors.add(result);
                 }
             }
         }
@@ -469,10 +488,12 @@ public class CovarianceDataFileValidation extends AbstractDataValidation {
             }
         }
 
-        if (numOfVars == 0 && errors.size() <= maxNumOfMsg) {
-            String errMsg = "Covariance file does not contain variable names.";
-            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
-            errors.add(result);
+        if (numOfVars == 0) {
+            if (errors.size() <= maxNumOfMsg) {
+                String errMsg = "Covariance file does not contain variable names.";
+                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                errors.add(result);
+            }
         }
 
         return numOfVars;

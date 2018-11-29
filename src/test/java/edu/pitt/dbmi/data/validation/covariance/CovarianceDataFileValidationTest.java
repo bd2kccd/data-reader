@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -39,7 +40,7 @@ public class CovarianceDataFileValidationTest {
     private final String missingValueMarker = "*";
     private final String commentMarker = "//";
 
-    private final Path dataFile = Paths.get(getClass().getResource("/data/covariance/spartina.txt").getFile());
+    private final Path dataFile = Paths.get(getClass().getResource("/data/covariance/validation/spartina.txt").getFile());
 
     public CovarianceDataFileValidationTest() {
     }
@@ -72,6 +73,18 @@ public class CovarianceDataFileValidationTest {
                     errors.add(result);
             }
         }
+
+        long expected = 1;
+        long actual = infos.size();
+        Assert.assertEquals(expected, actual);
+
+        expected = 0;
+        actual = warnings.size();
+        Assert.assertEquals(expected, actual);
+
+        expected = 4;
+        actual = errors.size();
+        Assert.assertEquals(expected, actual);
     }
 
 }
