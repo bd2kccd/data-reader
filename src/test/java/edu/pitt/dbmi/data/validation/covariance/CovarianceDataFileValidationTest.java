@@ -49,7 +49,7 @@ public class CovarianceDataFileValidationTest {
      */
     @Test
     public void testValidate() {
-        CovarianceDataFileValidation fileValidation = new CovarianceDataFileValidation(dataFile.toFile(), delimiter);
+        LowerCovarianceDataFileValidation fileValidation = new LowerCovarianceDataFileValidation(dataFile.toFile(), delimiter);
         fileValidation.setCommentMarker(commentMarker);
         fileValidation.setQuoteCharacter(quoteCharacter);
 

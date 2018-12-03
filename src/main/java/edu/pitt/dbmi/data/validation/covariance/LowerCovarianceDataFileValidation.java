@@ -36,9 +36,9 @@ import java.nio.file.StandardOpenOption;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class CovarianceDataFileValidation extends AbstractValidation {
+public class LowerCovarianceDataFileValidation extends AbstractValidation {
 
-    public CovarianceDataFileValidation(File dataFile, Delimiter delimiter) {
+    public LowerCovarianceDataFileValidation(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
