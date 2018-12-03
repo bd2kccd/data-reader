@@ -18,12 +18,24 @@
  */
 package edu.pitt.dbmi.data.validation.tabular;
 
+import edu.pitt.dbmi.data.reader.Delimiter;
+import edu.pitt.dbmi.data.validation.AbstractColumnValidation;
+import java.io.File;
+
 /**
  *
  * Nov 28, 2018 11:02:32 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class TabularColumnFileValidation {
+public class TabularColumnFileValidation extends AbstractColumnValidation {
+
+    public TabularColumnFileValidation(File dataFile, Delimiter delimiter) {
+        super(dataFile, delimiter);
+    }
+
+    @Override
+    protected void validateFile(int maxNumOfMsg) {
+    }
 
 }
