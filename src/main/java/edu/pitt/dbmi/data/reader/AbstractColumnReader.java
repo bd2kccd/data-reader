@@ -30,7 +30,7 @@ import java.nio.file.StandardOpenOption;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class AbstractColumnReader implements ColumnReader {
+public abstract class AbstractColumnReader implements ColumnReader {
 
     protected static final int BUFFER_SIZE = 1024 * 1024;
 

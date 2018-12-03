@@ -30,7 +30,7 @@ import java.nio.file.StandardOpenOption;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class AbstractDataReader extends AbstractColumnReader {
+public abstract class AbstractDataReader extends AbstractColumnReader {
 
     protected String missingValueMarker;
 
