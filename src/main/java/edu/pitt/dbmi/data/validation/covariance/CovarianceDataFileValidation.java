@@ -19,7 +19,7 @@
 package edu.pitt.dbmi.data.validation.covariance;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
-import edu.pitt.dbmi.data.validation.AbstractDataValidation;
+import edu.pitt.dbmi.data.validation.AbstractValidation;
 import edu.pitt.dbmi.data.validation.MessageType;
 import edu.pitt.dbmi.data.validation.ValidationAttribute;
 import edu.pitt.dbmi.data.validation.ValidationCode;
@@ -36,20 +36,20 @@ import java.nio.file.StandardOpenOption;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class CovarianceDataFileValidation extends AbstractDataValidation {
+public class CovarianceDataFileValidation extends AbstractValidation {
 
     public CovarianceDataFileValidation(File dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
     @Override
-    protected void validateFile(int maxNumOfMsg) {
+    public void validate() {
         try {
-            int numOfCases = validateNumberOfCases(maxNumOfMsg);
-            int numOfVars = validateNumberOfVariables(maxNumOfMsg);
-            validateData(numOfVars, maxNumOfMsg);
+            int numOfCases = validateNumberOfCases(maximumNumberOfMessages);
+            int numOfVars = validateNumberOfVariables(maximumNumberOfMessages);
+            validateData(numOfVars, maximumNumberOfMessages);
 
-            if (infos.size() <= maxNumOfMsg) {
+            if (infos.size() <= maximumNumberOfMessages) {
                 String infoMsg = String.format("There are %d cases and %d variables.", numOfCases, numOfVars);
                 ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_SUMMARY, infoMsg);
                 result.setAttribute(ValidationAttribute.ROW_NUMBER, numOfCases);
@@ -57,7 +57,7 @@ public class CovarianceDataFileValidation extends AbstractDataValidation {
                 infos.add(result);
             }
         } catch (IOException exception) {
-            if (errors.size() <= maxNumOfMsg) {
+            if (errors.size() <= maximumNumberOfMessages) {
                 String errMsg = String.format("Unable to read file %s.", dataFile.getName());
                 ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
                 result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getName());

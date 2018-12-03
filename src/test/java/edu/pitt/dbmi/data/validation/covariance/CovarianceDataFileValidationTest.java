@@ -37,7 +37,6 @@ public class CovarianceDataFileValidationTest {
 
     private final Delimiter delimiter = Delimiter.SPACE;
     private final char quoteCharacter = '"';
-    private final String missingValueMarker = "*";
     private final String commentMarker = "//";
 
     private final Path dataFile = Paths.get(getClass().getResource("/data/covariance/validation/spartina.txt").getFile());
@@ -52,7 +51,6 @@ public class CovarianceDataFileValidationTest {
     public void testValidate() {
         CovarianceDataFileValidation fileValidation = new CovarianceDataFileValidation(dataFile.toFile(), delimiter);
         fileValidation.setCommentMarker(commentMarker);
-        fileValidation.setMissingValueMarker(missingValueMarker);
         fileValidation.setQuoteCharacter(quoteCharacter);
 
         fileValidation.validate();
