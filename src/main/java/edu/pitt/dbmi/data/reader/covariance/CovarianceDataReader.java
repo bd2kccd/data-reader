@@ -18,7 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.covariance;
 
-import edu.pitt.dbmi.data.reader.DataReader;
+import edu.pitt.dbmi.data.reader.ColumnReader;
 import java.io.IOException;
 
 /**
@@ -27,7 +27,7 @@ import java.io.IOException;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface CovarianceDataReader extends DataReader {
+public interface CovarianceDataReader extends ColumnReader {
 
     public CovarianceData readInData() throws IOException;
 

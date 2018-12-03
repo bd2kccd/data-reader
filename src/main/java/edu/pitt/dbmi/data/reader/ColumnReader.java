@@ -20,17 +20,24 @@ package edu.pitt.dbmi.data.reader;
 
 /**
  *
- * Nov 5, 2018 2:28:53 PM
+ * Dec 3, 2018 2:24:32 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends ColumnReader {
+public interface ColumnReader {
 
     /**
-     * Set a value to indicate missing data in the data file.
+     * Set the character that is used to group multiple words as one.
      *
-     * @param missingValueMarker
+     * @param quoteCharacter
      */
-    public void setMissingValueMarker(String missingValueMarker);
+    public void setQuoteCharacter(char quoteCharacter);
+
+    /**
+     * Set a value to indicate a line is a comment to be ignored.
+     *
+     * @param commentMarker
+     */
+    public void setCommentMarker(String commentMarker);
 
 }

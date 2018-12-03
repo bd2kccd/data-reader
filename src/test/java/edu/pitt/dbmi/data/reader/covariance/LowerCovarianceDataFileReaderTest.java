@@ -36,7 +36,6 @@ public class LowerCovarianceDataFileReaderTest {
 
     private final Delimiter delimiter = Delimiter.SPACE;
     private final char quoteCharacter = '"';
-    private final String missingValueMarker = "*";
     private final String commentMarker = "//";
 
     private final Path dataFile = Paths.get(getClass().getResource("/data/covariance/spartina.txt").getFile());
@@ -53,7 +52,6 @@ public class LowerCovarianceDataFileReaderTest {
     public void testGetNumberOfCases() throws IOException {
         CovarianceDataReader dataFileReader = new LowerCovarianceDataFileReader(dataFile.toFile(), delimiter);
         dataFileReader.setCommentMarker(commentMarker);
-        dataFileReader.setMissingValueMarker(missingValueMarker);
         dataFileReader.setQuoteCharacter(quoteCharacter);
 
         CovarianceData covarianceData = dataFileReader.readInData();

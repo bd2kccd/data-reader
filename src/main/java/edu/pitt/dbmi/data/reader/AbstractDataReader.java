@@ -30,125 +30,13 @@ import java.nio.file.StandardOpenOption;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractDataReader implements DataReader {
+public class AbstractDataReader extends AbstractColumnReader {
 
-    protected static final int BUFFER_SIZE = 1024 * 1024;
-
-    protected static final byte LINE_FEED = '\n';
-    protected static final byte CARRIAGE_RETURN = '\r';
-
-    protected static final byte SPACE_CHAR = Delimiter.SPACE.getByteValue();
-    protected static final String EMPTY_STRING = "";
-
-    protected char quoteCharacter;
     protected String missingValueMarker;
-    protected String commentMarker;
-
-    protected final File dataFile;
-    protected final Delimiter delimiter;
 
     public AbstractDataReader(File dataFile, Delimiter delimiter) {
-        this.dataFile = dataFile;
-        this.delimiter = delimiter;
-        this.quoteCharacter = '"';
+        super(dataFile, delimiter);
         this.missingValueMarker = "";
-        this.commentMarker = "";
-    }
-
-    /**
-     * Counts number of column from the first non-blank line.
-     *
-     * @return the number of column from the first non-blank line
-     * @throws IOException
-     */
-    protected int countNumberOfColumns() throws IOException {
-        int count = 0;
-
-        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
-            boolean skip = false;
-            boolean hasSeenNonblankChar = false;
-            boolean hasQuoteChar = false;
-            boolean finished = false;
-
-            byte delimChar = delimiter.getByteValue();
-            byte prevChar = -1;
-
-            // comment marker check
-            byte[] comment = commentMarker.getBytes();
-            int cmntIndex = 0;
-            boolean checkForComment = comment.length > 0;
-
-            byte[] buffer = new byte[BUFFER_SIZE];
-            int len;
-            while ((len = in.read(buffer)) != -1 && !finished && !Thread.currentThread().isInterrupted()) {
-                for (int i = 0; i < len && !finished && !Thread.currentThread().isInterrupted(); i++) {
-                    byte currChar = buffer[i];
-
-                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                        finished = hasSeenNonblankChar && !skip;
-                        if (finished) {
-                            count++;
-                        }
-
-                        // reset states
-                        skip = false;
-                        hasSeenNonblankChar = false;
-                        cmntIndex = 0;
-                        checkForComment = comment.length > 0;
-                    } else if (!skip) {
-                        if (currChar > SPACE_CHAR) {
-                            hasSeenNonblankChar = true;
-                        }
-
-                        // skip blank chars at the begining of the line
-                        if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
-                            continue;
-                        }
-
-                        // check for comment marker to skip line
-                        if (checkForComment) {
-                            if (currChar == comment[cmntIndex]) {
-                                cmntIndex++;
-                                if (cmntIndex == comment.length) {
-                                    skip = true;
-                                    prevChar = currChar;
-
-                                    continue;
-                                }
-                            } else {
-                                checkForComment = false;
-                            }
-                        }
-
-                        if (currChar == quoteCharacter) {
-                            hasQuoteChar = !hasQuoteChar;
-                        } else if (!hasQuoteChar) {
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    if (currChar <= SPACE_CHAR && prevChar > SPACE_CHAR) {
-                                        count++;
-                                    }
-                                    break;
-                                default:
-                                    if (currChar == delimChar) {
-                                        count++;
-                                    }
-                            }
-                        }
-                    }
-
-                    prevChar = currChar;
-                }
-            }
-
-            // case when no newline char at end of file
-            finished = hasSeenNonblankChar && !skip;
-            if (finished) {
-                count++;
-            }
-        }
-
-        return count;
     }
 
     /**
@@ -220,23 +108,8 @@ public abstract class AbstractDataReader implements DataReader {
         return count;
     }
 
-    @Override
-    public void setQuoteCharacter(char quoteCharacter) {
-        this.quoteCharacter = quoteCharacter;
-    }
-
-    @Override
     public void setMissingValueMarker(String missingValueMarker) {
-        this.missingValueMarker = (missingValueMarker == null)
-                ? ""
-                : missingValueMarker.trim();
-    }
-
-    @Override
-    public void setCommentMarker(String commentMarker) {
-        this.commentMarker = (commentMarker == null)
-                ? ""
-                : commentMarker.trim();
+        this.missingValueMarker = missingValueMarker;
     }
 
 }
