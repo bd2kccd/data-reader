@@ -73,7 +73,45 @@ public class TabularColumnFileValidationTest {
             }
         }
 
-        long expected = 0;
+        long expected = 1;
+        long actual = infos.size();
+        Assert.assertEquals(expected, actual);
+
+        expected = 0;
+        actual = warnings.size();
+        Assert.assertEquals(expected, actual);
+
+        expected = 1;
+        actual = errors.size();
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testValidateFileWithExcludeVariables() {
+        TabularColumnFileValidation fileValidation = new TabularColumnFileValidation(dataFile.toFile(), delimiter);
+        fileValidation.setCommentMarker(commentMarker);
+        fileValidation.setQuoteCharacter(quoteCharacter);
+
+        fileValidation.validate(new int[]{7});
+
+        List<ValidationResult> results = fileValidation.getValidationResults();
+        List<ValidationResult> infos = new LinkedList<>();
+        List<ValidationResult> warnings = new LinkedList<>();
+        List<ValidationResult> errors = new LinkedList<>();
+        for (ValidationResult result : results) {
+            switch (result.getCode()) {
+                case INFO:
+                    infos.add(result);
+                    break;
+                case WARNING:
+                    warnings.add(result);
+                    break;
+                default:
+                    errors.add(result);
+            }
+        }
+
+        long expected = 1;
         long actual = infos.size();
         Assert.assertEquals(expected, actual);
 

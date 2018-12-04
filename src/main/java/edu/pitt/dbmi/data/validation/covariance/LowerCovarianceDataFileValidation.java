@@ -119,7 +119,7 @@ public class LowerCovarianceDataFileValidation extends AbstractValidation {
                                         String errMsg = String.format(
                                                 "Line %d: Insufficient data.  Expect %d value(s) but encounter %d.",
                                                 lineNum, rowNum, colNum);
-                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
+                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DATA, errMsg);
                                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                         result.setAttribute(ValidationAttribute.EXPECTED_COUNT, rowNum);
                                         result.setAttribute(ValidationAttribute.ACTUAL_COUNT, colNum);
@@ -276,7 +276,7 @@ public class LowerCovarianceDataFileValidation extends AbstractValidation {
                             String errMsg = String.format(
                                     "Line %d: Insufficient data.  Expect %d value(s) but encounter %d.",
                                     lineNum, rowNum, colNum);
-                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DAT, errMsg);
+                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INSUFFICIENT_DATA, errMsg);
                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                             result.setAttribute(ValidationAttribute.EXPECTED_COUNT, rowNum);
                             result.setAttribute(ValidationAttribute.ACTUAL_COUNT, colNum);

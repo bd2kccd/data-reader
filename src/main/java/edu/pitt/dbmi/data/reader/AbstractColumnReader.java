@@ -23,6 +23,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -51,6 +55,138 @@ public abstract class AbstractColumnReader implements ColumnReader {
         this.delimiter = delimiter;
         this.quoteCharacter = '"';
         this.commentMarker = "";
+    }
+
+    protected int[] toColumnNumbers(Set<String> columnNames) throws IOException {
+        if (columnNames.isEmpty()) {
+            return new int[0];
+        }
+
+        List<Integer> colNums = new LinkedList<>();
+        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
+            boolean skip = false;
+            boolean hasSeenNonblankChar = false;
+            boolean hasQuoteChar = false;
+            boolean finished = false;
+
+            byte delimChar = delimiter.getByteValue();
+            byte prevChar = -1;
+
+            // comment marker check
+            byte[] comment = commentMarker.getBytes();
+            int cmntIndex = 0;
+            boolean checkForComment = comment.length > 0;
+
+            int colNum = 0;
+            StringBuilder dataBuilder = new StringBuilder();
+
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int len;
+            while ((len = in.read(buffer)) != -1 && !finished && !Thread.currentThread().isInterrupted()) {
+                for (int i = 0; i < len && !finished && !Thread.currentThread().isInterrupted(); i++) {
+                    byte currChar = buffer[i];
+
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        finished = hasSeenNonblankChar && !skip;
+                        if (finished) {
+                            String value = dataBuilder.toString().trim();
+                            dataBuilder.delete(0, dataBuilder.length());
+
+                            colNum++;
+                            if (columnNames.contains(value)) {
+                                colNums.add(colNum);
+                            }
+                        } else {
+                            dataBuilder.delete(0, dataBuilder.length());
+                        }
+
+                        // reset states
+                        skip = false;
+                        hasSeenNonblankChar = false;
+                        cmntIndex = 0;
+                        checkForComment = comment.length > 0;
+                    } else if (!skip) {
+                        if (currChar > SPACE_CHAR) {
+                            hasSeenNonblankChar = true;
+                        }
+
+                        // skip blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                            continue;
+                        }
+
+                        // check for comment marker to skip line
+                        if (checkForComment) {
+                            if (currChar == comment[cmntIndex]) {
+                                cmntIndex++;
+                                if (cmntIndex == comment.length) {
+                                    skip = true;
+                                    prevChar = currChar;
+                                    continue;
+                                }
+                            } else {
+                                checkForComment = false;
+                            }
+                        }
+
+                        if (currChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else if (!hasQuoteChar) {
+                            boolean isDelimiter;
+                            switch (delimiter) {
+                                case WHITESPACE:
+                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                    break;
+                                default:
+                                    isDelimiter = (currChar == delimChar);
+                            }
+
+                            if (isDelimiter) {
+                                String value = dataBuilder.toString().trim();
+                                dataBuilder.delete(0, dataBuilder.length());
+
+                                colNum++;
+                                if (columnNames.contains(value)) {
+                                    colNums.add(colNum);
+                                }
+                            } else {
+                                dataBuilder.append((char) currChar);
+                            }
+                        }
+                    }
+
+                    prevChar = currChar;
+                }
+            }
+
+            finished = hasSeenNonblankChar && !skip;
+            if (finished) {
+                String value = dataBuilder.toString().trim();
+                dataBuilder.delete(0, dataBuilder.length());
+
+                colNum++;
+                if (columnNames.contains(value)) {
+                    colNums.add(colNum);
+                }
+            }
+        }
+
+        return colNums.stream().mapToInt(e -> e).toArray();
+    }
+
+    /**
+     * Keep all the columns that are between 1 and numOfCols, inclusive.
+     *
+     * @param numOfCols maximum number of columns
+     * @param columns list of column numbers
+     * @return
+     */
+    protected int[] extractValidColumnNumbers(int numOfCols, int[] columns) {
+        return Arrays.stream(columns)
+                .filter(e -> e > 0 && e <= numOfCols)
+                .sorted()
+                .distinct()
+                .toArray();
     }
 
     /**

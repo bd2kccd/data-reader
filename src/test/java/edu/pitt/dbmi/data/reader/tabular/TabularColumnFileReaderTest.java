@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.Assert;
@@ -174,62 +173,6 @@ public class TabularColumnFileReaderTest {
             excludedColumns = new int[]{1, 3, 5, 7};
             columns = columnFileReader.getColumns(excludedColumns, isDiscrete);
             expected = 6;
-            actual = columns.length;
-            Assert.assertEquals(expected, actual);
-        }
-    }
-
-    /**
-     * Test of toColumnNumbers method, of class TabularColumnFileReader.
-     *
-     * @throws IOException
-     */
-    @Test
-    public void testToColumnNumbers() throws IOException {
-        for (Path dataFile : dataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
-            columnFileReader.setCommentMarker(commentMarker);
-            columnFileReader.setMissingValueMarker(missingValueMarker);
-            columnFileReader.setQuoteCharacter(quoteCharacter);
-            columnFileReader.setHasHeader(hasHeader);
-
-            int[] columns = columnFileReader.toColumnNumbers(Collections.EMPTY_SET);
-            long expected = 0;
-            long actual = columns.length;
-            Assert.assertEquals(expected, actual);
-
-            columns = columnFileReader.toColumnNumbers(new HashSet<>(Arrays.asList("X1", "X10", "X5", "X11")));
-            expected = 3;
-            actual = columns.length;
-            Assert.assertEquals(expected, actual);
-        }
-    }
-
-    /**
-     * Test of extractValidColumnNumbers method, of class
-     * TabularColumnFileReader.
-     *
-     * @throws IOException
-     */
-    @Test
-    public void testExtractValidColumnNumbers() throws IOException {
-        for (Path dataFile : dataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
-            columnFileReader.setCommentMarker(commentMarker);
-            columnFileReader.setMissingValueMarker(missingValueMarker);
-            columnFileReader.setQuoteCharacter(quoteCharacter);
-            columnFileReader.setHasHeader(hasHeader);
-
-            int numOfCols = 10;
-            int[] cols = new int[0];
-            int[] columns = columnFileReader.extractValidColumnNumbers(numOfCols, cols);
-            long expected = 0;
-            long actual = columns.length;
-            Assert.assertEquals(expected, actual);
-
-            cols = new int[]{1, 1, 3, 5, 5, 7};
-            columns = columnFileReader.extractValidColumnNumbers(numOfCols, cols);
-            expected = 4;
             actual = columns.length;
             Assert.assertEquals(expected, actual);
         }

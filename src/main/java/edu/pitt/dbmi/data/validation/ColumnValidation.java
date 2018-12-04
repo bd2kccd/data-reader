@@ -18,8 +18,6 @@
  */
 package edu.pitt.dbmi.data.validation;
 
-import java.util.Set;
-
 /**
  *
  * Dec 3, 2018 3:52:11 PM
@@ -27,8 +25,6 @@ import java.util.Set;
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
 public interface ColumnValidation extends Validation {
-
-    public void validate(Set<String> excludedVariables);
 
     public void validate(int[] excludedColumns);
 
