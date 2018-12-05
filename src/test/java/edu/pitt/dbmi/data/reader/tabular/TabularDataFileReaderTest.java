@@ -52,19 +52,22 @@ public class TabularDataFileReaderTest {
     private final Path[] continuousDataFiles = {
         //        Paths.get(getClass().getResource("/data/tabular/continuous/dos_sim_test_data.csv").getFile()),
         //        Paths.get(getClass().getResource("/data/tabular/continuous/mac_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/tabular/continuous/sim_test_data.csv").getFile())
+        //        Paths.get(getClass().getResource("/data/tabular/continuous/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/continuous/quotes_sim_test_data.csv").getFile())
     };
 
     private final Path[] discreteDataFiles = {
         //        Paths.get(getClass().getResource("/data/tabular/discrete/dos_sim_test_data.csv").getFile()),
         //        Paths.get(getClass().getResource("/data/tabular/discrete/mac_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/tabular/discrete/sim_test_data.csv").getFile())
+        //        Paths.get(getClass().getResource("/data/tabular/discrete/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/discrete/quotes_sim_test_data.csv").getFile())
     };
 
     private final Path[] mixedDataFiles = {
         //        Paths.get(getClass().getResource("/data/tabular/mixed/dos_sim_test_data.csv").getFile()),
         //        Paths.get(getClass().getResource("/data/tabular/mixed/mac_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/tabular/mixed/sim_test_data.csv").getFile())
+        //        Paths.get(getClass().getResource("/data/tabular/mixed/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/mixed/quotes_sim_test_data.csv").getFile())
     };
 
     public TabularDataFileReaderTest() {

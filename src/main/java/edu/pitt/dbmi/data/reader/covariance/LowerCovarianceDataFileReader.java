@@ -166,46 +166,50 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
                         if (lineDataNum >= 3) {
                             if (currChar == quoteCharacter) {
                                 hasQuoteChar = !hasQuoteChar;
-                            } else if (!hasQuoteChar) {
-                                boolean isDelimiter;
-                                switch (delimiter) {
-                                    case WHITESPACE:
-                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
-                                        break;
-                                    default:
-                                        isDelimiter = (currChar == delimChar);
-                                }
-
-                                if (isDelimiter) {
-                                    if (col > row) {
-                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, col + 1, row + 1);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
+                            } else {
+                                if (hasQuoteChar) {
+                                    dataBuilder.append((char) currChar);
+                                } else {
+                                    boolean isDelimiter;
+                                    switch (delimiter) {
+                                        case WHITESPACE:
+                                            isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                            break;
+                                        default:
+                                            isDelimiter = (currChar == delimChar);
                                     }
 
-                                    String value = dataBuilder.toString().trim();
-                                    dataBuilder.delete(0, dataBuilder.length());
-
-                                    colNum++;
-                                    if (value.isEmpty()) {
-                                        String errMsg = String.format("Missing value on line %d at column %d.", lineNum, colNum);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
-                                    } else {
-                                        try {
-                                            double covariance = Double.parseDouble(value);
-                                            data[row][col] = covariance;
-                                            data[col][row] = covariance;
-                                        } catch (NumberFormatException exception) {
-                                            String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
-                                            LOGGER.error(errMsg, exception);
+                                    if (isDelimiter) {
+                                        if (col > row) {
+                                            String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, col + 1, row + 1);
+                                            LOGGER.error(errMsg);
                                             throw new DataReaderException(errMsg);
                                         }
-                                    }
 
-                                    col++;
-                                } else {
-                                    dataBuilder.append((char) currChar);
+                                        String value = dataBuilder.toString().trim();
+                                        dataBuilder.delete(0, dataBuilder.length());
+
+                                        colNum++;
+                                        if (value.isEmpty()) {
+                                            String errMsg = String.format("Missing value on line %d at column %d.", lineNum, colNum);
+                                            LOGGER.error(errMsg);
+                                            throw new DataReaderException(errMsg);
+                                        } else {
+                                            try {
+                                                double covariance = Double.parseDouble(value);
+                                                data[row][col] = covariance;
+                                                data[col][row] = covariance;
+                                            } catch (NumberFormatException exception) {
+                                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
+                                                LOGGER.error(errMsg, exception);
+                                                throw new DataReaderException(errMsg);
+                                            }
+                                        }
+
+                                        col++;
+                                    } else {
+                                        dataBuilder.append((char) currChar);
+                                    }
                                 }
                             }
                         }
@@ -343,30 +347,34 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
                         if (lineDataNum == 2) {
                             if (currChar == quoteCharacter) {
                                 hasQuoteChar = !hasQuoteChar;
-                            } else if (!hasQuoteChar) {
-                                boolean isDelimiter;
-                                switch (delimiter) {
-                                    case WHITESPACE:
-                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
-                                        break;
-                                    default:
-                                        isDelimiter = (currChar == delimChar);
-                                }
-
-                                if (isDelimiter) {
-                                    String value = dataBuilder.toString().trim();
-                                    dataBuilder.delete(0, dataBuilder.length());
-
-                                    colNum++;
-                                    if (value.isEmpty()) {
-                                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
-                                    } else {
-                                        variables.add(value);
-                                    }
-                                } else {
+                            } else {
+                                if (hasQuoteChar) {
                                     dataBuilder.append((char) currChar);
+                                } else {
+                                    boolean isDelimiter;
+                                    switch (delimiter) {
+                                        case WHITESPACE:
+                                            isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                            break;
+                                        default:
+                                            isDelimiter = (currChar == delimChar);
+                                    }
+
+                                    if (isDelimiter) {
+                                        String value = dataBuilder.toString().trim();
+                                        dataBuilder.delete(0, dataBuilder.length());
+
+                                        colNum++;
+                                        if (value.isEmpty()) {
+                                            String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
+                                            LOGGER.error(errMsg);
+                                            throw new DataReaderException(errMsg);
+                                        } else {
+                                            variables.add(value);
+                                        }
+                                    } else {
+                                        dataBuilder.append((char) currChar);
+                                    }
                                 }
                             }
                         }
@@ -408,7 +416,6 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
         try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
-            boolean hasQuoteChar = false;
             boolean finished = false;
 
             // comment marker check
@@ -470,9 +477,7 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
                             }
                         }
 
-                        if (currChar == quoteCharacter) {
-                            hasQuoteChar = !hasQuoteChar;
-                        } else if (!hasQuoteChar) {
+                        if (currChar != quoteCharacter) {
                             dataBuilder.append((char) currChar);
                         }
                     }

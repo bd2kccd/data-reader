@@ -293,58 +293,62 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else if (!hasQuoteChar) {
-                            boolean isDelimiter;
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
-                                    break;
-                                default:
-                                    isDelimiter = (currChar == delimChar);
-                            }
-
-                            if (isDelimiter) {
-                                colNum++;
-
-                                // ensure we don't go out of bound
-                                if (columnIndex < numOfCols) {
-                                    DiscreteColumn column = columns[columnIndex];
-                                    if (column.getColumnNumber() == colNum) {
-                                        columnIndex++;
-
-                                        String value = dataBuilder.toString().trim();
-                                        if (column.isDiscrete()) {
-                                            if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                                discreteData[col][row] = DISCRETE_MISSING_VALUE;
-                                            } else {
-                                                discreteData[col][row] = column.getEncodeValue(value);
-                                            }
-                                        } else {
-                                            if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                                continuousData[col][row] = CONTINUOUS_MISSING_VALUE;
-                                            } else {
-                                                try {
-                                                    continuousData[col][row] = Double.parseDouble(value);
-                                                } catch (NumberFormatException exception) {
-                                                    String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
-                                                    LOGGER.error(errMsg, exception);
-                                                    throw new DataReaderException(errMsg);
-                                                }
-                                            }
-                                        }
-
-                                        col++;
-                                    }
-                                } else {
-                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
+                        } else {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
                                 }
 
-                                // clear data
-                                dataBuilder.delete(0, dataBuilder.length());
-                            } else {
-                                dataBuilder.append((char) currChar);
+                                if (isDelimiter) {
+                                    colNum++;
+
+                                    // ensure we don't go out of bound
+                                    if (columnIndex < numOfCols) {
+                                        DiscreteColumn column = columns[columnIndex];
+                                        if (column.getColumnNumber() == colNum) {
+                                            columnIndex++;
+
+                                            String value = dataBuilder.toString().trim();
+                                            if (column.isDiscrete()) {
+                                                if (value.length() == 0 || value.equals(missingValueMarker)) {
+                                                    discreteData[col][row] = DISCRETE_MISSING_VALUE;
+                                                } else {
+                                                    discreteData[col][row] = column.getEncodeValue(value);
+                                                }
+                                            } else {
+                                                if (value.length() == 0 || value.equals(missingValueMarker)) {
+                                                    continuousData[col][row] = CONTINUOUS_MISSING_VALUE;
+                                                } else {
+                                                    try {
+                                                        continuousData[col][row] = Double.parseDouble(value);
+                                                    } catch (NumberFormatException exception) {
+                                                        String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
+                                                        LOGGER.error(errMsg, exception);
+                                                        throw new DataReaderException(errMsg);
+                                                    }
+                                                }
+                                            }
+
+                                            col++;
+                                        }
+                                    } else {
+                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                        LOGGER.error(errMsg);
+                                        throw new DataReaderException(errMsg);
+                                    }
+
+                                    // clear data
+                                    dataBuilder.delete(0, dataBuilder.length());
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
                             }
                         }
                     }
@@ -564,42 +568,46 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else if (!hasQuoteChar) {
-                            boolean isDelimiter;
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
-                                    break;
-                                default:
-                                    isDelimiter = (currChar == delimChar);
-                            }
-
-                            if (isDelimiter) {
-                                colNum++;
-
-                                // ensure we don't go out of bound
-                                if (columnIndex < numOfCols) {
-                                    DiscreteColumn column = columns[columnIndex];
-                                    if (column.getColumnNumber() == colNum) {
-                                        columnIndex++;
-
-                                        String value = dataBuilder.toString().trim();
-                                        if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                            data[col++][row] = column.getEncodeValue(value);
-                                        } else {
-                                            data[col++][row] = DISCRETE_MISSING_VALUE;
-                                        }
-                                    }
-                                } else {
-                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
+                        } else {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
                                 }
 
-                                // clear data
-                                dataBuilder.delete(0, dataBuilder.length());
-                            } else {
-                                dataBuilder.append((char) currChar);
+                                if (isDelimiter) {
+                                    colNum++;
+
+                                    // ensure we don't go out of bound
+                                    if (columnIndex < numOfCols) {
+                                        DiscreteColumn column = columns[columnIndex];
+                                        if (column.getColumnNumber() == colNum) {
+                                            columnIndex++;
+
+                                            String value = dataBuilder.toString().trim();
+                                            if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                                                data[col++][row] = column.getEncodeValue(value);
+                                            } else {
+                                                data[col++][row] = DISCRETE_MISSING_VALUE;
+                                            }
+                                        }
+                                    } else {
+                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                        LOGGER.error(errMsg);
+                                        throw new DataReaderException(errMsg);
+                                    }
+
+                                    // clear data
+                                    dataBuilder.delete(0, dataBuilder.length());
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
                             }
                         }
                     }
@@ -798,42 +806,46 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else if (!hasQuoteChar) {
-                            boolean isDelimiter;
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
-                                    break;
-                                default:
-                                    isDelimiter = (currChar == delimChar);
-                            }
-
-                            if (isDelimiter) {
-                                colNum++;
-
-                                // ensure we don't go out of bound
-                                if (columnIndex < numOfCols) {
-                                    DiscreteColumn column = columns[columnIndex];
-                                    if (column.getColumnNumber() == colNum) {
-                                        columnIndex++;
-
-                                        if (column.isDiscrete()) {
-                                            String value = dataBuilder.toString().trim();
-                                            if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                                column.setValue(value);
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
+                        } else {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
                                 }
 
-                                // clear data
-                                dataBuilder.delete(0, dataBuilder.length());
-                            } else {
-                                dataBuilder.append((char) currChar);
+                                if (isDelimiter) {
+                                    colNum++;
+
+                                    // ensure we don't go out of bound
+                                    if (columnIndex < numOfCols) {
+                                        DiscreteColumn column = columns[columnIndex];
+                                        if (column.getColumnNumber() == colNum) {
+                                            columnIndex++;
+
+                                            if (column.isDiscrete()) {
+                                                String value = dataBuilder.toString().trim();
+                                                if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                                                    column.setValue(value);
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                        LOGGER.error(errMsg);
+                                        throw new DataReaderException(errMsg);
+                                    }
+
+                                    // clear data
+                                    dataBuilder.delete(0, dataBuilder.length());
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
                             }
                         }
                     }
@@ -1050,48 +1062,52 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else if (!hasQuoteChar) {
-                            boolean isDelimiter;
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
-                                    break;
-                                default:
-                                    isDelimiter = (currChar == delimChar);
-                            }
-
-                            if (isDelimiter) {
-                                colNum++;
-
-                                // ensure we don't go out of bound
-                                if (columnIndex < numOfCols) {
-                                    TabularDataColumn column = columns[columnIndex];
-                                    if (column.getColumnNumber() == colNum) {
-                                        columnIndex++;
-
-                                        String value = dataBuilder.toString().trim();
-                                        if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                            data[row][col++] = CONTINUOUS_MISSING_VALUE;
-                                        } else {
-                                            try {
-                                                data[row][col++] = Double.parseDouble(value);
-                                            } catch (NumberFormatException exception) {
-                                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
-                                                LOGGER.error(errMsg, exception);
-                                                throw new DataReaderException(errMsg);
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
+                        } else {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
                                 }
 
-                                // clear data
-                                dataBuilder.delete(0, dataBuilder.length());
-                            } else {
-                                dataBuilder.append((char) currChar);
+                                if (isDelimiter) {
+                                    colNum++;
+
+                                    // ensure we don't go out of bound
+                                    if (columnIndex < numOfCols) {
+                                        TabularDataColumn column = columns[columnIndex];
+                                        if (column.getColumnNumber() == colNum) {
+                                            columnIndex++;
+
+                                            String value = dataBuilder.toString().trim();
+                                            if (value.length() == 0 || value.equals(missingValueMarker)) {
+                                                data[row][col++] = CONTINUOUS_MISSING_VALUE;
+                                            } else {
+                                                try {
+                                                    data[row][col++] = Double.parseDouble(value);
+                                                } catch (NumberFormatException exception) {
+                                                    String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
+                                                    LOGGER.error(errMsg, exception);
+                                                    throw new DataReaderException(errMsg);
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                        LOGGER.error(errMsg);
+                                        throw new DataReaderException(errMsg);
+                                    }
+
+                                    // clear data
+                                    dataBuilder.delete(0, dataBuilder.length());
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
                             }
                         }
                     }

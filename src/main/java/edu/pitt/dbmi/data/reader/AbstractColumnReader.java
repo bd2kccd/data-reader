@@ -131,26 +131,30 @@ public abstract class AbstractColumnReader implements ColumnReader {
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else if (!hasQuoteChar) {
-                            boolean isDelimiter;
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
-                                    break;
-                                default:
-                                    isDelimiter = (currChar == delimChar);
-                            }
-
-                            if (isDelimiter) {
-                                String value = dataBuilder.toString().trim();
-                                dataBuilder.delete(0, dataBuilder.length());
-
-                                colNum++;
-                                if (columnNames.contains(value)) {
-                                    colNums.add(colNum);
-                                }
-                            } else {
+                        } else {
+                            if (hasQuoteChar) {
                                 dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
+                                }
+
+                                if (isDelimiter) {
+                                    String value = dataBuilder.toString().trim();
+                                    dataBuilder.delete(0, dataBuilder.length());
+
+                                    colNum++;
+                                    if (columnNames.contains(value)) {
+                                        colNums.add(colNum);
+                                    }
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
                             }
                         }
                     }

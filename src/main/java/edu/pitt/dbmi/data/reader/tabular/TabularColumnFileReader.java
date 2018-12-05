@@ -254,43 +254,47 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else if (!hasQuoteChar) {
-                            boolean isDelimiter;
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
-                                    break;
-                                default:
-                                    isDelimiter = (currChar == delimChar);
-                            }
-
-                            if (isDelimiter) {
-                                colNum++;
-
-                                // ensure we don't go out of bound
-                                if (columnIndex < numOfCols) {
-                                    TabularDataColumn column = columns[columnIndex];
-                                    if (column.getColumnNumber() == colNum) {
-                                        String value = dataBuilder.toString().trim();
-                                        if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                            Set<String> categories = columnCategories[columnIndex];
-                                            if (categories.size() < maxCategoryToAdd) {
-                                                categories.add(value);
-                                            }
-                                        }
-
-                                        columnIndex++;
-                                    }
-                                } else {
-                                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
+                        } else {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
                                 }
 
-                                // clear data
-                                dataBuilder.delete(0, dataBuilder.length());
-                            } else {
-                                dataBuilder.append((char) currChar);
+                                if (isDelimiter) {
+                                    colNum++;
+
+                                    // ensure we don't go out of bound
+                                    if (columnIndex < numOfCols) {
+                                        TabularDataColumn column = columns[columnIndex];
+                                        if (column.getColumnNumber() == colNum) {
+                                            String value = dataBuilder.toString().trim();
+                                            if (value.length() > 0 && !value.equals(missingValueMarker)) {
+                                                Set<String> categories = columnCategories[columnIndex];
+                                                if (categories.size() < maxCategoryToAdd) {
+                                                    categories.add(value);
+                                                }
+                                            }
+
+                                            columnIndex++;
+                                        }
+                                    } else {
+                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                        LOGGER.error(errMsg);
+                                        throw new DataReaderException(errMsg);
+                                    }
+
+                                    // clear data
+                                    dataBuilder.delete(0, dataBuilder.length());
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
                             }
                         }
                     }
@@ -375,12 +379,12 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
 
                             colNum++;
                             if (numOfExCols == 0 || exColsIndex >= numOfExCols || colNum != excludedColumns[exColsIndex]) {
-                                if (value.length() > 0) {
-                                    columns.add(new TabularDataColumn(value, colNum, isDiscrete));
-                                } else {
+                                if (value.isEmpty()) {
                                     String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
                                     LOGGER.error(errMsg);
                                     throw new DataReaderException(errMsg);
+                                } else {
+                                    columns.add(new TabularDataColumn(value, colNum, isDiscrete));
                                 }
                             }
                         } else {
@@ -420,35 +424,39 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
 
                         if (currChar == quoteCharacter) {
                             hasQuoteChar = !hasQuoteChar;
-                        } else if (!hasQuoteChar) {
-                            boolean isDelimiter;
-                            switch (delimiter) {
-                                case WHITESPACE:
-                                    isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
-                                    break;
-                                default:
-                                    isDelimiter = (currChar == delimChar);
-                            }
-
-                            if (isDelimiter) {
-                                String value = dataBuilder.toString().trim();
-                                dataBuilder.delete(0, dataBuilder.length());
-
-                                colNum++;
-                                if (numOfExCols > 0 && (exColsIndex < numOfExCols && colNum == excludedColumns[exColsIndex])) {
-                                    exColsIndex++;
-                                } else {
-                                    if (value.length() > 0) {
-                                        columns.add(new TabularDataColumn(value, colNum, isDiscrete));
-                                    } else {
-                                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
-                                    }
+                        } else {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
                                 }
 
-                            } else {
-                                dataBuilder.append((char) currChar);
+                                if (isDelimiter) {
+                                    String value = dataBuilder.toString().trim();
+                                    dataBuilder.delete(0, dataBuilder.length());
+
+                                    colNum++;
+                                    if (numOfExCols > 0 && (exColsIndex < numOfExCols && colNum == excludedColumns[exColsIndex])) {
+                                        exColsIndex++;
+                                    } else {
+                                        if (value.isEmpty()) {
+                                            String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
+                                            LOGGER.error(errMsg);
+                                            throw new DataReaderException(errMsg);
+                                        } else {
+                                            columns.add(new TabularDataColumn(value, colNum, isDiscrete));
+                                        }
+                                    }
+
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
                             }
                         }
                     }
@@ -464,12 +472,12 @@ public class TabularColumnFileReader extends AbstractTabularDataReader {
 
                 colNum++;
                 if (numOfExCols == 0 || exColsIndex >= numOfExCols || colNum != excludedColumns[exColsIndex]) {
-                    if (value.length() > 0) {
-                        columns.add(new TabularDataColumn(value, colNum, isDiscrete));
-                    } else {
+                    if (value.isEmpty()) {
                         String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
                         LOGGER.error(errMsg);
                         throw new DataReaderException(errMsg);
+                    } else {
+                        columns.add(new TabularDataColumn(value, colNum, isDiscrete));
                     }
                 }
             }

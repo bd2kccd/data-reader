@@ -48,7 +48,8 @@ public class ContinuousTabularDataFileReaderTest {
     private final Path[] dataFiles = {
         Paths.get(getClass().getResource("/data/tabular/continuous/dos_sim_test_data.csv").getFile()),
         Paths.get(getClass().getResource("/data/tabular/continuous/mac_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/tabular/continuous/sim_test_data.csv").getFile())
+        Paths.get(getClass().getResource("/data/tabular/continuous/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/continuous/quotes_sim_test_data.csv").getFile())
     };
 
     public ContinuousTabularDataFileReaderTest() {

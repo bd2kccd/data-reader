@@ -46,7 +46,8 @@ public class TabularColumnFileReaderTest {
     private final Path[] dataFiles = {
         Paths.get(getClass().getResource("/data/tabular/mixed/dos_sim_test_data.csv").getFile()),
         Paths.get(getClass().getResource("/data/tabular/mixed/mac_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/tabular/mixed/sim_test_data.csv").getFile())
+        Paths.get(getClass().getResource("/data/tabular/mixed/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/mixed/quotes_sim_test_data.csv").getFile())
     };
 
     public TabularColumnFileReaderTest() {

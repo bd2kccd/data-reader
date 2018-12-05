@@ -38,7 +38,10 @@ public class LowerCovarianceDataFileReaderTest {
     private final char quoteCharacter = '"';
     private final String commentMarker = "//";
 
-    private final Path dataFile = Paths.get(getClass().getResource("/data/covariance/spartina.txt").getFile());
+    private final Path[] dataFiles = {
+        Paths.get(getClass().getResource("/data/covariance/spartina.txt").getFile()),
+        Paths.get(getClass().getResource("/data/covariance/quotes_spartina.txt").getFile())
+    };
 
     public LowerCovarianceDataFileReaderTest() {
     }
@@ -50,30 +53,32 @@ public class LowerCovarianceDataFileReaderTest {
      */
     @Test
     public void testGetNumberOfCases() throws IOException {
-        CovarianceDataReader dataFileReader = new LowerCovarianceDataFileReader(dataFile.toFile(), delimiter);
-        dataFileReader.setCommentMarker(commentMarker);
-        dataFileReader.setQuoteCharacter(quoteCharacter);
+        for (Path dataFile : dataFiles) {
+            CovarianceDataReader dataFileReader = new LowerCovarianceDataFileReader(dataFile.toFile(), delimiter);
+            dataFileReader.setCommentMarker(commentMarker);
+            dataFileReader.setQuoteCharacter(quoteCharacter);
 
-        CovarianceData covarianceData = dataFileReader.readInData();
+            CovarianceData covarianceData = dataFileReader.readInData();
 
-        int numberOfCases = covarianceData.getNumberOfCases();
-        long expected = 45;
-        long actual = numberOfCases;
-        Assert.assertEquals(expected, actual);
+            int numberOfCases = covarianceData.getNumberOfCases();
+            long expected = 45;
+            long actual = numberOfCases;
+            Assert.assertEquals(expected, actual);
 
-        List<String> variables = covarianceData.getVariables();
-        expected = 15;
-        actual = variables.size();
-        Assert.assertEquals(expected, actual);
+            List<String> variables = covarianceData.getVariables();
+            expected = 15;
+            actual = variables.size();
+            Assert.assertEquals(expected, actual);
 
-        double[][] data = covarianceData.getData();
-        expected = 15;
-        actual = data.length;
-        Assert.assertEquals(expected, actual);
+            double[][] data = covarianceData.getData();
+            expected = 15;
+            actual = data.length;
+            Assert.assertEquals(expected, actual);
 
-        expected = 15;
-        actual = data[0].length;
-        Assert.assertEquals(expected, actual);
+            expected = 15;
+            actual = data[0].length;
+            Assert.assertEquals(expected, actual);
+        }
     }
 
 }

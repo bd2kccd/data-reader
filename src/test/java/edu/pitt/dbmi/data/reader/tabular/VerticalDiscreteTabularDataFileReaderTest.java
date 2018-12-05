@@ -49,7 +49,8 @@ public class VerticalDiscreteTabularDataFileReaderTest {
     private final Path[] dataFiles = {
         Paths.get(getClass().getResource("/data/tabular/discrete/dos_sim_test_data.csv").getFile()),
         Paths.get(getClass().getResource("/data/tabular/discrete/mac_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/tabular/discrete/sim_test_data.csv").getFile())
+        Paths.get(getClass().getResource("/data/tabular/discrete/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/discrete/quotes_sim_test_data.csv").getFile())
     };
 
     public VerticalDiscreteTabularDataFileReaderTest() {
