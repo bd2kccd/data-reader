@@ -20,21 +20,18 @@ package edu.pitt.dbmi.data.reader;
 
 /**
  *
- * Dec 3, 2018 2:24:32 PM
+ * Dec 10, 2018 3:57:59 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends DatasetReader {
+public interface MixedTabularData extends Data {
 
-    public static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
+    public int getNumOfRows();
 
-    public static final int DISCRETE_MISSING_VALUE = -99;
+    public DiscreteDataColumn[] getDataColumns();
 
-    /**
-     * Set the value to indicate missing data.
-     *
-     * @param missingDataMarker
-     */
-    public void setMissingDataMarker(String missingDataMarker);
+    public double[][] getContinuousData();
+
+    public int[][] getDiscreteData();
 
 }

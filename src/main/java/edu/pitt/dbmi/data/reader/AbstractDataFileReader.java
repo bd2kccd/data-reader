@@ -18,23 +18,29 @@
  */
 package edu.pitt.dbmi.data.reader;
 
+import java.nio.file.Path;
+
 /**
  *
- * Dec 3, 2018 2:24:32 PM
+ * Dec 7, 2018 3:43:12 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends DatasetReader {
+public abstract class AbstractDataFileReader extends DatasetFileReader implements DataReader {
 
-    public static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
+    protected String missingDataMarker;
 
-    public static final int DISCRETE_MISSING_VALUE = -99;
+    public AbstractDataFileReader(Path dataFile, Delimiter delimiter) {
+        super(dataFile, delimiter);
 
-    /**
-     * Set the value to indicate missing data.
-     *
-     * @param missingDataMarker
-     */
-    public void setMissingDataMarker(String missingDataMarker);
+        this.missingDataMarker = "";
+    }
+
+    @Override
+    public void setMissingDataMarker(String missingDataMarker) {
+        this.missingDataMarker = (missingDataMarker == null)
+                ? ""
+                : missingDataMarker.trim();
+    }
 
 }

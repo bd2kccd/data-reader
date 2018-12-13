@@ -16,25 +16,30 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.validation;
+
+import edu.pitt.dbmi.data.reader.DatasetFileReader;
+import edu.pitt.dbmi.data.reader.Delimiter;
+import java.nio.file.Path;
 
 /**
  *
- * Dec 3, 2018 2:24:32 PM
+ * Dec 12, 2018 12:14:52 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends DatasetReader {
+public abstract class AbstractDatasetFileValidation extends DatasetFileReader implements Validation {
 
-    public static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
+    protected int maxNumOfMsg;
 
-    public static final int DISCRETE_MISSING_VALUE = -99;
+    public AbstractDatasetFileValidation(Path dataFile, Delimiter delimiter) {
+        super(dataFile, delimiter);
+        this.maxNumOfMsg = Integer.MAX_VALUE;
+    }
 
-    /**
-     * Set the value to indicate missing data.
-     *
-     * @param missingDataMarker
-     */
-    public void setMissingDataMarker(String missingDataMarker);
+    @Override
+    public void setMaximumNumberOfMessages(int maxNumOfMsg) {
+        this.maxNumOfMsg = maxNumOfMsg;
+    }
 
 }

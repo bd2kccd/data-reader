@@ -16,25 +16,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.validation;
 
 /**
  *
- * Dec 3, 2018 2:24:32 PM
+ * Feb 16, 2017 1:49:30 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends DatasetReader {
+public enum ValidationAttribute {
 
-    public static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
-
-    public static final int DISCRETE_MISSING_VALUE = -99;
-
-    /**
-     * Set the value to indicate missing data.
-     *
-     * @param missingDataMarker
-     */
-    public void setMissingDataMarker(String missingDataMarker);
+    CONTINUOUS_VAR_COUNT,
+    DISCRETE_VAR_COUNT,
+    LINE_NUMBER,
+    COLUMN_NUMBER,
+    ROW_NUMBER,
+    EXPECTED_COUNT,
+    ACTUAL_COUNT,
+    LINE_COUNT,
+    COLUMN_COUNT,
+    ROW_COUNT,
+    ASSUMED_MISSING_COUNT,
+    LABELED_MISSING_COUNT,
+    ROW_WITH_MISSING_VALUE_COUNT,
+    COLUMN_WITH_MISSING_VALUE_COUNT,
+    FILE_NAME,
+    VALUE
 
 }

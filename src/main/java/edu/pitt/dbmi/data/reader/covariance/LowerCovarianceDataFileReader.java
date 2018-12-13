@@ -18,13 +18,13 @@
  */
 package edu.pitt.dbmi.data.reader.covariance;
 
-import edu.pitt.dbmi.data.reader.AbstractDataReader;
+import edu.pitt.dbmi.data.reader.DatasetFileReader;
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import edu.pitt.dbmi.data.reader.Delimiter;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,11 +37,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class LowerCovarianceDataFileReader extends AbstractDataReader implements CovarianceDataReader {
+public class LowerCovarianceDataFileReader extends DatasetFileReader implements CovarianceDataReader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LowerCovarianceDataFileReader.class);
 
-    public LowerCovarianceDataFileReader(File dataFile, Delimiter delimiter) {
+    public LowerCovarianceDataFileReader(Path dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
@@ -57,7 +57,7 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
     private double[][] getCovarianceData(int matrixSize) throws IOException {
         double[][] data = new double[matrixSize][matrixSize];
 
-        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
             boolean hasQuoteChar = false;
@@ -260,7 +260,7 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
     private List<String> getVariables() throws IOException {
         List<String> variables = new LinkedList<>();
 
-        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
             boolean hasQuoteChar = false;
@@ -413,7 +413,7 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
     private int getNumberOfCases() throws IOException {
         int numOfCases = 0;
 
-        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
             boolean finished = false;
@@ -452,33 +452,35 @@ public class LowerCovarianceDataFileReader extends AbstractDataReader implements
                             cmntIndex = 0;
                             checkForComment = comment.length > 0;
                         }
-                    } else if (!skip) {
-                        if (currChar > SPACE_CHAR) {
-                            hasSeenNonblankChar = true;
-                        }
-
-                        // skip blank chars at the begining of the line
-                        if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
-                            continue;
-                        }
-
-                        // check for comment marker to skip line
-                        if (checkForComment) {
-                            if (currChar == comment[cmntIndex]) {
-                                cmntIndex++;
-                                if (cmntIndex == comment.length) {
-                                    skip = true;
-                                    prevChar = currChar;
-
-                                    continue;
-                                }
-                            } else {
-                                checkForComment = false;
+                    } else {
+                        if (!skip) {
+                            if (currChar > SPACE_CHAR) {
+                                hasSeenNonblankChar = true;
                             }
-                        }
 
-                        if (currChar != quoteCharacter) {
-                            dataBuilder.append((char) currChar);
+                            // skip blank chars at the begining of the line
+                            if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                                continue;
+                            }
+
+                            // check for comment marker to skip line
+                            if (checkForComment) {
+                                if (currChar == comment[cmntIndex]) {
+                                    cmntIndex++;
+                                    if (cmntIndex == comment.length) {
+                                        skip = true;
+                                        prevChar = currChar;
+
+                                        continue;
+                                    }
+                                } else {
+                                    checkForComment = false;
+                                }
+                            }
+
+                            if (currChar != quoteCharacter) {
+                                dataBuilder.append((char) currChar);
+                            }
                         }
                     }
 

@@ -18,6 +18,8 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
+import edu.pitt.dbmi.data.reader.Data;
+import edu.pitt.dbmi.data.reader.DataColumn;
 import edu.pitt.dbmi.data.reader.DataReader;
 import java.io.IOException;
 
@@ -29,28 +31,20 @@ import java.io.IOException;
  */
 public interface TabularDataReader extends DataReader {
 
+    public Data readInData(DataColumn[] dataColumns, boolean hasHeader) throws IOException;
+
     /**
-     * Set true if the dataset has a header on the first line.
+     * Analyze the column data to determine if it contains discrete data based
+     * on the number of categories. If the number of categories of a column is
+     * equal to or less than the given number of categories, it will be
+     * considered to have discrete data. Else, it is considered to have
+     * continuous data.
      *
+     * @param dataColumns
+     * @param numberOfCategories maximum number of categories to be consider
      * @param hasHeader
-     */
-    public void setHasHeader(boolean hasHeader);
-
-    /**
-     * Get the number of columns in the dataset. The number of column is based
-     * on the column counts of the first line.
-     *
-     * @return
      * @throws IOException
      */
-    public int getNumberOfColumns() throws IOException;
-
-    /**
-     * Get the number of rows containing data, exclude the header row.
-     *
-     * @return
-     * @throws IOException
-     */
-    public int getNumberOfRows() throws IOException;
+    public void determineDiscreteDataColumns(DataColumn[] dataColumns, int numberOfCategories, boolean hasHeader) throws IOException;
 
 }

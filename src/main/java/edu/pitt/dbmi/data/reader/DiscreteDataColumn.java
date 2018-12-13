@@ -18,23 +18,24 @@
  */
 package edu.pitt.dbmi.data.reader;
 
+import java.util.List;
+
 /**
  *
- * Dec 3, 2018 2:24:32 PM
+ * Dec 10, 2018 3:24:22 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends DatasetReader {
+public interface DiscreteDataColumn {
 
-    public static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
+    public Integer getEncodeValue(String value);
 
-    public static final int DISCRETE_MISSING_VALUE = -99;
+    public void recategorize();
 
-    /**
-     * Set the value to indicate missing data.
-     *
-     * @param missingDataMarker
-     */
-    public void setMissingDataMarker(String missingDataMarker);
+    public List<String> getCategories();
+
+    public DataColumn getDataColumn();
+
+    public void setValue(String value);
 
 }

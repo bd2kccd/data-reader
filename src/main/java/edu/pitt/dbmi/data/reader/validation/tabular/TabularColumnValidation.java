@@ -16,25 +16,26 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.validation.tabular;
+
+import edu.pitt.dbmi.data.reader.DatasetReader;
+import edu.pitt.dbmi.data.reader.validation.Validation;
+import edu.pitt.dbmi.data.reader.validation.ValidationResult;
+import java.util.List;
+import java.util.Set;
 
 /**
  *
- * Dec 3, 2018 2:24:32 PM
+ * Dec 12, 2018 2:34:56 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends DatasetReader {
+public interface TabularColumnValidation extends Validation, DatasetReader {
 
-    public static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
+    public List<ValidationResult> validate();
 
-    public static final int DISCRETE_MISSING_VALUE = -99;
+    public List<ValidationResult> validate(int[] excludedColumns);
 
-    /**
-     * Set the value to indicate missing data.
-     *
-     * @param missingDataMarker
-     */
-    public void setMissingDataMarker(String missingDataMarker);
+    public List<ValidationResult> validate(Set<String> excludedColumns);
 
 }

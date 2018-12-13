@@ -28,7 +28,7 @@ import org.junit.Test;
 
 /**
  *
- * Nov 19, 2018 11:16:29 AM
+ * Dec 7, 2018 4:39:33 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
@@ -47,14 +47,14 @@ public class LowerCovarianceDataFileReaderTest {
     }
 
     /**
-     * Test of getNumberOfCases method, of class LowerCovarianceDataFileReader.
+     * Test of readInData method, of class LowerCovarianceDataFileReader.
      *
      * @throws IOException
      */
     @Test
-    public void testGetNumberOfCases() throws IOException {
+    public void testReadInData() throws IOException {
         for (Path dataFile : dataFiles) {
-            CovarianceDataReader dataFileReader = new LowerCovarianceDataFileReader(dataFile.toFile(), delimiter);
+            CovarianceDataReader dataFileReader = new LowerCovarianceDataFileReader(dataFile, delimiter);
             dataFileReader.setCommentMarker(commentMarker);
             dataFileReader.setQuoteCharacter(quoteCharacter);
 

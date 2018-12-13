@@ -16,25 +16,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.utils;
 
 /**
  *
- * Dec 3, 2018 2:24:32 PM
+ * Dec 9, 2018 11:28:38 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends DatasetReader {
+public final class TabularFileUtils {
 
-    public static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
+    private TabularFileUtils() {
+    }
 
-    public static final int DISCRETE_MISSING_VALUE = -99;
+    public static final String stripCharacter(String word, byte character) {
+        if (word == null || word.isEmpty()) {
+            return "";
+        }
 
-    /**
-     * Set the value to indicate missing data.
-     *
-     * @param missingDataMarker
-     */
-    public void setMissingDataMarker(String missingDataMarker);
+        StringBuilder dataBuilder = new StringBuilder();
+        for (byte currChar : word.getBytes()) {
+            if (currChar != character) {
+                dataBuilder.append((char) currChar);
+            }
+        }
+
+        return dataBuilder.toString();
+    }
 
 }

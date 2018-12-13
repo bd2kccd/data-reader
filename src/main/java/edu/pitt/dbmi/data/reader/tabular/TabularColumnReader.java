@@ -16,25 +16,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.tabular;
+
+import edu.pitt.dbmi.data.reader.DataColumn;
+import edu.pitt.dbmi.data.reader.DatasetReader;
+import java.io.IOException;
+import java.util.Set;
 
 /**
+ * Reads in columns of tabular data.
  *
- * Dec 3, 2018 2:24:32 PM
+ * Dec 8, 2018 3:57:51 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends DatasetReader {
+public interface TabularColumnReader extends DatasetReader {
 
-    public static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
+    public DataColumn[] readInDataColumns(boolean isDiscrete) throws IOException;
 
-    public static final int DISCRETE_MISSING_VALUE = -99;
+    public DataColumn[] readInDataColumns(int[] excludedColumns, boolean isDiscrete) throws IOException;
 
-    /**
-     * Set the value to indicate missing data.
-     *
-     * @param missingDataMarker
-     */
-    public void setMissingDataMarker(String missingDataMarker);
+    public DataColumn[] readInDataColumns(Set<String> excludedColumns, boolean isDiscrete) throws IOException;
+
+    public DataColumn[] generateColumns(int[] excludedCols, boolean isDiscrete) throws IOException;
 
 }

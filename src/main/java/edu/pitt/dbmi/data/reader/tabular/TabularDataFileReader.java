@@ -18,17 +18,24 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
+import edu.pitt.dbmi.data.reader.AbstractDataFileReader;
+import edu.pitt.dbmi.data.reader.ContinuousData;
+import edu.pitt.dbmi.data.reader.Data;
+import edu.pitt.dbmi.data.reader.DataColumn;
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import edu.pitt.dbmi.data.reader.Delimiter;
-import edu.pitt.dbmi.data.reader.tabular.TabularColumnFileReader.TabularDataColumn;
-import java.io.File;
+import edu.pitt.dbmi.data.reader.DiscreteDataColumn;
+import edu.pitt.dbmi.data.reader.MixedTabularData;
+import edu.pitt.dbmi.data.reader.VerticalDiscreteData;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,26 +45,24 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * Nov 7, 2018 2:34:40 PM
+ * Nov 15, 2018 5:22:50 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class TabularDataFileReader extends AbstractTabularDataReader {
+public class TabularDataFileReader extends AbstractDataFileReader implements TabularDataReader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TabularDataFileReader.class);
 
-    private static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
-    private static final int DISCRETE_MISSING_VALUE = -99;
-
-    public TabularDataFileReader(File dataFile, Delimiter delimiter) {
+    public TabularDataFileReader(Path dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
-    public TabularData readInData(TabularDataColumn[] columns) throws IOException {
+    @Override
+    public Data readInData(DataColumn[] dataColumns, boolean hasHeader) throws IOException {
         boolean isDiscrete = false;
         boolean isContinuous = false;
-        for (TabularDataColumn column : columns) {
-            if (column.isDiscrete()) {
+        for (DataColumn dataColumn : dataColumns) {
+            if (dataColumn.isDiscrete()) {
                 isDiscrete = true;
             } else {
                 isContinuous = true;
@@ -69,57 +74,46 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         }
 
         if (isDiscrete && isContinuous) {
-            return readInMixedData(columns);
+            return readInMixedData(dataColumns, hasHeader);
         } else if (isContinuous) {
-            return readInContinuousData(columns);
+            return readInContinuousData(dataColumns, hasHeader);
+        } else if (isDiscrete) {
+            return readInDiscreteData(dataColumns, hasHeader);
         } else {
-            return readInDiscreteData(columns);
+            return null;
         }
     }
 
-    public TabularData readInMixedData(TabularDataColumn[] columns) throws IOException {
-        int numOfCols = columns.length;
-        int numOfRows = getNumberOfRows();
+    private Data readInMixedData(DataColumn[] dataColumns, boolean hasHeader) throws IOException {
+        int numOfCols = dataColumns.length;
+        int numOfRows = hasHeader ? countNumberOfLines() - 1 : countNumberOfLines();
 
-        MixedDataColumn[] mixedDataColumns = new MixedDataColumn[numOfCols];
+        DiscreteDataColumn[] discreteDataColumns = new DiscreteDataColumn[numOfCols];
         double[][] continuousData = new double[numOfCols][];
         int[][] discreteData = new int[numOfCols][];
         for (int i = 0; i < numOfCols; i++) {
-            TabularDataColumn column = columns[i];
+            DataColumn dataColumn = dataColumns[i];
 
             // initialize data
-            if (column.isDiscrete()) {
+            if (dataColumn.isDiscrete()) {
                 discreteData[i] = new int[numOfRows];
             } else {
                 continuousData[i] = new double[numOfRows];
             }
 
             // initialize columns
-            mixedDataColumns[i] = new MixedDataColumn(column);
+            discreteDataColumns[i] = new MixedTabularFileDataColumn(dataColumn);
         }
 
-        readInDiscreteCategorizes(mixedDataColumns);
-        readInMixedData(mixedDataColumns, continuousData, discreteData);
+        readInDiscreteCategorizes(discreteDataColumns, hasHeader);
+        readInMixedData(discreteDataColumns, hasHeader, continuousData, discreteData);
 
-        return new MixedTabularDataset(numOfRows, mixedDataColumns, continuousData, discreteData);
+        return new MixedTabularFileData(numOfRows, discreteDataColumns, continuousData, discreteData);
     }
 
-    public TabularData readInDiscreteData(TabularDataColumn[] columns) throws IOException {
-        // convert data columns to discrete columns
-        DiscreteDataColumn[] discreteDataColumns = Arrays.stream(columns)
-                .map(DiscreteDataColumn::new)
-                .toArray(DiscreteDataColumn[]::new);
-
-        readInDiscreteCategorizes(discreteDataColumns);
-
-        int[][] data = readInDiscreteData(discreteDataColumns);
-
-        return new VerticalDiscreteTabularDataset(discreteDataColumns, data);
-    }
-
-    protected void readInMixedData(DiscreteColumn[] columns, double[][] continuousData, int[][] discreteData) throws IOException {
-        int numOfCols = columns.length;
-        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
+    protected void readInMixedData(DiscreteDataColumn[] dataColumns, boolean hasHeader, double[][] continuousData, int[][] discreteData) throws IOException {
+        int numOfCols = dataColumns.length;
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
@@ -211,42 +205,36 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                         if (hasSeenNonblankChar && !skip) {
                             colNum++;
 
-                            // ensure we don't go out of bound
-                            if (columnIndex < numOfCols) {
-                                DiscreteColumn column = columns[columnIndex];
-                                if (column.getColumnNumber() == colNum) {
-                                    columnIndex++;
-
-                                    String value = dataBuilder.toString().trim();
-                                    if (column.isDiscrete()) {
-                                        if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                            discreteData[col][row] = DISCRETE_MISSING_VALUE;
-                                        } else {
-                                            discreteData[col][row] = column.getEncodeValue(value);
-                                        }
+                            DiscreteDataColumn discreteDataColumn = dataColumns[columnIndex];
+                            DataColumn dataColumn = discreteDataColumn.getDataColumn();
+                            if (dataColumn.getColumnNumber() == colNum) {
+                                String value = dataBuilder.toString().trim();
+                                if (dataColumn.isDiscrete()) {
+                                    if (value.isEmpty() || value.equals(missingDataMarker)) {
+                                        discreteData[col++][row] = DISCRETE_MISSING_VALUE;
                                     } else {
-                                        if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                            continuousData[col][row] = CONTINUOUS_MISSING_VALUE;
-                                        } else {
-                                            try {
-                                                continuousData[col][row] = Double.parseDouble(value);
-                                            } catch (NumberFormatException exception) {
-                                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
-                                                LOGGER.error(errMsg, exception);
-                                                throw new DataReaderException(errMsg);
-                                            }
+                                        discreteData[col++][row] = discreteDataColumn.getEncodeValue(value);
+                                    }
+                                } else {
+                                    if (value.isEmpty() || value.equals(missingDataMarker)) {
+                                        continuousData[col++][row] = CONTINUOUS_MISSING_VALUE;
+                                    } else {
+                                        try {
+                                            continuousData[col++][row] = Double.parseDouble(value);
+                                        } catch (NumberFormatException exception) {
+                                            String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
+                                            LOGGER.error(errMsg, exception);
+                                            throw new DataReaderException(errMsg);
                                         }
                                     }
                                 }
 
-                                // ensure we have enough data
-                                if (columnIndex < numOfCols) {
-                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
-                                }
-                            } else {
-                                String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                columnIndex++;
+                            }
+
+                            // ensure we have enough data
+                            if (columnIndex < numOfCols) {
+                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
                                 LOGGER.error(errMsg);
                                 throw new DataReaderException(errMsg);
                             }
@@ -309,39 +297,35 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                                 if (isDelimiter) {
                                     colNum++;
 
-                                    // ensure we don't go out of bound
-                                    if (columnIndex < numOfCols) {
-                                        DiscreteColumn column = columns[columnIndex];
-                                        if (column.getColumnNumber() == colNum) {
-                                            columnIndex++;
-
-                                            String value = dataBuilder.toString().trim();
-                                            if (column.isDiscrete()) {
-                                                if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                                    discreteData[col][row] = DISCRETE_MISSING_VALUE;
-                                                } else {
-                                                    discreteData[col][row] = column.getEncodeValue(value);
-                                                }
+                                    DiscreteDataColumn discreteDataColumn = dataColumns[columnIndex];
+                                    DataColumn dataColumn = discreteDataColumn.getDataColumn();
+                                    if (dataColumn.getColumnNumber() == colNum) {
+                                        String value = dataBuilder.toString().trim();
+                                        if (dataColumn.isDiscrete()) {
+                                            if (value.isEmpty() || value.equals(missingDataMarker)) {
+                                                discreteData[col++][row] = DISCRETE_MISSING_VALUE;
                                             } else {
-                                                if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                                    continuousData[col][row] = CONTINUOUS_MISSING_VALUE;
-                                                } else {
-                                                    try {
-                                                        continuousData[col][row] = Double.parseDouble(value);
-                                                    } catch (NumberFormatException exception) {
-                                                        String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
-                                                        LOGGER.error(errMsg, exception);
-                                                        throw new DataReaderException(errMsg);
-                                                    }
+                                                discreteData[col++][row] = discreteDataColumn.getEncodeValue(value);
+                                            }
+                                        } else {
+                                            if (value.isEmpty() || value.equals(missingDataMarker)) {
+                                                continuousData[col++][row] = CONTINUOUS_MISSING_VALUE;
+                                            } else {
+                                                try {
+                                                    continuousData[col++][row] = Double.parseDouble(value);
+                                                } catch (NumberFormatException exception) {
+                                                    String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
+                                                    LOGGER.error(errMsg, exception);
+                                                    throw new DataReaderException(errMsg);
                                                 }
                                             }
-
-                                            col++;
                                         }
-                                    } else {
-                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
+
+                                        columnIndex++;
+                                        if (columnIndex == numOfCols) {
+                                            row++;
+                                            skip = true;
+                                        }
                                     }
 
                                     // clear data
@@ -360,42 +344,36 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
             if (!skipHeader && hasSeenNonblankChar && !skip) {
                 colNum++;
 
-                // ensure we don't go out of bound
-                if (columnIndex < numOfCols) {
-                    DiscreteColumn column = columns[columnIndex];
-                    if (column.getColumnNumber() == colNum) {
-                        columnIndex++;
-
-                        String value = dataBuilder.toString().trim();
-                        if (column.isDiscrete()) {
-                            if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                discreteData[col][row] = DISCRETE_MISSING_VALUE;
-                            } else {
-                                discreteData[col][row] = column.getEncodeValue(value);
-                            }
+                DiscreteDataColumn discreteDataColumn = dataColumns[columnIndex];
+                DataColumn dataColumn = discreteDataColumn.getDataColumn();
+                if (dataColumn.getColumnNumber() == colNum) {
+                    String value = dataBuilder.toString().trim();
+                    if (dataColumn.isDiscrete()) {
+                        if (value.isEmpty() || value.equals(missingDataMarker)) {
+                            discreteData[col++][row] = DISCRETE_MISSING_VALUE;
                         } else {
-                            if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                continuousData[col][row] = CONTINUOUS_MISSING_VALUE;
-                            } else {
-                                try {
-                                    continuousData[col][row] = Double.parseDouble(value);
-                                } catch (NumberFormatException exception) {
-                                    String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
-                                    LOGGER.error(errMsg, exception);
-                                    throw new DataReaderException(errMsg);
-                                }
+                            discreteData[col++][row] = discreteDataColumn.getEncodeValue(value);
+                        }
+                    } else {
+                        if (value.isEmpty() || value.equals(missingDataMarker)) {
+                            continuousData[col++][row] = CONTINUOUS_MISSING_VALUE;
+                        } else {
+                            try {
+                                continuousData[col++][row] = Double.parseDouble(value);
+                            } catch (NumberFormatException exception) {
+                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
+                                LOGGER.error(errMsg, exception);
+                                throw new DataReaderException(errMsg);
                             }
                         }
                     }
 
-                    // ensure we have enough data
-                    if (columnIndex < numOfCols) {
-                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
-                        LOGGER.error(errMsg);
-                        throw new DataReaderException(errMsg);
-                    }
-                } else {
-                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                    columnIndex++;
+                }
+
+                // ensure we have enough data
+                if (columnIndex < numOfCols) {
+                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
                     LOGGER.error(errMsg);
                     throw new DataReaderException(errMsg);
                 }
@@ -403,12 +381,257 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         }
     }
 
-    protected int[][] readInDiscreteData(DiscreteColumn[] columns) throws IOException {
-        int numOfCols = columns.length;
-        int numOfRows = getNumberOfRows();
-        int[][] data = new int[numOfCols][numOfRows];
+    @Override
+    public void determineDiscreteDataColumns(DataColumn[] dataColumns, int numberOfCategories, boolean hasHeader) throws IOException {
+        int numOfCols = dataColumns.length;
+        Set<String>[] columnCategories = new Set[numOfCols];
+        for (int i = 0; i < numOfCols; i++) {
+            columnCategories[i] = new HashSet<>();
+        }
 
-        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+            boolean skipHeader = hasHeader;
+            boolean skip = false;
+            boolean hasSeenNonblankChar = false;
+            boolean hasQuoteChar = false;
+
+            byte delimChar = delimiter.getByteValue();
+
+            // comment marker check
+            byte[] comment = commentMarker.getBytes();
+            int cmntIndex = 0;
+            boolean checkForComment = comment.length > 0;
+
+            int colNum = 0;
+            int lineNum = 1;
+
+            int columnIndex = 0;
+
+            int maxCategoryToAdd = numberOfCategories + 1;
+
+            StringBuilder dataBuilder = new StringBuilder();
+            byte prevChar = -1;
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int len;
+            while ((len = in.read(buffer)) != -1 && !Thread.currentThread().isInterrupted()) {
+                int i = 0; // buffer array index
+
+                if (skipHeader) {
+                    boolean finished = false;
+                    for (; i < len && !finished && !Thread.currentThread().isInterrupted(); i++) {
+                        byte currChar = buffer[i];
+
+                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                                prevChar = currChar;
+                                continue;
+                            }
+
+                            finished = hasSeenNonblankChar && !skip;
+                            if (finished) {
+                                skipHeader = false;
+                            }
+
+                            lineNum++;
+
+                            // reset states
+                            skip = false;
+                            hasSeenNonblankChar = false;
+                            cmntIndex = 0;
+                            checkForComment = comment.length > 0;
+                        } else if (!skip) {
+                            if (currChar > SPACE_CHAR) {
+                                hasSeenNonblankChar = true;
+                            }
+
+                            // skip blank chars at the begining of the line
+                            if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                                continue;
+                            }
+
+                            // check for comment marker to skip line
+                            if (checkForComment) {
+                                if (currChar == comment[cmntIndex]) {
+                                    cmntIndex++;
+                                    if (cmntIndex == comment.length) {
+                                        skip = true;
+                                        prevChar = currChar;
+                                        continue;
+                                    }
+                                } else {
+                                    checkForComment = false;
+                                }
+                            }
+                        }
+
+                        prevChar = currChar;
+                    }
+                }
+
+                for (; i < len && !Thread.currentThread().isInterrupted(); i++) {
+                    byte currChar = buffer[i];
+
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                            prevChar = currChar;
+                            continue;
+                        }
+
+                        if (hasSeenNonblankChar && !skip) {
+                            colNum++;
+
+                            DataColumn dataColumn = dataColumns[columnIndex];
+                            if (dataColumn.getColumnNumber() == colNum) {
+                                String value = dataBuilder.toString().trim();
+                                if (!(value.isEmpty() || value.equals(missingDataMarker))) {
+                                    Set<String> categories = columnCategories[columnIndex];
+                                    if (categories.size() < maxCategoryToAdd) {
+                                        categories.add(value);
+                                    }
+                                }
+
+                                columnIndex++;
+                            }
+
+                            // ensure we have enough data
+                            if (columnIndex < numOfCols) {
+                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
+                                LOGGER.error(errMsg);
+                                throw new DataReaderException(errMsg);
+                            }
+                        }
+
+                        lineNum++;
+
+                        // clear data
+                        dataBuilder.delete(0, dataBuilder.length());
+
+                        // reset states
+                        skip = false;
+                        hasSeenNonblankChar = false;
+                        cmntIndex = 0;
+                        checkForComment = comment.length > 0;
+                        columnIndex = 0;
+                        colNum = 0;
+                    } else if (!skip) {
+                        if (currChar > SPACE_CHAR) {
+                            hasSeenNonblankChar = true;
+                        }
+
+                        // skip blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                            continue;
+                        }
+
+                        // check for comment marker to skip line
+                        if (checkForComment) {
+                            if (currChar == comment[cmntIndex]) {
+                                cmntIndex++;
+                                if (cmntIndex == comment.length) {
+                                    skip = true;
+                                    prevChar = currChar;
+                                    continue;
+                                }
+                            } else {
+                                checkForComment = false;
+                            }
+                        }
+
+                        if (currChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
+                                }
+
+                                if (isDelimiter) {
+                                    colNum++;
+
+                                    DataColumn dataColumn = dataColumns[columnIndex];
+                                    if (dataColumn.getColumnNumber() == colNum) {
+                                        String value = dataBuilder.toString().trim();
+                                        if (!(value.isEmpty() || value.equals(missingDataMarker))) {
+                                            Set<String> categories = columnCategories[columnIndex];
+                                            if (categories.size() < maxCategoryToAdd) {
+                                                categories.add(value);
+                                            }
+                                        }
+
+                                        columnIndex++;
+                                        if (columnIndex == numOfCols) {
+                                            skip = true;
+                                        }
+                                    }
+
+                                    // clear data
+                                    dataBuilder.delete(0, dataBuilder.length());
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
+                            }
+                        }
+                    }
+
+                    prevChar = currChar;
+                }
+            }
+
+            if (!skipHeader && hasSeenNonblankChar && !skip) {
+                colNum++;
+
+                DataColumn dataColumn = dataColumns[columnIndex];
+                if (dataColumn.getColumnNumber() == colNum) {
+                    String value = dataBuilder.toString().trim();
+                    if (!(value.isEmpty() || value.equals(missingDataMarker))) {
+                        Set<String> categories = columnCategories[columnIndex];
+                        if (categories.size() < maxCategoryToAdd) {
+                            categories.add(value);
+                        }
+                    }
+
+                    columnIndex++;
+                }
+
+                // ensure we have enough data
+                if (columnIndex < numOfCols) {
+                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
+                    LOGGER.error(errMsg);
+                    throw new DataReaderException(errMsg);
+                }
+            }
+        }
+
+        for (int i = 0; i < numOfCols; i++) {
+            dataColumns[i].setDiscrete(columnCategories[i].size() <= numberOfCategories);
+        }
+    }
+
+    private Data readInDiscreteData(DataColumn[] dataColumns, boolean hasHeader) throws IOException {
+        DiscreteDataColumn[] discreteDataColumns = Arrays.stream(dataColumns)
+                .map(DiscreteTabularFileDataColumn::new)
+                .toArray(DiscreteDataColumn[]::new);
+
+        readInDiscreteCategorizes(discreteDataColumns, hasHeader);
+
+        int[][] data = readInDiscreteData(discreteDataColumns, hasHeader);
+
+        return new VerticalDiscreteTabularFileData(discreteDataColumns, data);
+    }
+
+    private Data readInContinuousData(DataColumn[] dataColumns, boolean hasHeader) throws IOException {
+        int numOfCols = dataColumns.length;
+        int numOfRows = hasHeader ? countNumberOfLines() - 1 : countNumberOfLines();
+        double[][] data = new double[numOfRows][numOfCols];
+
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
@@ -500,28 +723,27 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                         if (hasSeenNonblankChar && !skip) {
                             colNum++;
 
-                            // ensure we don't go out of bound
-                            if (columnIndex < numOfCols) {
-                                DiscreteColumn column = columns[columnIndex];
-                                if (column.getColumnNumber() == colNum) {
-                                    columnIndex++;
-
-                                    String value = dataBuilder.toString().trim();
-                                    if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                        data[col++][row] = column.getEncodeValue(value);
-                                    } else {
-                                        data[col++][row] = DISCRETE_MISSING_VALUE;
+                            DataColumn dataColumn = dataColumns[columnIndex];
+                            if (dataColumn.getColumnNumber() == colNum) {
+                                String value = dataBuilder.toString().trim();
+                                if (value.isEmpty() || value.equals(missingDataMarker)) {
+                                    data[row][col++] = CONTINUOUS_MISSING_VALUE;
+                                } else {
+                                    try {
+                                        data[row][col++] = Double.parseDouble(value);
+                                    } catch (NumberFormatException exception) {
+                                        String errMsg = String.format("Non-continuous number %s on line %d at column %d.", value, lineNum, colNum);
+                                        LOGGER.error(errMsg, exception);
+                                        throw new DataReaderException(errMsg);
                                     }
                                 }
 
-                                // ensure we have enough data
-                                if (columnIndex < numOfCols) {
-                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
-                                }
-                            } else {
-                                String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                columnIndex++;
+                            }
+
+                            // ensure we have enough data
+                            if (columnIndex < numOfCols) {
+                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
                                 LOGGER.error(errMsg);
                                 throw new DataReaderException(errMsg);
                             }
@@ -584,23 +806,26 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                                 if (isDelimiter) {
                                     colNum++;
 
-                                    // ensure we don't go out of bound
-                                    if (columnIndex < numOfCols) {
-                                        DiscreteColumn column = columns[columnIndex];
-                                        if (column.getColumnNumber() == colNum) {
-                                            columnIndex++;
-
-                                            String value = dataBuilder.toString().trim();
-                                            if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                                data[col++][row] = column.getEncodeValue(value);
-                                            } else {
-                                                data[col++][row] = DISCRETE_MISSING_VALUE;
+                                    DataColumn dataColumn = dataColumns[columnIndex];
+                                    if (dataColumn.getColumnNumber() == colNum) {
+                                        String value = dataBuilder.toString().trim();
+                                        if (value.isEmpty() || value.equals(missingDataMarker)) {
+                                            data[row][col++] = CONTINUOUS_MISSING_VALUE;
+                                        } else {
+                                            try {
+                                                data[row][col++] = Double.parseDouble(value);
+                                            } catch (NumberFormatException exception) {
+                                                String errMsg = String.format("Non-continuous number %s on line %d at column %d.", value, lineNum, colNum);
+                                                LOGGER.error(errMsg, exception);
+                                                throw new DataReaderException(errMsg);
                                             }
                                         }
-                                    } else {
-                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
+
+                                        columnIndex++;
+                                        if (columnIndex == numOfCols) {
+                                            row++;
+                                            skip = true;
+                                        }
                                     }
 
                                     // clear data
@@ -619,28 +844,260 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
             if (!skipHeader && hasSeenNonblankChar && !skip) {
                 colNum++;
 
-                // ensure we don't go out of bound
-                if (columnIndex < numOfCols) {
-                    DiscreteColumn column = columns[columnIndex];
-                    if (column.getColumnNumber() == colNum) {
-                        columnIndex++;
-
-                        String value = dataBuilder.toString().trim();
-                        if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                            data[col++][row] = column.getEncodeValue(value);
-                        } else {
-                            data[col++][row] = DISCRETE_MISSING_VALUE;
+                DataColumn dataColumn = dataColumns[columnIndex];
+                if (dataColumn.getColumnNumber() == colNum) {
+                    String value = dataBuilder.toString().trim();
+                    if (value.isEmpty() || value.equals(missingDataMarker)) {
+                        data[row][col++] = CONTINUOUS_MISSING_VALUE;
+                    } else {
+                        try {
+                            data[row][col++] = Double.parseDouble(value);
+                        } catch (NumberFormatException exception) {
+                            String errMsg = String.format("Non-continuous number %s on line %d at column %d.", value, lineNum, colNum);
+                            LOGGER.error(errMsg, exception);
+                            throw new DataReaderException(errMsg);
                         }
                     }
 
-                    // ensure we have enough data
-                    if (columnIndex < numOfCols) {
-                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
-                        LOGGER.error(errMsg);
-                        throw new DataReaderException(errMsg);
+                    columnIndex++;
+                }
+
+                // ensure we have enough data
+                if (columnIndex < numOfCols) {
+                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
+                    LOGGER.error(errMsg);
+                    throw new DataReaderException(errMsg);
+                }
+            }
+        }
+
+        return new ContinuousTabularFileData(dataColumns, data);
+    }
+
+    protected int[][] readInDiscreteData(DiscreteDataColumn[] dataColumns, boolean hasHeader) throws IOException {
+        int numOfCols = dataColumns.length;
+        int numOfRows = hasHeader ? countNumberOfLines() - 1 : countNumberOfLines();
+        int[][] data = new int[numOfCols][numOfRows];
+
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
+            boolean skipHeader = hasHeader;
+            boolean skip = false;
+            boolean hasSeenNonblankChar = false;
+            boolean hasQuoteChar = false;
+
+            byte delimChar = delimiter.getByteValue();
+
+            // comment marker check
+            byte[] comment = commentMarker.getBytes();
+            int cmntIndex = 0;
+            boolean checkForComment = comment.length > 0;
+
+            int colNum = 0;
+            int lineNum = 1;
+
+            int columnIndex = 0;
+
+            int row = 0;  // array row number
+            int col = 0;  // array column number
+
+            StringBuilder dataBuilder = new StringBuilder();
+            byte prevChar = -1;
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int len;
+            while ((len = in.read(buffer)) != -1 && !Thread.currentThread().isInterrupted()) {
+                int i = 0; // buffer array index
+
+                if (skipHeader) {
+                    boolean finished = false;
+                    for (; i < len && !finished && !Thread.currentThread().isInterrupted(); i++) {
+                        byte currChar = buffer[i];
+
+                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                                prevChar = currChar;
+                                continue;
+                            }
+
+                            finished = hasSeenNonblankChar && !skip;
+                            if (finished) {
+                                skipHeader = false;
+                            }
+
+                            lineNum++;
+
+                            // reset states
+                            skip = false;
+                            hasSeenNonblankChar = false;
+                            cmntIndex = 0;
+                            checkForComment = comment.length > 0;
+                        } else if (!skip) {
+                            if (currChar > SPACE_CHAR) {
+                                hasSeenNonblankChar = true;
+                            }
+
+                            // skip blank chars at the begining of the line
+                            if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                                continue;
+                            }
+
+                            // check for comment marker to skip line
+                            if (checkForComment) {
+                                if (currChar == comment[cmntIndex]) {
+                                    cmntIndex++;
+                                    if (cmntIndex == comment.length) {
+                                        skip = true;
+                                        prevChar = currChar;
+                                        continue;
+                                    }
+                                } else {
+                                    checkForComment = false;
+                                }
+                            }
+                        }
+
+                        prevChar = currChar;
                     }
-                } else {
-                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                }
+
+                for (; i < len && !Thread.currentThread().isInterrupted(); i++) {
+                    byte currChar = buffer[i];
+
+                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
+                        if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
+                            prevChar = currChar;
+                            continue;
+                        }
+
+                        if (hasSeenNonblankChar && !skip) {
+                            colNum++;
+
+                            DiscreteDataColumn discreteDataColumn = dataColumns[columnIndex];
+                            DataColumn dataColumn = discreteDataColumn.getDataColumn();
+                            if (dataColumn.getColumnNumber() == colNum) {
+                                String value = dataBuilder.toString().trim();
+                                if (value.isEmpty() || value.equals(missingDataMarker)) {
+                                    data[col++][row] = DISCRETE_MISSING_VALUE;
+                                } else {
+                                    data[col++][row] = discreteDataColumn.getEncodeValue(value);
+                                }
+
+                                columnIndex++;
+                            }
+
+                            // ensure we have enough data
+                            if (columnIndex < numOfCols) {
+                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
+                                LOGGER.error(errMsg);
+                                throw new DataReaderException(errMsg);
+                            }
+
+                            row++;
+                        }
+
+                        lineNum++;
+
+                        // clear data
+                        dataBuilder.delete(0, dataBuilder.length());
+
+                        // reset states
+                        skip = false;
+                        hasSeenNonblankChar = false;
+                        cmntIndex = 0;
+                        checkForComment = comment.length > 0;
+                        columnIndex = 0;
+                        colNum = 0;
+                        col = 0;
+                    } else if (!skip) {
+                        if (currChar > SPACE_CHAR) {
+                            hasSeenNonblankChar = true;
+                        }
+
+                        // skip blank chars at the begining of the line
+                        if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
+                            continue;
+                        }
+
+                        // check for comment marker to skip line
+                        if (checkForComment) {
+                            if (currChar == comment[cmntIndex]) {
+                                cmntIndex++;
+                                if (cmntIndex == comment.length) {
+                                    skip = true;
+                                    prevChar = currChar;
+                                    continue;
+                                }
+                            } else {
+                                checkForComment = false;
+                            }
+                        }
+
+                        if (currChar == quoteCharacter) {
+                            hasQuoteChar = !hasQuoteChar;
+                        } else {
+                            if (hasQuoteChar) {
+                                dataBuilder.append((char) currChar);
+                            } else {
+                                boolean isDelimiter;
+                                switch (delimiter) {
+                                    case WHITESPACE:
+                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
+                                        break;
+                                    default:
+                                        isDelimiter = (currChar == delimChar);
+                                }
+
+                                if (isDelimiter) {
+                                    colNum++;
+
+                                    DiscreteDataColumn discreteDataColumn = dataColumns[columnIndex];
+                                    DataColumn dataColumn = discreteDataColumn.getDataColumn();
+                                    if (dataColumn.getColumnNumber() == colNum) {
+                                        String value = dataBuilder.toString().trim();
+                                        if (value.isEmpty() || value.equals(missingDataMarker)) {
+                                            data[col++][row] = DISCRETE_MISSING_VALUE;
+                                        } else {
+                                            data[col++][row] = discreteDataColumn.getEncodeValue(value);
+                                        }
+
+                                        columnIndex++;
+                                        if (columnIndex == numOfCols) {
+                                            row++;
+                                            skip = true;
+                                        }
+                                    }
+
+                                    // clear data
+                                    dataBuilder.delete(0, dataBuilder.length());
+                                } else {
+                                    dataBuilder.append((char) currChar);
+                                }
+                            }
+                        }
+                    }
+
+                    prevChar = currChar;
+                }
+            }
+
+            if (!skipHeader && hasSeenNonblankChar && !skip) {
+                colNum++;
+
+                DiscreteDataColumn discreteDataColumn = dataColumns[columnIndex];
+                DataColumn dataColumn = discreteDataColumn.getDataColumn();
+                if (dataColumn.getColumnNumber() == colNum) {
+                    String value = dataBuilder.toString().trim();
+                    if (value.isEmpty() || value.equals(missingDataMarker)) {
+                        data[col++][row] = DISCRETE_MISSING_VALUE;
+                    } else {
+                        data[col++][row] = discreteDataColumn.getEncodeValue(value);
+                    }
+
+                    columnIndex++;
+                }
+
+                // ensure we have enough data
+                if (columnIndex < numOfCols) {
+                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
                     LOGGER.error(errMsg);
                     throw new DataReaderException(errMsg);
                 }
@@ -650,9 +1107,9 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         return data;
     }
 
-    protected void readInDiscreteCategorizes(DiscreteColumn[] columns) throws IOException {
-        int numOfCols = columns.length;
-        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
+    protected void readInDiscreteCategorizes(DiscreteDataColumn[] dataColumns, boolean hasHeader) throws IOException {
+        int numOfCols = dataColumns.length;
+        try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
@@ -741,28 +1198,22 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                         if (hasSeenNonblankChar && !skip) {
                             colNum++;
 
-                            // ensure we don't go out of bound
-                            if (columnIndex < numOfCols) {
-                                DiscreteColumn column = columns[columnIndex];
-                                if (column.getColumnNumber() == colNum) {
-                                    columnIndex++;
-
-                                    if (column.isDiscrete()) {
-                                        String value = dataBuilder.toString().trim();
-                                        if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                            column.setValue(value);
-                                        }
+                            DiscreteDataColumn discreteDataColumn = dataColumns[columnIndex];
+                            DataColumn dataColumn = discreteDataColumn.getDataColumn();
+                            if (dataColumn.getColumnNumber() == colNum) {
+                                if (dataColumn.isDiscrete()) {
+                                    String value = dataBuilder.toString().trim();
+                                    if (value.length() > 0 && !value.equals(missingDataMarker)) {
+                                        discreteDataColumn.setValue(value);
                                     }
                                 }
 
-                                // ensure we have enough data
-                                if (columnIndex < numOfCols) {
-                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
-                                }
-                            } else {
-                                String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                                columnIndex++;
+                            }
+
+                            // ensure we have enough data
+                            if (columnIndex < numOfCols) {
+                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
                                 LOGGER.error(errMsg);
                                 throw new DataReaderException(errMsg);
                             }
@@ -822,23 +1273,20 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
                                 if (isDelimiter) {
                                     colNum++;
 
-                                    // ensure we don't go out of bound
-                                    if (columnIndex < numOfCols) {
-                                        DiscreteColumn column = columns[columnIndex];
-                                        if (column.getColumnNumber() == colNum) {
-                                            columnIndex++;
-
-                                            if (column.isDiscrete()) {
-                                                String value = dataBuilder.toString().trim();
-                                                if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                                    column.setValue(value);
-                                                }
+                                    DiscreteDataColumn discreteDataColumn = dataColumns[columnIndex];
+                                    DataColumn dataColumn = discreteDataColumn.getDataColumn();
+                                    if (dataColumn.getColumnNumber() == colNum) {
+                                        if (dataColumn.isDiscrete()) {
+                                            String value = dataBuilder.toString().trim();
+                                            if (value.length() > 0 && !value.equals(missingDataMarker)) {
+                                                discreteDataColumn.setValue(value);
                                             }
                                         }
-                                    } else {
-                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
+
+                                        columnIndex++;
+                                        if (columnIndex == numOfCols) {
+                                            skip = true;
+                                        }
                                     }
 
                                     // clear data
@@ -857,28 +1305,22 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
             if (!skipHeader && hasSeenNonblankChar && !skip) {
                 colNum++;
 
-                // ensure we don't go out of bound
-                if (columnIndex < numOfCols) {
-                    DiscreteColumn column = columns[columnIndex];
-                    if (column.getColumnNumber() == colNum) {
-                        columnIndex++;
-
-                        if (column.isDiscrete()) {
-                            String value = dataBuilder.toString().trim();
-                            if (value.length() > 0 && !value.equals(missingValueMarker)) {
-                                column.setValue(value);
-                            }
+                DiscreteDataColumn discreteDataColumn = dataColumns[columnIndex];
+                DataColumn dataColumn = discreteDataColumn.getDataColumn();
+                if (dataColumn.getColumnNumber() == colNum) {
+                    if (dataColumn.isDiscrete()) {
+                        String value = dataBuilder.toString().trim();
+                        if (value.length() > 0 && !value.equals(missingDataMarker)) {
+                            discreteDataColumn.setValue(value);
                         }
                     }
 
-                    // ensure we have enough data
-                    if (columnIndex < numOfCols) {
-                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
-                        LOGGER.error(errMsg);
-                        throw new DataReaderException(errMsg);
-                    }
-                } else {
-                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
+                    columnIndex++;
+                }
+
+                // ensure we have enough data
+                if (columnIndex < numOfCols) {
+                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
                     LOGGER.error(errMsg);
                     throw new DataReaderException(errMsg);
                 }
@@ -886,321 +1328,32 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         }
 
         // recategorize values
-        for (DiscreteColumn column : columns) {
-            column.recategorize();
+        for (DiscreteDataColumn discreteDataColumn : dataColumns) {
+            discreteDataColumn.recategorize();
         }
     }
 
-    public TabularData readInContinuousData(TabularDataColumn[] columns) throws IOException {
-        int numOfCols = columns.length;
-        int numOfRows = getNumberOfRows();
-        double[][] data = new double[numOfRows][numOfCols];
+    private final class MixedTabularFileDataColumn implements DiscreteDataColumn {
 
-        try (InputStream in = Files.newInputStream(dataFile.toPath(), StandardOpenOption.READ)) {
-            boolean skipHeader = hasHeader;
-            boolean skip = false;
-            boolean hasSeenNonblankChar = false;
-            boolean hasQuoteChar = false;
-
-            byte delimChar = delimiter.getByteValue();
-
-            // comment marker check
-            byte[] comment = commentMarker.getBytes();
-            int cmntIndex = 0;
-            boolean checkForComment = comment.length > 0;
-
-            int colNum = 0;
-            int lineNum = 1;
-
-            int columnIndex = 0;
-
-            int row = 0;  // array row number
-            int col = 0;  // array column number
-
-            StringBuilder dataBuilder = new StringBuilder();
-            byte prevChar = -1;
-            byte[] buffer = new byte[BUFFER_SIZE];
-            int len;
-            while ((len = in.read(buffer)) != -1 && !Thread.currentThread().isInterrupted()) {
-                int i = 0; // buffer array index
-
-                if (skipHeader) {
-                    boolean finished = false;
-                    for (; i < len && !finished && !Thread.currentThread().isInterrupted(); i++) {
-                        byte currChar = buffer[i];
-
-                        if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                            if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
-                                prevChar = currChar;
-                                continue;
-                            }
-
-                            finished = hasSeenNonblankChar && !skip;
-                            if (finished) {
-                                skipHeader = false;
-                            }
-
-                            lineNum++;
-
-                            // reset states
-                            skip = false;
-                            hasSeenNonblankChar = false;
-                            cmntIndex = 0;
-                            checkForComment = comment.length > 0;
-                        } else if (!skip) {
-                            if (currChar > SPACE_CHAR) {
-                                hasSeenNonblankChar = true;
-                            }
-
-                            // skip blank chars at the begining of the line
-                            if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
-                                continue;
-                            }
-
-                            // check for comment marker to skip line
-                            if (checkForComment) {
-                                if (currChar == comment[cmntIndex]) {
-                                    cmntIndex++;
-                                    if (cmntIndex == comment.length) {
-                                        skip = true;
-                                        prevChar = currChar;
-                                        continue;
-                                    }
-                                } else {
-                                    checkForComment = false;
-                                }
-                            }
-                        }
-
-                        prevChar = currChar;
-                    }
-                }
-
-                for (; i < len && !Thread.currentThread().isInterrupted(); i++) {
-                    byte currChar = buffer[i];
-
-                    if (currChar == CARRIAGE_RETURN || currChar == LINE_FEED) {
-                        if (currChar == LINE_FEED && prevChar == CARRIAGE_RETURN) {
-                            prevChar = currChar;
-                            continue;
-                        }
-
-                        if (hasSeenNonblankChar && !skip) {
-                            colNum++;
-
-                            // ensure we don't go out of bound
-                            if (columnIndex < numOfCols) {
-                                TabularDataColumn column = columns[columnIndex];
-                                if (column.getColumnNumber() == colNum) {
-                                    columnIndex++;
-
-                                    String value = dataBuilder.toString().trim();
-                                    if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                        data[row][col++] = CONTINUOUS_MISSING_VALUE;
-                                    } else {
-                                        try {
-                                            data[row][col++] = Double.parseDouble(value);
-                                        } catch (NumberFormatException exception) {
-                                            String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
-                                            LOGGER.error(errMsg, exception);
-                                            throw new DataReaderException(errMsg);
-                                        }
-                                    }
-                                }
-
-                                // ensure we have enough data
-                                if (columnIndex < numOfCols) {
-                                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
-                                }
-                            } else {
-                                String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                                LOGGER.error(errMsg);
-                                throw new DataReaderException(errMsg);
-                            }
-
-                            row++;
-                        }
-
-                        lineNum++;
-
-                        // clear data
-                        dataBuilder.delete(0, dataBuilder.length());
-
-                        // reset states
-                        skip = false;
-                        hasSeenNonblankChar = false;
-                        cmntIndex = 0;
-                        checkForComment = comment.length > 0;
-                        columnIndex = 0;
-                        colNum = 0;
-                        col = 0;
-                    } else if (!skip) {
-                        if (currChar > SPACE_CHAR) {
-                            hasSeenNonblankChar = true;
-                        }
-
-                        // skip blank chars at the begining of the line
-                        if (currChar <= SPACE_CHAR && !hasSeenNonblankChar) {
-                            continue;
-                        }
-
-                        // check for comment marker to skip line
-                        if (checkForComment) {
-                            if (currChar == comment[cmntIndex]) {
-                                cmntIndex++;
-                                if (cmntIndex == comment.length) {
-                                    skip = true;
-                                    prevChar = currChar;
-                                    continue;
-                                }
-                            } else {
-                                checkForComment = false;
-                            }
-                        }
-
-                        if (currChar == quoteCharacter) {
-                            hasQuoteChar = !hasQuoteChar;
-                        } else {
-                            if (hasQuoteChar) {
-                                dataBuilder.append((char) currChar);
-                            } else {
-                                boolean isDelimiter;
-                                switch (delimiter) {
-                                    case WHITESPACE:
-                                        isDelimiter = (currChar <= SPACE_CHAR) && (prevChar > SPACE_CHAR);
-                                        break;
-                                    default:
-                                        isDelimiter = (currChar == delimChar);
-                                }
-
-                                if (isDelimiter) {
-                                    colNum++;
-
-                                    // ensure we don't go out of bound
-                                    if (columnIndex < numOfCols) {
-                                        TabularDataColumn column = columns[columnIndex];
-                                        if (column.getColumnNumber() == colNum) {
-                                            columnIndex++;
-
-                                            String value = dataBuilder.toString().trim();
-                                            if (value.length() == 0 || value.equals(missingValueMarker)) {
-                                                data[row][col++] = CONTINUOUS_MISSING_VALUE;
-                                            } else {
-                                                try {
-                                                    data[row][col++] = Double.parseDouble(value);
-                                                } catch (NumberFormatException exception) {
-                                                    String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
-                                                    LOGGER.error(errMsg, exception);
-                                                    throw new DataReaderException(errMsg);
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                                        LOGGER.error(errMsg);
-                                        throw new DataReaderException(errMsg);
-                                    }
-
-                                    // clear data
-                                    dataBuilder.delete(0, dataBuilder.length());
-                                } else {
-                                    dataBuilder.append((char) currChar);
-                                }
-                            }
-                        }
-                    }
-
-                    prevChar = currChar;
-                }
-            }
-
-            if (!skipHeader && hasSeenNonblankChar && !skip) {
-                colNum++;
-
-                // ensure we don't go out of bound
-                if (columnIndex < numOfCols) {
-                    TabularDataColumn column = columns[columnIndex];
-                    if (column.getColumnNumber() == colNum) {
-                        columnIndex++;
-
-                        String value = dataBuilder.toString().trim();
-                        if (value.length() == 0 || value.equals(missingValueMarker)) {
-                            data[row][col++] = CONTINUOUS_MISSING_VALUE;
-                        } else {
-                            try {
-                                data[row][col++] = Double.parseDouble(value);
-                            } catch (NumberFormatException exception) {
-                                String errMsg = String.format("Invalid number %s on line %d at column %d.", value, lineNum, colNum);
-                                LOGGER.error(errMsg, exception);
-                                throw new DataReaderException(errMsg);
-                            }
-                        }
-                    }
-
-                    // ensure we have enough data
-                    if (columnIndex < numOfCols) {
-                        String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfCols);
-                        LOGGER.error(errMsg);
-                        throw new DataReaderException(errMsg);
-                    }
-                } else {
-                    String errMsg = String.format("Excess data on line %d.  Extracted %d value(s) but expected %d.", lineNum, numOfCols + 1, numOfCols);
-                    LOGGER.error(errMsg);
-                    throw new DataReaderException(errMsg);
-                }
-            }
-        }
-
-        return new ContinuousTabularDataset(columns, data);
-    }
-
-    public interface DiscreteColumn {
-
-        public boolean isDiscrete();
-
-        public void setValue(String value);
-
-        public void recategorize();
-
-        public List<String> getCategories();
-
-        public Integer getEncodeValue(String value);
-
-        public int getColumnNumber();
-
-        public String getName();
-
-    }
-
-    public class MixedDataColumn implements DiscreteColumn {
-
-        private final TabularDataColumn column;
+        private final DataColumn dataColumn;
         private final Map<String, Integer> values;
         private List<String> categories;
 
-        private MixedDataColumn(TabularDataColumn column) {
-            if (column == null) {
-                throw new IllegalArgumentException("Column cannot be null.");
-            }
-            this.column = column;
-            this.values = column.isDiscrete() ? new TreeMap<>() : null;
+        public MixedTabularFileDataColumn(DataColumn dataColumn) {
+            this.dataColumn = dataColumn;
+            this.values = dataColumn.isDiscrete() ? new TreeMap<>() : null;
         }
 
         @Override
         public String toString() {
-            return "MixedDataColumn{" + "column=" + column + ", values=" + values + ", categories=" + categories + '}';
+            return "MixedTabularFileDataColumn{" + "dataColumn=" + dataColumn + ", values=" + values + ", categories=" + categories + '}';
         }
 
         @Override
-        public boolean isDiscrete() {
-            return column.isDiscrete();
-        }
-
-        @Override
-        public void setValue(String value) {
-            this.values.put(value, null);
+        public Integer getEncodeValue(String value) {
+            return (values == null)
+                    ? DISCRETE_MISSING_VALUE
+                    : values.get(value);
         }
 
         @Override
@@ -1222,55 +1375,33 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         }
 
         @Override
-        public Integer getEncodeValue(String value) {
-            return (values == null)
-                    ? DISCRETE_MISSING_VALUE
-                    : values.get(value);
+        public DataColumn getDataColumn() {
+            return dataColumn;
         }
 
         @Override
-        public int getColumnNumber() {
-            return column.getColumnNumber();
-        }
-
-        @Override
-        public String getName() {
-            return column.getName();
-        }
-
-        public TabularDataColumn getColumn() {
-            return column;
+        public void setValue(String value) {
+            if (this.values != null) {
+                this.values.put(value, null);
+            }
         }
 
     }
 
-    public class DiscreteDataColumn implements DiscreteColumn {
+    private final class DiscreteTabularFileDataColumn implements DiscreteDataColumn {
 
-        private final TabularDataColumn column;
+        private final DataColumn dataColumn;
         private final Map<String, Integer> values;
         private List<String> categories;
 
-        private DiscreteDataColumn(TabularDataColumn column) {
-            if (column == null) {
-                throw new IllegalArgumentException("Column cannot be null.");
-            }
-            this.column = column;
+        public DiscreteTabularFileDataColumn(DataColumn dataColumn) {
+            this.dataColumn = dataColumn;
             this.values = new TreeMap<>();
         }
 
         @Override
         public String toString() {
-            return "DiscreteDataColumn{" + "column=" + column + ", values=" + values + ", categories=" + categories + '}';
-        }
-
-        @Override
-        public boolean isDiscrete() {
-            return column.isDiscrete();
-        }
-
-        @Override
-        public void setValue(String value) {
-            this.values.put(value, null);
+            return "DiscreteTabularFileDataColumn{" + "dataColumn=" + dataColumn + ", values=" + values + ", categories=" + categories + '}';
         }
 
         @Override
@@ -1285,8 +1416,15 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         }
 
         @Override
+        public DataColumn getDataColumn() {
+            return dataColumn;
+        }
+
+        @Override
         public List<String> getCategories() {
-            return (categories == null) ? Collections.EMPTY_LIST : categories;
+            return (categories == null)
+                    ? Collections.EMPTY_LIST
+                    : categories;
         }
 
         @Override
@@ -1295,88 +1433,86 @@ public class TabularDataFileReader extends AbstractTabularDataReader {
         }
 
         @Override
-        public int getColumnNumber() {
-            return column.getColumnNumber();
-        }
-
-        @Override
-        public String getName() {
-            return column.getName();
-        }
-
-        public TabularDataColumn getColumn() {
-            return column;
+        public void setValue(String value) {
+            this.values.put(value, null);
         }
 
     }
 
-    public class MixedTabularDataset implements TabularData {
+    private final class MixedTabularFileData implements MixedTabularData {
 
         private final int numOfRows;
-        private final MixedDataColumn[] columns;
-
+        private final DiscreteDataColumn[] dataColumns;
         private final double[][] continuousData;
         private final int[][] discreteData;
 
-        private MixedTabularDataset(int numOfRows, MixedDataColumn[] columns, double[][] continuousData, int[][] discreteData) {
+        public MixedTabularFileData(int numOfRows, DiscreteDataColumn[] dataColumns, double[][] continuousData, int[][] discreteData) {
             this.numOfRows = numOfRows;
-            this.columns = columns;
+            this.dataColumns = dataColumns;
             this.continuousData = continuousData;
             this.discreteData = discreteData;
         }
 
+        @Override
         public int getNumOfRows() {
             return numOfRows;
         }
 
-        public MixedDataColumn[] getColumns() {
-            return columns;
+        @Override
+        public DiscreteDataColumn[] getDataColumns() {
+            return dataColumns;
         }
 
+        @Override
         public double[][] getContinuousData() {
             return continuousData;
         }
 
+        @Override
         public int[][] getDiscreteData() {
             return discreteData;
         }
 
     }
 
-    public class VerticalDiscreteTabularDataset implements TabularData {
+    private final class VerticalDiscreteTabularFileData implements VerticalDiscreteData {
 
-        private final DiscreteDataColumn[] columns;
+        private final DiscreteDataColumn[] dataColumns;
         private final int[][] data;
 
-        private VerticalDiscreteTabularDataset(DiscreteDataColumn[] columns, int[][] data) {
-            this.columns = columns;
+        public VerticalDiscreteTabularFileData(DiscreteDataColumn[] dataColumns, int[][] data) {
+            this.dataColumns = dataColumns;
             this.data = data;
         }
 
-        public DiscreteDataColumn[] getColumns() {
-            return columns;
+        @Override
+        public DiscreteDataColumn[] getDataColumns() {
+            return dataColumns;
         }
 
+        @Override
         public int[][] getData() {
             return data;
         }
 
     }
 
-    public class ContinuousTabularDataset implements TabularData {
+    private final class ContinuousTabularFileData implements ContinuousData {
 
-        private final TabularDataColumn[] columns;
+        private final DataColumn[] dataColumns;
         private final double[][] data;
 
-        private ContinuousTabularDataset(TabularDataColumn[] columns, double[][] data) {
-            this.columns = columns;
+        public ContinuousTabularFileData(DataColumn[] dataColumns, double[][] data) {
+            this.dataColumns = dataColumns;
             this.data = data;
         }
 
-        public TabularDataColumn[] getColumns() {
-            return columns;
+        @Override
+        public DataColumn[] getDataColumns() {
+            return dataColumns;
         }
 
+        @Override
         public double[][] getData() {
             return data;
         }

@@ -16,13 +16,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.tabular;
+package edu.pitt.dbmi.data.reader.validation.tabular;
 
-import edu.pitt.dbmi.data.reader.DataColumn;
-import edu.pitt.dbmi.data.reader.DataReaderException;
 import edu.pitt.dbmi.data.reader.Delimiter;
+import edu.pitt.dbmi.data.reader.tabular.AbstractTabularColumnReader;
 import edu.pitt.dbmi.data.reader.utils.Columns;
 import edu.pitt.dbmi.data.reader.utils.TabularFileUtils;
+import edu.pitt.dbmi.data.reader.validation.MessageType;
+import edu.pitt.dbmi.data.reader.validation.ValidationAttribute;
+import edu.pitt.dbmi.data.reader.validation.ValidationCode;
+import edu.pitt.dbmi.data.reader.validation.ValidationResult;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -33,83 +36,88 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Reads in columns of tabular data from file.
  *
- * Nov 7, 2018 2:24:23 PM
+ * Dec 12, 2018 3:28:26 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class TabularColumnFileReader extends AbstractTabularColumnReader implements TabularColumnReader {
+public class TabularColumnFileValidation extends AbstractTabularColumnReader implements TabularColumnValidation {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TabularColumnFileReader.class);
+    private int maxNumOfMsg;
 
-    public TabularColumnFileReader(Path dataFile, Delimiter delimiter) {
+    public TabularColumnFileValidation(Path dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
+        this.maxNumOfMsg = Integer.MAX_VALUE;
     }
 
     @Override
-    public DataColumn[] readInDataColumns(boolean isDiscrete) throws IOException {
-        return readInDataColumns(Collections.EMPTY_SET, isDiscrete);
+    public List<ValidationResult> validate() {
+        return validate(Collections.EMPTY_SET);
     }
 
     @Override
-    public DataColumn[] readInDataColumns(int[] excludedColumns, boolean isDiscrete) throws IOException {
-        int numOfCols = countNumberOfColumns();
-        int[] excludedCols = Columns.sortNew(excludedColumns);
-        int[] validCols = Columns.extractValidColumnNumbers(numOfCols, excludedCols);
+    public List<ValidationResult> validate(int[] excludedColumns) {
+        List<ValidationResult> results = new LinkedList<>();
 
-        return getColumns(validCols, isDiscrete);
-    }
+        try {
+            int numOfCols = countNumberOfColumns();
+            int[] excludedCols = Columns.sortNew(excludedColumns);
+            int[] validCols = Columns.extractValidColumnNumbers(numOfCols, excludedCols);
 
-    @Override
-    public DataColumn[] readInDataColumns(Set<String> excludedColumns, boolean isDiscrete) throws IOException {
-        if (excludedColumns == null || excludedColumns.isEmpty()) {
-            return getColumns(new int[0], isDiscrete);
-        } else {
-            Set<String> modifiedExcludedCols = new HashSet<>();
-            if (Character.isDefined(quoteCharacter)) {
-                excludedColumns.stream()
-                        .map(e -> e.trim())
-                        .filter(e -> !e.isEmpty())
-                        .forEach(e -> modifiedExcludedCols.add(TabularFileUtils.stripCharacter(e, quoteCharacter)));
-            } else {
-                excludedColumns.stream()
-                        .map(e -> e.trim())
-                        .filter(e -> !e.isEmpty())
-                        .forEach(e -> modifiedExcludedCols.add(e));
-            }
-
-            int[] excludedCols = toColumnNumbers(modifiedExcludedCols);
-
-            return getColumns(excludedCols, isDiscrete);
-        }
-    }
-
-    @Override
-    public DataColumn[] generateColumns(int[] excludedColumns, boolean isDiscrete) throws IOException {
-        List<DataColumn> columns = new LinkedList<>();
-
-        int[] excludedCols = Columns.sortNew(excludedColumns);
-        int numOfCols = countNumberOfColumns();
-        String prefix = "C";
-        int exclColIndex = 0;
-        for (int col = 1; col <= numOfCols && !Thread.currentThread().isInterrupted(); col++) {
-            if (exclColIndex < excludedCols.length && col == excludedCols[exclColIndex]) {
-                exclColIndex++;
-            } else {
-                columns.add(new TabularFileDataColumn(prefix + col, col, isDiscrete));
+            validateColumns(validCols, results);
+        } catch (IOException exception) {
+            if (results.size() <= maxNumOfMsg) {
+                String errMsg = String.format("Unable to read file %s.", dataFile.getFileName());
+                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
+                result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getFileName());
+                results.add(result);
             }
         }
 
-        return columns.toArray(new DataColumn[columns.size()]);
+        return results;
     }
 
-    protected DataColumn[] getColumns(int[] excludedColumns, boolean isDiscrete) throws IOException {
-        List<DataColumn> columns = new LinkedList<>();
+    @Override
+    public List<ValidationResult> validate(Set<String> excludedColumns) {
+        List<ValidationResult> results = new LinkedList<>();
+
+        try {
+            if (excludedColumns == null || excludedColumns.isEmpty()) {
+                validateColumns(new int[0], results);
+            } else {
+                Set<String> modifiedExcludedCols = new HashSet<>();
+                if (Character.isDefined(quoteCharacter)) {
+                    excludedColumns.stream()
+                            .map(e -> e.trim())
+                            .filter(e -> !e.isEmpty())
+                            .forEach(e -> modifiedExcludedCols.add(TabularFileUtils.stripCharacter(e, quoteCharacter)));
+                } else {
+                    excludedColumns.stream()
+                            .map(e -> e.trim())
+                            .filter(e -> !e.isEmpty())
+                            .forEach(e -> modifiedExcludedCols.add(e));
+                }
+
+                int[] excludedCols = toColumnNumbers(modifiedExcludedCols);
+
+                validateColumns(excludedCols, results);
+            }
+        } catch (IOException exception) {
+            if (results.size() <= maxNumOfMsg) {
+                String errMsg = String.format("Unable to read file %s.", dataFile.getFileName());
+                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_IO_ERROR, errMsg);
+                result.setAttribute(ValidationAttribute.FILE_NAME, dataFile.getFileName());
+                results.add(result);
+            }
+        }
+
+        return results;
+    }
+
+    private void validateColumns(int[] excludedColumns, List<ValidationResult> results) throws IOException {
+        int numOfVars = 0;
 
         try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skip = false;
@@ -147,12 +155,13 @@ public class TabularColumnFileReader extends AbstractTabularColumnReader impleme
 
                             colNum++;
                             if (numOfExCols == 0 || exColsIndex >= numOfExCols || colNum != excludedColumns[exColsIndex]) {
+                                numOfVars++;
                                 if (value.isEmpty()) {
-                                    String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
-                                    LOGGER.error(errMsg);
-                                    throw new DataReaderException(errMsg);
-                                } else {
-                                    columns.add(new TabularFileDataColumn(value, colNum, isDiscrete));
+                                    String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNum, colNum);
+                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                                    result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                    result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                    results.add(result);
                                 }
                             }
                         } else {
@@ -213,12 +222,13 @@ public class TabularColumnFileReader extends AbstractTabularColumnReader impleme
                                     if (numOfExCols > 0 && (exColsIndex < numOfExCols && colNum == excludedColumns[exColsIndex])) {
                                         exColsIndex++;
                                     } else {
+                                        numOfVars++;
                                         if (value.isEmpty()) {
-                                            String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
-                                            LOGGER.error(errMsg);
-                                            throw new DataReaderException(errMsg);
-                                        } else {
-                                            columns.add(new TabularFileDataColumn(value, colNum, isDiscrete));
+                                            String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNum, colNum);
+                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                                            results.add(result);
                                         }
                                     }
 
@@ -240,62 +250,32 @@ public class TabularColumnFileReader extends AbstractTabularColumnReader impleme
 
                 colNum++;
                 if (numOfExCols == 0 || exColsIndex >= numOfExCols || colNum != excludedColumns[exColsIndex]) {
+                    numOfVars++;
                     if (value.isEmpty()) {
-                        String errMsg = String.format("Missing variable name on line %d at column %d.", lineNum, colNum);
-                        LOGGER.error(errMsg);
-                        throw new DataReaderException(errMsg);
-                    } else {
-                        columns.add(new TabularFileDataColumn(value, colNum, isDiscrete));
+                        String errMsg = String.format("Line %d, column %d: Missing variable name.", lineNum, colNum);
+                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
+                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
+                        results.add(result);
                     }
                 }
             }
         }
 
-        return columns.toArray(new DataColumn[columns.size()]);
+        if (numOfVars <= 0) {
+            String errMsg = "No variable was read in.";
+            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_MISSING_VALUE, errMsg);
+            results.add(result);
+        }
+
+        String infoMsg = String.format("There are %d variables.", numOfVars);
+        ValidationResult result = new ValidationResult(ValidationCode.INFO, MessageType.FILE_SUMMARY, infoMsg);
+        results.add(result);
     }
 
-    private final class TabularFileDataColumn implements DataColumn {
-
-        private final String name;
-        private final int columnNumber;
-        private boolean discrete;
-
-        private TabularFileDataColumn(String name, int columnNumber) {
-            this.name = name;
-            this.columnNumber = columnNumber;
-        }
-
-        public TabularFileDataColumn(String name, int columnNumber, boolean discrete) {
-            this.name = name;
-            this.columnNumber = columnNumber;
-            this.discrete = discrete;
-        }
-
-        @Override
-        public String toString() {
-            return "TabularFileDataColumn{" + "name=" + name + ", columnNumber=" + columnNumber + ", discrete=" + discrete + '}';
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public int getColumnNumber() {
-            return columnNumber;
-        }
-
-        @Override
-        public boolean isDiscrete() {
-            return discrete;
-        }
-
-        @Override
-        public void setDiscrete(boolean discrete) {
-            this.discrete = discrete;
-        }
-
+    @Override
+    public void setMaximumNumberOfMessages(int maxNumOfMsg) {
+        this.maxNumOfMsg = maxNumOfMsg;
     }
 
 }

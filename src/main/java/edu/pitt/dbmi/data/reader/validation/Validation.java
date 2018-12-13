@@ -16,25 +16,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.validation;
 
 /**
  *
- * Dec 3, 2018 2:24:32 PM
+ * Dec 12, 2018 3:08:46 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends DatasetReader {
+public interface Validation {
 
-    public static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
-
-    public static final int DISCRETE_MISSING_VALUE = -99;
-
-    /**
-     * Set the value to indicate missing data.
-     *
-     * @param missingDataMarker
-     */
-    public void setMissingDataMarker(String missingDataMarker);
+    public void setMaximumNumberOfMessages(int maxNumOfMsg);
 
 }

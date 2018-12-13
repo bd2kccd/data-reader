@@ -18,17 +18,20 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
+import edu.pitt.dbmi.data.reader.ContinuousData;
+import edu.pitt.dbmi.data.reader.Data;
+import edu.pitt.dbmi.data.reader.DataColumn;
 import edu.pitt.dbmi.data.reader.Delimiter;
-import edu.pitt.dbmi.data.reader.tabular.TabularColumnFileReader.TabularDataColumn;
-import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.ContinuousTabularDataset;
-import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.MixedDataColumn;
-import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.MixedTabularDataset;
-import edu.pitt.dbmi.data.reader.tabular.TabularDataFileReader.VerticalDiscreteTabularDataset;
+import edu.pitt.dbmi.data.reader.DiscreteDataColumn;
+import edu.pitt.dbmi.data.reader.MixedTabularData;
+import edu.pitt.dbmi.data.reader.VerticalDiscreteData;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import org.junit.Ignore;
+import java.util.HashSet;
+import java.util.Set;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -45,114 +48,408 @@ public class TabularDataFileReaderTest {
     private final String commentMarker = "//";
     private final boolean hasHeader = true;
 
-    private final String[] excludeVariables = {
-        "X1", "X3", "X5", "X7", "X9"
-    };
-
     private final Path[] continuousDataFiles = {
-        //        Paths.get(getClass().getResource("/data/tabular/continuous/dos_sim_test_data.csv").getFile()),
-        //        Paths.get(getClass().getResource("/data/tabular/continuous/mac_sim_test_data.csv").getFile()),
-        //        Paths.get(getClass().getResource("/data/tabular/continuous/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/continuous/dos_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/continuous/mac_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/continuous/sim_test_data.csv").getFile()),
         Paths.get(getClass().getResource("/data/tabular/continuous/quotes_sim_test_data.csv").getFile())
     };
 
     private final Path[] discreteDataFiles = {
-        //        Paths.get(getClass().getResource("/data/tabular/discrete/dos_sim_test_data.csv").getFile()),
-        //        Paths.get(getClass().getResource("/data/tabular/discrete/mac_sim_test_data.csv").getFile()),
-        //        Paths.get(getClass().getResource("/data/tabular/discrete/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/discrete/dos_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/discrete/mac_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/discrete/sim_test_data.csv").getFile()),
         Paths.get(getClass().getResource("/data/tabular/discrete/quotes_sim_test_data.csv").getFile())
     };
 
     private final Path[] mixedDataFiles = {
-        //        Paths.get(getClass().getResource("/data/tabular/mixed/dos_sim_test_data.csv").getFile()),
-        //        Paths.get(getClass().getResource("/data/tabular/mixed/mac_sim_test_data.csv").getFile()),
-        //        Paths.get(getClass().getResource("/data/tabular/mixed/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/mixed/dos_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/mixed/mac_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/mixed/sim_test_data.csv").getFile()),
         Paths.get(getClass().getResource("/data/tabular/mixed/quotes_sim_test_data.csv").getFile())
     };
 
     public TabularDataFileReaderTest() {
     }
 
-    @Ignore
+    /**
+     * Test of readInData method, of class TabularDataFileReader.
+     *
+     * @throws IOException
+     */
     @Test
-    public void testReadInData() throws IOException {
-        for (Path dataFile : mixedDataFiles) {
-            TabularColumnFileReader columnFileReader = new TabularColumnFileReader(dataFile.toFile(), delimiter);
-            columnFileReader.setCommentMarker(commentMarker);
-            columnFileReader.setMissingValueMarker(missingValueMarker);
-            columnFileReader.setQuoteCharacter(quoteCharacter);
-            columnFileReader.setHasHeader(hasHeader);
+    public void testReadInDataContinuous() throws IOException {
+        for (Path dataFile : continuousDataFiles) {
+            TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnReader.setCommentMarker(commentMarker);
+            columnReader.setQuoteCharacter(quoteCharacter);
 
             boolean isDiscrete = false;
-            TabularDataColumn[] columns = columnFileReader.readInDataColumns(isDiscrete);
-//            columns[1].setDiscrete(false);
-//            Arrays.stream(columns).forEach(System.out::println);
-            int numOfCategories = 4;
-            columnFileReader.determineDiscreteDataColumns(columns, numOfCategories);
-            columns[1].setDiscrete(false);
+            DataColumn[] dataColumns = columnReader.readInDataColumns(isDiscrete);
 
-            TabularDataFileReader dataFileReader = new TabularDataFileReader(dataFile.toFile(), delimiter);
-            dataFileReader.setCommentMarker(commentMarker);
-            dataFileReader.setMissingValueMarker(missingValueMarker);
-            dataFileReader.setQuoteCharacter(quoteCharacter);
-            dataFileReader.setHasHeader(hasHeader);
+            long expected = 10;
+            long actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
 
-            TabularData tabData = dataFileReader.readInData(columns);
-            if (tabData instanceof ContinuousTabularDataset) {
-                ContinuousTabularDataset tabularDataset = (ContinuousTabularDataset) tabData;
+            TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
+            dataReader.setCommentMarker(commentMarker);
+            dataReader.setQuoteCharacter(quoteCharacter);
+            dataReader.setMissingDataMarker(missingValueMarker);
 
-                System.out.println("================================================================================");
-                Arrays.stream(tabularDataset.getColumns()).forEach(System.out::println);
-                System.out.println("--------------------------------------------------------------------------------");
-                double[][] data = tabularDataset.getData();
-                for (double[] rowData : data) {
-                    int lastIndex = rowData.length - 1;
-                    for (int i = 0; i < lastIndex; i++) {
-                        System.out.printf("%f\t", rowData[i]);
-                    }
-                    System.out.printf("%f%n", rowData[lastIndex]);
-                }
-                System.out.println("================================================================================");
-            } else if (tabData instanceof VerticalDiscreteTabularDataset) {
-                VerticalDiscreteTabularDataset tabularDataset = (VerticalDiscreteTabularDataset) tabData;
-                System.out.println("================================================================================");
-                Arrays.stream(tabularDataset.getColumns()).forEach(System.out::println);
-                System.out.println("--------------------------------------------------------------------------------");
-                int[][] data = tabularDataset.getData();
-                int numOfCols = data.length;
-                int numOfRows = data[0].length;
-                for (int row = 0; row < numOfRows; row++) {
-                    for (int col = 0; col < numOfCols; col++) {
-                        System.out.printf("%d\t", data[col][row]);
-                    }
-                    System.out.println();
-                }
-                System.out.println("================================================================================");
-            } else if (tabData instanceof MixedTabularDataset) {
-                MixedTabularDataset tabularDataset = (MixedTabularDataset) tabData;
+            Data data = dataReader.readInData(dataColumns, hasHeader);
+            Assert.assertTrue(data instanceof ContinuousData);
 
-                MixedDataColumn[] mixedCols = tabularDataset.getColumns();
-                System.out.println("================================================================================");
-                Arrays.stream(tabularDataset.getColumns()).forEach(System.out::println);
-                System.out.println("--------------------------------------------------------------------------------");
-                double[][] continuousData = tabularDataset.getContinuousData();
-                int[][] discreteData = tabularDataset.getDiscreteData();
-                int numOfRows = tabularDataset.getNumOfRows();
-                int numOfCols = mixedCols.length;
-                for (int row = 0; row < numOfRows; row++) {
-                    for (int col = 0; col < numOfCols; col++) {
-                        if (continuousData[col] != null) {
-                            System.out.printf("%f\t", continuousData[col][row]);
-                        }
-                        if (discreteData[col] != null) {
-                            System.out.printf("%d\t", discreteData[col][row]);
-                        }
-                    }
-                    System.out.println();
-                }
-                System.out.println("================================================================================");
+            if (data instanceof ContinuousData) {
+                ContinuousData continuousData = (ContinuousData) data;
+                double[][] contData = continuousData.getData();
+
+                expected = 18;
+                actual = contData.length;
+                Assert.assertEquals(expected, actual);
+
+                expected = 10;
+                actual = contData[0].length;
+                Assert.assertEquals(expected, actual);
             }
         }
+    }
+
+    /**
+     * Test of readInData method, of class TabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataContinuousWithExcludeColumns() throws IOException {
+        Set<String> excludedColumns = new HashSet<>(Arrays.asList("X1", "X3", "X4", "X6", "X8", "X10"));
+        for (Path dataFile : continuousDataFiles) {
+            TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnReader.setCommentMarker(commentMarker);
+            columnReader.setQuoteCharacter(quoteCharacter);
+
+            boolean isDiscrete = false;
+            DataColumn[] dataColumns = columnReader.readInDataColumns(excludedColumns, isDiscrete);
+
+            long expected = 4;
+            long actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
+
+            TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
+            dataReader.setCommentMarker(commentMarker);
+            dataReader.setQuoteCharacter(quoteCharacter);
+            dataReader.setMissingDataMarker(missingValueMarker);
+
+            Data data = dataReader.readInData(dataColumns, hasHeader);
+            Assert.assertTrue(data instanceof ContinuousData);
+
+            if (data instanceof ContinuousData) {
+                ContinuousData continuousData = (ContinuousData) data;
+                double[][] contData = continuousData.getData();
+
+                expected = 18;
+                actual = contData.length;
+                Assert.assertEquals(expected, actual);
+
+                expected = 4;
+                actual = contData[0].length;
+                Assert.assertEquals(expected, actual);
+            }
+        }
+    }
+
+    /**
+     * Test of readInData method, of class TabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataDiscrete() throws IOException {
+        for (Path dataFile : discreteDataFiles) {
+            TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnReader.setCommentMarker(commentMarker);
+            columnReader.setQuoteCharacter(quoteCharacter);
+
+            boolean isDiscrete = true;
+            DataColumn[] dataColumns = columnReader.readInDataColumns(isDiscrete);
+
+            long expected = 10;
+            long actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
+
+            TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
+            dataReader.setCommentMarker(commentMarker);
+            dataReader.setQuoteCharacter(quoteCharacter);
+            dataReader.setMissingDataMarker(missingValueMarker);
+
+            Data data = dataReader.readInData(dataColumns, hasHeader);
+            Assert.assertTrue(data instanceof VerticalDiscreteData);
+
+            if (data instanceof VerticalDiscreteData) {
+                VerticalDiscreteData verticalDiscreteData = (VerticalDiscreteData) data;
+
+                DiscreteDataColumn[] columns = verticalDiscreteData.getDataColumns();
+                expected = 10;
+                actual = columns.length;
+                Assert.assertEquals(expected, actual);
+
+                int[][] discreteData = verticalDiscreteData.getData();
+
+                expected = 10;
+                actual = discreteData.length;
+                Assert.assertEquals(expected, actual);
+
+                expected = 19;
+                actual = discreteData[0].length;
+                Assert.assertEquals(expected, actual);
+            }
+        }
+    }
+
+    /**
+     * Test of readInData method, of class TabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataDiscreteWithExcludeColumns() throws IOException {
+        Set<String> excludedColumns = new HashSet<>(Arrays.asList("X1", "X3", "X4", "X6", "X8", "X10"));
+        for (Path dataFile : discreteDataFiles) {
+            TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnReader.setCommentMarker(commentMarker);
+            columnReader.setQuoteCharacter(quoteCharacter);
+
+            boolean isDiscrete = true;
+            DataColumn[] dataColumns = columnReader.readInDataColumns(excludedColumns, isDiscrete);
+
+            long expected = 4;
+            long actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
+
+            TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
+            dataReader.setCommentMarker(commentMarker);
+            dataReader.setQuoteCharacter(quoteCharacter);
+            dataReader.setMissingDataMarker(missingValueMarker);
+
+            Data data = dataReader.readInData(dataColumns, hasHeader);
+            Assert.assertTrue(data instanceof VerticalDiscreteData);
+
+            if (data instanceof VerticalDiscreteData) {
+                VerticalDiscreteData verticalDiscreteData = (VerticalDiscreteData) data;
+
+                DiscreteDataColumn[] columns = verticalDiscreteData.getDataColumns();
+                expected = 4;
+                actual = columns.length;
+                Assert.assertEquals(expected, actual);
+
+                int[][] discreteData = verticalDiscreteData.getData();
+
+                expected = 4;
+                actual = discreteData.length;
+                Assert.assertEquals(expected, actual);
+
+                expected = 19;
+                actual = discreteData[0].length;
+                Assert.assertEquals(expected, actual);
+            }
+        }
+    }
+
+    /**
+     * Test of readInData method, of class TabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataMixed() throws IOException {
+        for (Path dataFile : mixedDataFiles) {
+            TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnReader.setCommentMarker(commentMarker);
+            columnReader.setQuoteCharacter(quoteCharacter);
+
+            boolean isDiscrete = true;
+            DataColumn[] dataColumns = columnReader.readInDataColumns(isDiscrete);
+
+            long expected = 10;
+            long actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
+
+            TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
+            dataReader.setCommentMarker(commentMarker);
+            dataReader.setQuoteCharacter(quoteCharacter);
+            dataReader.setMissingDataMarker(missingValueMarker);
+
+            int numberOfCategories = 4;
+            dataReader.determineDiscreteDataColumns(dataColumns, numberOfCategories, hasHeader);
+
+            Data data = dataReader.readInData(dataColumns, hasHeader);
+            Assert.assertTrue(data instanceof MixedTabularData);
+
+            if (data instanceof MixedTabularData) {
+                MixedTabularData mixedTabularData = (MixedTabularData) data;
+
+                int numOfRows = mixedTabularData.getNumOfRows();
+                int numOfCols = dataColumns.length;
+                DiscreteDataColumn[] discreteDataColumns = mixedTabularData.getDataColumns();
+                double[][] continuousData = mixedTabularData.getContinuousData();
+                int[][] discreteData = mixedTabularData.getDiscreteData();
+
+                expected = 20;
+                actual = numOfRows;
+                Assert.assertEquals(expected, actual);
+
+                expected = 10;
+                actual = discreteDataColumns.length;
+                Assert.assertEquals(expected, actual);
+
+                int numOfContinuous = 0;
+                int numOfDiscrete = 0;
+                for (int i = 0; i < numOfCols; i++) {
+                    if (continuousData[i] != null) {
+                        numOfContinuous++;
+                    }
+                    if (discreteData[i] != null) {
+                        numOfDiscrete++;
+                    }
+                }
+
+                expected = 5;
+                actual = numOfContinuous;
+                Assert.assertEquals(expected, actual);
+
+                expected = 5;
+                actual = numOfDiscrete;
+                Assert.assertEquals(expected, actual);
+            }
+        }
+    }
+
+    /**
+     * Test of readInData method, of class TabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataMixedWithExcludeColumns() throws IOException {
+        Set<String> excludedColumns = new HashSet<>(Arrays.asList("X1", "X3", "X4", "X6", "X8", "X10"));
+        for (Path dataFile : mixedDataFiles) {
+            TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
+            columnReader.setCommentMarker(commentMarker);
+            columnReader.setQuoteCharacter(quoteCharacter);
+
+            boolean isDiscrete = true;
+            DataColumn[] dataColumns = columnReader.readInDataColumns(excludedColumns, isDiscrete);
+
+            long expected = 4;
+            long actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
+
+            TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
+            dataReader.setCommentMarker(commentMarker);
+            dataReader.setQuoteCharacter(quoteCharacter);
+            dataReader.setMissingDataMarker(missingValueMarker);
+
+            int numberOfCategories = 4;
+            dataReader.determineDiscreteDataColumns(dataColumns, numberOfCategories, hasHeader);
+
+            Data data = dataReader.readInData(dataColumns, hasHeader);
+            Assert.assertTrue(data instanceof MixedTabularData);
+
+            if (data instanceof MixedTabularData) {
+                MixedTabularData mixedTabularData = (MixedTabularData) data;
+
+                int numOfRows = mixedTabularData.getNumOfRows();
+                int numOfCols = dataColumns.length;
+                DiscreteDataColumn[] discreteDataColumns = mixedTabularData.getDataColumns();
+                double[][] continuousData = mixedTabularData.getContinuousData();
+                int[][] discreteData = mixedTabularData.getDiscreteData();
+
+                expected = 20;
+                actual = numOfRows;
+                Assert.assertEquals(expected, actual);
+
+                expected = 4;
+                actual = discreteDataColumns.length;
+                Assert.assertEquals(expected, actual);
+
+                int numOfContinuous = 0;
+                int numOfDiscrete = 0;
+                for (int i = 0; i < numOfCols; i++) {
+                    if (continuousData[i] != null) {
+                        numOfContinuous++;
+                    }
+                    if (discreteData[i] != null) {
+                        numOfDiscrete++;
+                    }
+                }
+
+                expected = 1;
+                actual = numOfContinuous;
+                Assert.assertEquals(expected, actual);
+
+                expected = 3;
+                actual = numOfDiscrete;
+                Assert.assertEquals(expected, actual);
+            }
+        }
+    }
+
+    /**
+     * Test of determineDiscreteDataColumns method, of class
+     * TabularColumnFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testDetermineDiscreteDataColumns() throws IOException {
+        for (Path dataFile : mixedDataFiles) {
+            TabularColumnReader fileReader = new TabularColumnFileReader(dataFile, delimiter);
+            fileReader.setCommentMarker(commentMarker);
+            fileReader.setQuoteCharacter(quoteCharacter);
+
+            boolean isDiscrete = false;
+            DataColumn[] dataColumns = fileReader.readInDataColumns(isDiscrete);
+
+            TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
+            dataReader.setCommentMarker(commentMarker);
+            dataReader.setQuoteCharacter(quoteCharacter);
+            dataReader.setMissingDataMarker(missingValueMarker);
+
+            dataReader.determineDiscreteDataColumns(dataColumns, 4, hasHeader);
+            long numOfDiscrete = Arrays.stream(dataColumns)
+                    .filter(DataColumn::isDiscrete)
+                    .count();
+
+            long expected = 5;
+            long actual = numOfDiscrete;
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Test of readInData method, of class TabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInData() throws IOException {
+    }
+
+    /**
+     * Test of readInDiscreteData method, of class TabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDiscreteData() throws IOException {
+    }
+
+    /**
+     * Test of readInDiscreteCategorizes method, of class TabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDiscreteCategorizes() throws IOException {
     }
 
 }
