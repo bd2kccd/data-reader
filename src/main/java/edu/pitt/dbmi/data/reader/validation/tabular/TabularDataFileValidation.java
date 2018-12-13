@@ -189,17 +189,6 @@ public class TabularDataFileValidation extends AbstractDataFileReader implements
                                     result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                     result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                     results.add(result);
-                                } else if (!value.equals(missingDataMarker)) {
-                                    try {
-                                        Integer.parseInt(value);
-                                    } catch (NumberFormatException exception) {
-                                        String errMsg = String.format("Line %d, column %d: Non-discrete number %s.", lineNum, colNum, value);
-                                        ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
-                                        result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                        result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                        result.setAttribute(ValidationAttribute.VALUE, value);
-                                        results.add(result);
-                                    }
                                 }
 
                                 columnIndex++;
@@ -285,17 +274,6 @@ public class TabularDataFileValidation extends AbstractDataFileReader implements
                                             result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                             results.add(result);
-                                        } else if (!value.equals(missingDataMarker)) {
-                                            try {
-                                                Integer.parseInt(value);
-                                            } catch (NumberFormatException exception) {
-                                                String errMsg = String.format("Line %d, column %d: Non-discrete number %s.", lineNum, colNum, value);
-                                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
-                                                result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                                result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                                result.setAttribute(ValidationAttribute.VALUE, value);
-                                                results.add(result);
-                                            }
                                         }
 
                                         columnIndex++;
@@ -330,17 +308,6 @@ public class TabularDataFileValidation extends AbstractDataFileReader implements
                         result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                         results.add(result);
-                    } else if (!value.equals(missingDataMarker)) {
-                        try {
-                            Integer.parseInt(value);
-                        } catch (NumberFormatException exception) {
-                            String errMsg = String.format("Line %d, column %d: Non-discrete number %s.", lineNum, colNum, value);
-                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
-                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                            result.setAttribute(ValidationAttribute.VALUE, value);
-                            results.add(result);
-                        }
                     }
 
                     columnIndex++;
@@ -756,18 +723,7 @@ public class TabularDataFileValidation extends AbstractDataFileReader implements
                                     result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                     results.add(result);
                                 } else if (!value.equals(missingDataMarker)) {
-                                    if (dataColumn.isDiscrete()) {
-                                        try {
-                                            Integer.parseInt(value);
-                                        } catch (NumberFormatException exception) {
-                                            String errMsg = String.format("Line %d, column %d: Non-discrete number %s.", lineNum, colNum, value);
-                                            ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
-                                            result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                            result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                            result.setAttribute(ValidationAttribute.VALUE, value);
-                                            results.add(result);
-                                        }
-                                    } else {
+                                    if (!dataColumn.isDiscrete()) {
                                         try {
                                             Double.parseDouble(value);
                                         } catch (NumberFormatException exception) {
@@ -865,18 +821,7 @@ public class TabularDataFileValidation extends AbstractDataFileReader implements
                                             result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                                             results.add(result);
                                         } else if (!value.equals(missingDataMarker)) {
-                                            if (dataColumn.isDiscrete()) {
-                                                try {
-                                                    Integer.parseInt(value);
-                                                } catch (NumberFormatException exception) {
-                                                    String errMsg = String.format("Line %d, column %d: Non-discrete number %s.", lineNum, colNum, value);
-                                                    ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
-                                                    result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                                    result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                                    result.setAttribute(ValidationAttribute.VALUE, value);
-                                                    results.add(result);
-                                                }
-                                            } else {
+                                            if (!dataColumn.isDiscrete()) {
                                                 try {
                                                     Double.parseDouble(value);
                                                 } catch (NumberFormatException exception) {
@@ -923,18 +868,7 @@ public class TabularDataFileValidation extends AbstractDataFileReader implements
                         result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
                         results.add(result);
                     } else if (!value.equals(missingDataMarker)) {
-                        if (dataColumn.isDiscrete()) {
-                            try {
-                                Integer.parseInt(value);
-                            } catch (NumberFormatException exception) {
-                                String errMsg = String.format("Line %d, column %d: Non-discrete number %s.", lineNum, colNum, value);
-                                ValidationResult result = new ValidationResult(ValidationCode.ERROR, MessageType.FILE_INVALID_NUMBER, errMsg);
-                                result.setAttribute(ValidationAttribute.COLUMN_NUMBER, colNum);
-                                result.setAttribute(ValidationAttribute.LINE_NUMBER, lineNum);
-                                result.setAttribute(ValidationAttribute.VALUE, value);
-                                results.add(result);
-                            }
-                        } else {
+                        if (!dataColumn.isDiscrete()) {
                             try {
                                 Double.parseDouble(value);
                             } catch (NumberFormatException exception) {

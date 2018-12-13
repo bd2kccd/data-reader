@@ -65,7 +65,7 @@ public class TabularDataFileValidationTest {
      * @throws IOException
      */
     @Test
-    public void testValidateForMixedData() throws IOException {
+    public void testValidateForMixedDataWithExcludedColumns() throws IOException {
         TabularColumnReader columnReader = new TabularColumnFileReader(mixedDataFile, delimiter);
         columnReader.setCommentMarker(commentMarker);
         columnReader.setQuoteCharacter(quoteCharacter);
@@ -123,7 +123,7 @@ public class TabularDataFileValidationTest {
      * @throws IOException
      */
     @Test
-    public void testValidateForMixedDataWithExcludedColumns() throws IOException {
+    public void testValidateForMixedData() throws IOException {
         TabularColumnReader columnReader = new TabularColumnFileReader(mixedDataFile, delimiter);
         columnReader.setCommentMarker(commentMarker);
         columnReader.setQuoteCharacter(quoteCharacter);
@@ -169,7 +169,7 @@ public class TabularDataFileValidationTest {
         actual = warnings.size();
         Assert.assertEquals(expected, actual);
 
-        expected = 1;
+        expected = 0;
         actual = errors.size();
         Assert.assertEquals(expected, actual);
     }
@@ -268,7 +268,7 @@ public class TabularDataFileValidationTest {
         actual = warnings.size();
         Assert.assertEquals(expected, actual);
 
-        expected = 1;
+        expected = 0;
         actual = errors.size();
         Assert.assertEquals(expected, actual);
     }
