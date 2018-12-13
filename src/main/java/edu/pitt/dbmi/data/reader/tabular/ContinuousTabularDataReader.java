@@ -18,28 +18,33 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.pitt.dbmi.data.reader.DataColumn;
-import edu.pitt.dbmi.data.reader.DatasetReader;
+import edu.pitt.dbmi.data.reader.Data;
+import edu.pitt.dbmi.data.reader.DataReader;
 import java.io.IOException;
 import java.util.Set;
 
 /**
- * Reads in columns of tabular data.
  *
- * Dec 8, 2018 3:57:51 PM
+ * Dec 13, 2018 4:11:33 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularColumnReader extends DatasetReader {
+public interface ContinuousTabularDataReader extends DataReader {
 
-    public DataColumn[] readInDataColumns(boolean isDiscrete) throws IOException;
+    /**
+     *
+     * Read in dataset. Excludes any variables from the given set.
+     *
+     * @param excludedColumns set of variable names to exclude
+     * @return
+     * @throws IOException whenever unable to read file
+     */
+    public Data readInData(Set<String> excludedColumns) throws IOException;
 
-    public DataColumn[] readInDataColumns(int[] excludedColumns, boolean isDiscrete) throws IOException;
+    public Data readInData(int[] excludedColumns) throws IOException;
 
-    public DataColumn[] readInDataColumns(Set<String> excludedColumns, boolean isDiscrete) throws IOException;
+    public Data readInData() throws IOException;
 
-    public DataColumn[] generateColumns(int[] excludedCols, boolean isDiscrete) throws IOException;
-
-    public int[] toColumnNumbers(Set<String> columnNames) throws IOException;
+    public void setHasHeader(boolean hasHeader);
 
 }

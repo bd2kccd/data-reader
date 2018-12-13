@@ -41,7 +41,7 @@ public abstract class AbstractTabularColumnReader extends DatasetFileReader {
         super(dataFile, delimiter);
     }
 
-    protected int[] toColumnNumbers(Set<String> columnNames) throws IOException {
+    public int[] toColumnNumbers(Set<String> columnNames) throws IOException {
         if (columnNames == null || columnNames.isEmpty()) {
             return new int[0];
         }
