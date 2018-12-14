@@ -18,10 +18,10 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.pitt.dbmi.data.reader.ContinuousData;
 import edu.pitt.dbmi.data.reader.Data;
-import edu.pitt.dbmi.data.reader.DataColumn;
 import edu.pitt.dbmi.data.reader.Delimiter;
+import edu.pitt.dbmi.data.reader.DiscreteDataColumn;
+import edu.pitt.dbmi.data.reader.VerticalDiscreteData;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,11 +33,11 @@ import org.junit.Test;
 
 /**
  *
- * Dec 13, 2018 5:40:46 PM
+ * Dec 14, 2018 11:10:26 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataReaderTest {
+public class VerticalDiscreteTabularDataFileReaderTest {
 
     private final Delimiter delimiter = Delimiter.COMMA;
     private final char quoteCharacter = '"';
@@ -46,17 +46,17 @@ public class ContinuousTabularDataReaderTest {
     private final boolean hasHeader = true;
 
     private final Path[] dataFiles = {
-        Paths.get(getClass().getResource("/data/tabular/continuous/dos_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/tabular/continuous/mac_sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/tabular/continuous/sim_test_data.csv").getFile()),
-        Paths.get(getClass().getResource("/data/tabular/continuous/quotes_sim_test_data.csv").getFile())
+        Paths.get(getClass().getResource("/data/tabular/discrete/dos_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/discrete/mac_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/discrete/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/discrete/quotes_sim_test_data.csv").getFile())
     };
 
-    public ContinuousTabularDataReaderTest() {
+    public VerticalDiscreteTabularDataFileReaderTest() {
     }
 
     /**
-     * Test of readInData method, of class ContinuousTabularDataReader.
+     * Test of readInData method, of class VerticalDiscreteTabularDataReader.
      *
      * @throws IOException
      */
@@ -64,67 +64,67 @@ public class ContinuousTabularDataReaderTest {
     public void testReadInDataWithExcludedColumns() throws IOException {
         Set<String> excludedColumns = new HashSet<>(Arrays.asList("X1", "X3", "X4", "X6", "X8", "X10"));
         for (Path dataFile : dataFiles) {
-            ContinuousTabularDataReader dataReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
+            VerticalDiscreteTabularDataReader dataReader = new VerticalDiscreteTabularDataFileReader(dataFile, delimiter);
             dataReader.setCommentMarker(commentMarker);
             dataReader.setQuoteCharacter(quoteCharacter);
             dataReader.setMissingDataMarker(missingValueMarker);
             dataReader.setHasHeader(hasHeader);
 
             Data data = dataReader.readInData(excludedColumns);
-            Assert.assertTrue(data instanceof ContinuousData);
+            Assert.assertTrue(data instanceof VerticalDiscreteData);
 
-            if (data instanceof ContinuousData) {
-                ContinuousData continuousData = (ContinuousData) data;
-                DataColumn[] dataColumns = continuousData.getDataColumns();
-                double[][] contData = continuousData.getData();
+            if (data instanceof VerticalDiscreteData) {
+                VerticalDiscreteData discreteData = (VerticalDiscreteData) data;
+                DiscreteDataColumn[] dataColumns = discreteData.getDataColumns();
+                int[][] discData = discreteData.getData();
 
                 long expected = 4;
                 long actual = dataColumns.length;
                 Assert.assertEquals(expected, actual);
 
                 expected = 4;
-                actual = contData[0].length;
+                actual = discData.length;
                 Assert.assertEquals(expected, actual);
 
-                expected = 18;
-                actual = contData.length;
+                expected = 19;
+                actual = discData[0].length;
                 Assert.assertEquals(expected, actual);
             }
         }
     }
 
     /**
-     * Test of readInData method, of class ContinuousTabularDataReader.
+     * Test of readInData method, of class VerticalDiscreteTabularDataReader.
      *
      * @throws IOException
      */
     @Test
     public void testReadInData() throws IOException {
         for (Path dataFile : dataFiles) {
-            ContinuousTabularDataReader dataReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
+            VerticalDiscreteTabularDataReader dataReader = new VerticalDiscreteTabularDataFileReader(dataFile, delimiter);
             dataReader.setCommentMarker(commentMarker);
             dataReader.setQuoteCharacter(quoteCharacter);
             dataReader.setMissingDataMarker(missingValueMarker);
             dataReader.setHasHeader(hasHeader);
 
             Data data = dataReader.readInData();
-            Assert.assertTrue(data instanceof ContinuousData);
+            Assert.assertTrue(data instanceof VerticalDiscreteData);
 
-            if (data instanceof ContinuousData) {
-                ContinuousData continuousData = (ContinuousData) data;
-                DataColumn[] dataColumns = continuousData.getDataColumns();
-                double[][] contData = continuousData.getData();
+            if (data instanceof VerticalDiscreteData) {
+                VerticalDiscreteData discreteData = (VerticalDiscreteData) data;
+                DiscreteDataColumn[] dataColumns = discreteData.getDataColumns();
+                int[][] contData = discreteData.getData();
 
                 long expected = 10;
                 long actual = dataColumns.length;
                 Assert.assertEquals(expected, actual);
 
                 expected = 10;
-                actual = contData[0].length;
+                actual = contData.length;
                 Assert.assertEquals(expected, actual);
 
-                expected = 18;
-                actual = contData.length;
+                expected = 19;
+                actual = contData[0].length;
                 Assert.assertEquals(expected, actual);
             }
         }

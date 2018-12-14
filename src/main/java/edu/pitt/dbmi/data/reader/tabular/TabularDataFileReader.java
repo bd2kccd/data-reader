@@ -59,6 +59,10 @@ public class TabularDataFileReader extends AbstractDataFileReader implements Tab
 
     @Override
     public Data readInData(DataColumn[] dataColumns, boolean hasHeader) throws IOException {
+        if (dataColumns == null) {
+            return null;
+        }
+
         boolean isDiscrete = false;
         boolean isContinuous = false;
         for (DataColumn dataColumn : dataColumns) {

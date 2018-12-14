@@ -29,16 +29,16 @@ import java.util.Set;
 
 /**
  *
- * Dec 13, 2018 4:03:33 PM
+ * Dec 14, 2018 10:53:16 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataFileReader extends AbstractDataFileReader implements ContinuousTabularDataReader {
+public class VerticalDiscreteTabularDataFileReader extends AbstractDataFileReader implements VerticalDiscreteTabularDataReader {
 
-    protected boolean hasHeader;
-    protected char quoteChar;
+    private boolean hasHeader;
+    private char quoteChar;
 
-    public ContinuousTabularDataFileReader(Path dataFile, Delimiter delimiter) {
+    public VerticalDiscreteTabularDataFileReader(Path dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
         this.hasHeader = hasHeader = true;
         this.quoteChar = '"';
@@ -51,7 +51,7 @@ public class ContinuousTabularDataFileReader extends AbstractDataFileReader impl
         columnReader.setQuoteCharacter(quoteChar);
 
         DataColumn[] dataColumns;
-        boolean isDiscrete = false;
+        boolean isDiscrete = true;
         if (hasHeader) {
             dataColumns = columnReader.readInDataColumns(excludedColumns, isDiscrete);
         } else {
@@ -73,7 +73,7 @@ public class ContinuousTabularDataFileReader extends AbstractDataFileReader impl
         columnReader.setCommentMarker(commentMarker);
         columnReader.setQuoteCharacter(quoteChar);
 
-        boolean isDiscrete = false;
+        boolean isDiscrete = true;
         DataColumn[] dataColumns = hasHeader
                 ? columnReader.readInDataColumns(excludedColumns, isDiscrete)
                 : columnReader.generateColumns(excludedColumns, isDiscrete);

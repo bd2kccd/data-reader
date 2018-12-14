@@ -18,12 +18,33 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
+import edu.pitt.dbmi.data.reader.Data;
+import edu.pitt.dbmi.data.reader.DataReader;
+import java.io.IOException;
+import java.util.Set;
+
 /**
  *
- * Dec 13, 2018 4:11:33 PM
+ * Dec 14, 2018 10:58:01 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface ContinuousTabularDataReader extends TabularDatasetReader {
+public interface TabularDatasetReader extends DataReader {
+
+    /**
+     *
+     * Read in dataset. Excludes any variables from the given set.
+     *
+     * @param excludedColumns set of variable names to exclude
+     * @return
+     * @throws IOException whenever unable to read file
+     */
+    public Data readInData(Set<String> excludedColumns) throws IOException;
+
+    public Data readInData(int[] excludedColumns) throws IOException;
+
+    public Data readInData() throws IOException;
+
+    public void setHasHeader(boolean hasHeader);
 
 }
