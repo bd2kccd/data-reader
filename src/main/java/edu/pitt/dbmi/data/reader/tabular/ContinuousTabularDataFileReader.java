@@ -35,8 +35,8 @@ import java.util.Set;
  */
 public class ContinuousTabularDataFileReader extends AbstractDataFileReader implements ContinuousTabularDataReader {
 
-    protected boolean hasHeader;
-    protected char quoteChar;
+    private boolean hasHeader;
+    private char quoteChar;
 
     public ContinuousTabularDataFileReader(Path dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
