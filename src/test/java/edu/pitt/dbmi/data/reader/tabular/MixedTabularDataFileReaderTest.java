@@ -47,9 +47,9 @@ public class MixedTabularDataFileReaderTest {
     private final int numberOfDiscreteCategories = 4;
 
     private final Path[] dataFiles = {
-        //        Paths.get(getClass().getResource("/data/tabular/mixed/dos_sim_test_data.csv").getFile()),
-        //        Paths.get(getClass().getResource("/data/tabular/mixed/mac_sim_test_data.csv").getFile()),
-        //        Paths.get(getClass().getResource("/data/tabular/mixed/sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/mixed/dos_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/mixed/mac_sim_test_data.csv").getFile()),
+        Paths.get(getClass().getResource("/data/tabular/mixed/sim_test_data.csv").getFile()),
         Paths.get(getClass().getResource("/data/tabular/mixed/quotes_sim_test_data.csv").getFile())
     };
 
