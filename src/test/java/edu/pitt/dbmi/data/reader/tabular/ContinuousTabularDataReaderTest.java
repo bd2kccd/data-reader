@@ -61,6 +61,79 @@ public class ContinuousTabularDataReaderTest {
      * @throws IOException
      */
     @Test
+    public void testReadInDataWithNoHeaderWithExcludedColumns() throws IOException {
+        Path dataFile = Paths.get(getClass().getResource("/data/tabular/continuous/no_header_sim_test_data.csv").getFile());
+        ContinuousTabularDataReader dataReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
+        dataReader.setCommentMarker(commentMarker);
+        dataReader.setQuoteCharacter(quoteCharacter);
+        dataReader.setMissingDataMarker(missingValueMarker);
+        dataReader.setHasHeader(false);
+
+        int[] excludedColumns = {5, 3, 1, 8, 10, 11};
+        Data data = dataReader.readInData(excludedColumns);
+        Assert.assertTrue(data instanceof ContinuousData);
+
+        if (data instanceof ContinuousData) {
+            ContinuousData continuousData = (ContinuousData) data;
+            DataColumn[] dataColumns = continuousData.getDataColumns();
+            double[][] contData = continuousData.getData();
+
+            long expected = 5;
+            long actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
+
+            expected = 5;
+            actual = contData[0].length;
+            Assert.assertEquals(expected, actual);
+
+            expected = 18;
+            actual = contData.length;
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Test of readInData method, of class ContinuousTabularDataReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataWithNoHeader() throws IOException {
+        Path dataFile = Paths.get(getClass().getResource("/data/tabular/continuous/no_header_sim_test_data.csv").getFile());
+        ContinuousTabularDataReader dataReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
+        dataReader.setCommentMarker(commentMarker);
+        dataReader.setQuoteCharacter(quoteCharacter);
+        dataReader.setMissingDataMarker(missingValueMarker);
+        dataReader.setHasHeader(false);
+
+        Data data = dataReader.readInData();
+        Assert.assertTrue(data instanceof ContinuousData);
+
+        if (data instanceof ContinuousData) {
+            ContinuousData continuousData = (ContinuousData) data;
+            DataColumn[] dataColumns = continuousData.getDataColumns();
+            double[][] contData = continuousData.getData();
+
+            long expected = 10;
+            long actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
+
+            expected = 10;
+            actual = contData[0].length;
+            Assert.assertEquals(expected, actual);
+
+            expected = 18;
+            actual = contData.length;
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Test of readInData method, of class ContinuousTabularDataReader.
+     *
+     * @throws IOException
+     */
+    @Test
     public void testReadInDataWithExcludedColumns() throws IOException {
         Set<String> excludedColumns = new HashSet<>(Arrays.asList("X1", "X3", "X4", "X6", "X8", "X10"));
         for (Path dataFile : dataFiles) {

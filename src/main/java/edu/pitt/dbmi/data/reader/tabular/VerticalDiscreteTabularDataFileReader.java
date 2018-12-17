@@ -50,14 +50,10 @@ public class VerticalDiscreteTabularDataFileReader extends AbstractDataFileReade
         columnReader.setCommentMarker(commentMarker);
         columnReader.setQuoteCharacter(quoteChar);
 
-        DataColumn[] dataColumns;
         boolean isDiscrete = true;
-        if (hasHeader) {
-            dataColumns = columnReader.readInDataColumns(excludedColumns, isDiscrete);
-        } else {
-            int[] excludedCols = columnReader.toColumnNumbers(excludedColumns);
-            dataColumns = columnReader.generateColumns(excludedCols, isDiscrete);
-        }
+        DataColumn[] dataColumns = hasHeader
+                ? columnReader.readInDataColumns(excludedColumns, isDiscrete)
+                : columnReader.generateColumns(new int[0], isDiscrete);
 
         TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
         dataReader.setCommentMarker(commentMarker);

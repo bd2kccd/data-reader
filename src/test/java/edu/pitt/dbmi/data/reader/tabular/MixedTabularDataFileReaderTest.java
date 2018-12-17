@@ -62,6 +62,117 @@ public class MixedTabularDataFileReaderTest {
      * @throws IOException
      */
     @Test
+    public void testReadInDataWithNoHeaderWithExcludeColumns() throws IOException {
+        Path dataFile = Paths.get(getClass().getResource("/data/tabular/mixed/no_header_sim_test_data.csv").getFile());
+        MixedTabularDataReader dataReader = new MixedTabularDataFileReader(numberOfDiscreteCategories, dataFile, delimiter);
+        dataReader.setCommentMarker(commentMarker);
+        dataReader.setQuoteCharacter(quoteCharacter);
+        dataReader.setMissingDataMarker(missingValueMarker);
+        dataReader.setHasHeader(false);
+
+        int[] excludedColumns = {5, 3, 8, 10, 11, 9};
+        Data data = dataReader.readInData(excludedColumns);
+        Assert.assertTrue(data instanceof MixedTabularData);
+
+        if (data instanceof MixedTabularData) {
+            MixedTabularData mixedTabularData = (MixedTabularData) data;
+
+            DiscreteDataColumn[] dataColumns = mixedTabularData.getDataColumns();
+            double[][] continuousData = mixedTabularData.getContinuousData();
+            int[][] discreteData = mixedTabularData.getDiscreteData();
+
+            int numOfRows = mixedTabularData.getNumOfRows();
+            int numOfCols = (continuousData.length > 0)
+                    ? continuousData.length
+                    : (discreteData.length > 0) ? discreteData.length : 0;
+
+            long expected = 20;
+            long actual = numOfRows;
+            Assert.assertEquals(expected, actual);
+
+            expected = 5;
+            actual = numOfCols;
+            Assert.assertEquals(expected, actual);
+
+            expected = 5;
+            actual = discreteData.length;
+            Assert.assertEquals(expected, actual);
+
+            expected = 5;
+            actual = continuousData.length;
+            Assert.assertEquals(expected, actual);
+
+            expected = 5;
+            actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
+
+            expected = 3;
+            actual = Arrays.stream(dataColumns).filter(e -> e.getDataColumn().isDiscrete()).count();
+            Assert.assertEquals(expected, actual);
+
+            expected = 2;
+            actual = Arrays.stream(dataColumns).filter(e -> !e.getDataColumn().isDiscrete()).count();
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Test of readInData method, of class MixedTabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataWithNoHeader() throws IOException {
+        Path dataFile = Paths.get(getClass().getResource("/data/tabular/mixed/no_header_sim_test_data.csv").getFile());
+        MixedTabularDataReader dataReader = new MixedTabularDataFileReader(numberOfDiscreteCategories, dataFile, delimiter);
+        dataReader.setCommentMarker(commentMarker);
+        dataReader.setQuoteCharacter(quoteCharacter);
+        dataReader.setMissingDataMarker(missingValueMarker);
+        dataReader.setHasHeader(false);
+
+        Data data = dataReader.readInData();
+        Assert.assertTrue(data instanceof MixedTabularData);
+
+        if (data instanceof MixedTabularData) {
+            MixedTabularData mixedTabularData = (MixedTabularData) data;
+
+            DiscreteDataColumn[] dataColumns = mixedTabularData.getDataColumns();
+            double[][] continuousData = mixedTabularData.getContinuousData();
+            int[][] discreteData = mixedTabularData.getDiscreteData();
+
+            int numOfRows = mixedTabularData.getNumOfRows();
+            int numOfCols = (continuousData.length > 0)
+                    ? continuousData.length
+                    : (discreteData.length > 0) ? discreteData.length : 0;
+
+            long expected = 20;
+            long actual = numOfRows;
+            Assert.assertEquals(expected, actual);
+
+            expected = 10;
+            actual = numOfCols;
+            Assert.assertEquals(expected, actual);
+
+            expected = 10;
+            actual = discreteData.length;
+            Assert.assertEquals(expected, actual);
+
+            expected = 10;
+            actual = continuousData.length;
+            Assert.assertEquals(expected, actual);
+
+            expected = 10;
+            actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
+        }
+    }
+
+    /**
+     * Test of readInData method, of class MixedTabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
     public void testReadInDataWithExcludeContinuousColumns() throws IOException {
         Set<String> excludedColumns = new HashSet<>(Arrays.asList("X1", "X3", "X6", "X8", "X9"));
         for (Path dataFile : dataFiles) {
