@@ -1,0 +1,25 @@
+{
+  "interventions" : [ {
+    "value" : {
+      "name" : "cd3_v",
+      "isContinuous" : true
+    },
+    "status" : {
+      "name" : "cd3_s",
+      "isContinuous" : false
+    }
+  }, {
+    "value" : {
+      "name" : "icam",
+      "isContinuous" : false
+    },
+    "status" : null
+  } ],
+  "domains" : [ {
+    "name" : "raf",
+    "isContinuous" : true
+  }, {
+    "name" : "mek",
+    "isContinuous" : true
+  } ]
+}
