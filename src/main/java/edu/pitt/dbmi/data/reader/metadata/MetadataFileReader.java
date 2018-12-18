@@ -23,8 +23,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -33,8 +31,6 @@ import org.slf4j.LoggerFactory;
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
 public class MetadataFileReader implements MetadataReader {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(MetadataFileReader.class);
 
     protected final Path metadataFile;
 
@@ -45,8 +41,8 @@ public class MetadataFileReader implements MetadataReader {
     @Override
     public DataColumnMetadata read() throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(metadataFile)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readValue(reader, DataColumnMetadata.class);
+            return (new ObjectMapper())
+                    .readValue(reader, DataColumnMetadata.class);
         }
     }
 
