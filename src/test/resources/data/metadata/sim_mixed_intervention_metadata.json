@@ -1,0 +1,25 @@
+{
+    "domains": [{
+            "name": "X3",
+            "continuous": true
+        }, {
+            "name": "X5",
+            "continuous": true
+        }],
+    "interventions": [{
+            "value": {
+                "name": "X9",
+                "continuous": true
+            },
+            "status": {
+                "name": "X10",
+                "continuous": false
+            }
+        }, {
+            "value": {
+                "name": "X8",
+                "continuous": false
+            },
+            "status": null
+        }]
+}

@@ -39,10 +39,9 @@ public class MetadataFileReader implements MetadataReader {
     }
 
     @Override
-    public DataColumnMetadata read() throws IOException {
+    public Metadata read() throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(metadataFile)) {
-            return (new ObjectMapper())
-                    .readValue(reader, DataColumnMetadata.class);
+            return (new ObjectMapper()).readValue(reader, Metadata.class);
         }
     }
 

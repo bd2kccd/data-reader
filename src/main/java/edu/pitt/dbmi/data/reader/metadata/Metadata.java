@@ -18,44 +18,50 @@
  */
 package edu.pitt.dbmi.data.reader.metadata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
+
 /**
  *
  * Dec 18, 2018 11:21:23 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class Metadata {
+public class Metadata {
 
-    protected String name;
-    protected boolean isContinuous;
+    @JsonProperty("domains")
+    private List<ColumnMetadata> domainColumnns;
+
+    @JsonProperty("interventions")
+    private List<InterventionalColumn> interventionalColumns;
 
     public Metadata() {
     }
 
-    public Metadata(String name, boolean isContinuous) {
-        this.name = name;
-        this.isContinuous = isContinuous;
-    }
-
-    public String getName() {
-        return name;
+    public Metadata(List<ColumnMetadata> domainColumnns, List<InterventionalColumn> interventionalColumns) {
+        this.domainColumnns = domainColumnns;
+        this.interventionalColumns = interventionalColumns;
     }
 
     @Override
     public String toString() {
-        return "Metadata{" + "name=" + name + ", isContinuous=" + isContinuous + '}';
+        return "Metadata{" + "domainColumnns=" + domainColumnns + ", interventionalColumns=" + interventionalColumns + '}';
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public List<ColumnMetadata> getDomainColumnns() {
+        return domainColumnns;
     }
 
-    public boolean isIsContinuous() {
-        return isContinuous;
+    public void setDomainColumnns(List<ColumnMetadata> domainColumnns) {
+        this.domainColumnns = domainColumnns;
     }
 
-    public void setIsContinuous(boolean isContinuous) {
-        this.isContinuous = isContinuous;
+    public List<InterventionalColumn> getInterventionalColumns() {
+        return interventionalColumns;
+    }
+
+    public void setInterventionalColumns(List<InterventionalColumn> interventionalColumns) {
+        this.interventionalColumns = interventionalColumns;
     }
 
 }

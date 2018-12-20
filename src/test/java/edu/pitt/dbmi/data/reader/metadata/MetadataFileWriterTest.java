@@ -19,9 +19,6 @@
 package edu.pitt.dbmi.data.reader.metadata;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import edu.pitt.dbmi.data.reader.metadata.interventional.InterventionalDataColumn;
-import edu.pitt.dbmi.data.reader.metadata.interventional.StatusMetadata;
-import edu.pitt.dbmi.data.reader.metadata.interventional.ValueMetadata;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,7 +36,7 @@ import org.junit.Test;
  */
 public class MetadataFileWriterTest {
 
-    private final Path metadataFile = Paths.get(getClass().getResource("/data/metadata/metadata.json").getFile());
+    private final Path metadataFile = Paths.get(getClass().getResource("/data/metadata/sim_mixed_intervention_metadata.json").getFile());
 
     public MetadataFileWriterTest() {
     }
@@ -48,22 +45,21 @@ public class MetadataFileWriterTest {
      * Test of writeAsString method, of class MetadataFileWriter.
      *
      * @throws JsonProcessingException
-     * @throws IOException
      */
     @Test
     public void testWriteAsString() throws JsonProcessingException, IOException {
-        List<InterventionalDataColumn> interventionalDataColumns = new LinkedList<>();
-        interventionalDataColumns.add(new InterventionalDataColumn(new ValueMetadata("cd3_v", true), new StatusMetadata("cd3_s", false)));
-        interventionalDataColumns.add(new InterventionalDataColumn(new ValueMetadata("icam", false), null));
+        List<ColumnMetadata> domainCols = new LinkedList<>();
+        domainCols.add(new ColumnMetadata("X3", true));
+        domainCols.add(new ColumnMetadata("X5", true));
 
-        List<DomainDataColumn> domainDataColumns = new LinkedList<>();
-        domainDataColumns.add(new DomainDataColumn("raf", true));
-        domainDataColumns.add(new DomainDataColumn("mek", true));
+        List<InterventionalColumn> intervCols = new LinkedList<>();
+        intervCols.add(new InterventionalColumn(new ColumnMetadata("X9", true), new ColumnMetadata("X10", false)));
+        intervCols.add(new InterventionalColumn(new ColumnMetadata("X8", false), null));
 
-        DataColumnMetadata dataColumnMetadata = new DataColumnMetadata(interventionalDataColumns, domainDataColumns);
+        Metadata metadata = new Metadata(domainCols, intervCols);
 
         String expected = new String(Files.readAllBytes(metadataFile)).trim();
-        String actual = (new MetadataFileWriter()).writeAsString(dataColumnMetadata);
+        String actual = (new MetadataFileWriter()).writeAsString(metadata);
         Assert.assertEquals(expected, actual);
     }
 

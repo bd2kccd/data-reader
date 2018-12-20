@@ -18,19 +18,53 @@
  */
 package edu.pitt.dbmi.data.reader.metadata;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  *
- * Dec 18, 2018 11:57:13 AM
+ * Dec 18, 2018 11:21:23 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class DomainDataColumn extends Metadata {
+public class ColumnMetadata {
 
-    public DomainDataColumn() {
+    private String name;
+
+    private boolean continuous;
+
+    @JsonIgnore
+    private int columnNumber;
+
+    public ColumnMetadata() {
     }
 
-    public DomainDataColumn(String name, boolean isContinuous) {
-        super(name, isContinuous);
+    public ColumnMetadata(String name, boolean continuous) {
+        this.name = name;
+        this.continuous = continuous;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public boolean isContinuous() {
+        return continuous;
+    }
+
+    public void setContinuous(boolean continuous) {
+        this.continuous = continuous;
+    }
+
+    public int getColumnNumber() {
+        return columnNumber;
+    }
+
+    public void setColumnNumber(int columnNumber) {
+        this.columnNumber = columnNumber;
     }
 
 }

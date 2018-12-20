@@ -30,8 +30,8 @@ import java.nio.file.Path;
  */
 public interface MetadataWriter {
 
-    public String writeAsString(DataColumnMetadata dataColumnMetadata) throws JsonProcessingException;
+    public String writeAsString(Metadata metadata) throws JsonProcessingException;
 
-    public void write(DataColumnMetadata dataColumnMetadata, Path outputFile) throws JsonProcessingException, IOException;
+    public void write(Metadata metadata, Path outputFile) throws JsonProcessingException, IOException;
 
 }

@@ -28,6 +28,6 @@ import java.io.IOException;
  */
 public interface MetadataReader {
 
-    public DataColumnMetadata read() throws IOException;
+    public Metadata read() throws IOException;
 
 }

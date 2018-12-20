@@ -35,22 +35,22 @@ import java.nio.file.StandardOpenOption;
 public class MetadataFileWriter implements MetadataWriter {
 
     @Override
-    public String writeAsString(DataColumnMetadata dataColumnMetadata) throws JsonProcessingException {
+    public String writeAsString(Metadata metadata) throws JsonProcessingException {
         return new ObjectMapper()
                 .writer()
                 .withDefaultPrettyPrinter()
-                .writeValueAsString(dataColumnMetadata);
+                .writeValueAsString(metadata);
     }
 
     @Override
-    public void write(DataColumnMetadata dataColumnMetadata, Path outputFile) throws JsonProcessingException, IOException {
+    public void write(Metadata metadata, Path outputFile) throws JsonProcessingException, IOException {
         ObjectWriter writer = new ObjectMapper().writer().withDefaultPrettyPrinter();
         if (Files.exists(outputFile)) {
             if (Files.deleteIfExists(outputFile)) {
-                Files.write(outputFile, writer.writeValueAsBytes(dataColumnMetadata), StandardOpenOption.CREATE);
+                Files.write(outputFile, writer.writeValueAsBytes(metadata), StandardOpenOption.CREATE);
             }
         } else {
-            Files.write(outputFile, writer.writeValueAsBytes(dataColumnMetadata), StandardOpenOption.CREATE);
+            Files.write(outputFile, writer.writeValueAsBytes(metadata), StandardOpenOption.CREATE);
         }
     }
 

@@ -16,51 +16,51 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.metadata.interventional;
+package edu.pitt.dbmi.data.reader.metadata;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  *
- * Dec 18, 2018 11:57:44 AM
+ * Dec 20, 2018 11:42:01 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class InterventionalDataColumn {
+public class InterventionalColumn {
 
     @JsonProperty("value")
-    private ValueMetadata valueMetadata;
+    private ColumnMetadata valueColumn;
 
     @JsonProperty("status")
-    private StatusMetadata statusMetadata;
+    private ColumnMetadata statusColumn;
 
-    public InterventionalDataColumn() {
+    public InterventionalColumn() {
     }
 
-    public InterventionalDataColumn(ValueMetadata valueMetadata, StatusMetadata statusMetadata) {
-        this.valueMetadata = valueMetadata;
-        this.statusMetadata = statusMetadata;
+    public InterventionalColumn(ColumnMetadata valueColumn, ColumnMetadata statusColumn) {
+        this.valueColumn = valueColumn;
+        this.statusColumn = statusColumn;
     }
 
     @Override
     public String toString() {
-        return "InterventionalDataColumn{" + "valueMetadata=" + valueMetadata + ", statusMetadata=" + statusMetadata + '}';
+        return "InterventionalColumn{" + "valueColumn=" + valueColumn + ", statusColumn=" + statusColumn + '}';
     }
 
-    public ValueMetadata getValueMetadata() {
-        return valueMetadata;
+    public ColumnMetadata getValueColumn() {
+        return valueColumn;
     }
 
-    public void setValueMetadata(ValueMetadata valueMetadata) {
-        this.valueMetadata = valueMetadata;
+    public void setValueColumn(ColumnMetadata valueColumn) {
+        this.valueColumn = valueColumn;
     }
 
-    public StatusMetadata getStatusMetadata() {
-        return statusMetadata;
+    public ColumnMetadata getStatusColumn() {
+        return statusColumn;
     }
 
-    public void setStatusMetadata(StatusMetadata statusMetadata) {
-        this.statusMetadata = statusMetadata;
+    public void setStatusColumn(ColumnMetadata statusColumn) {
+        this.statusColumn = statusColumn;
     }
 
 }

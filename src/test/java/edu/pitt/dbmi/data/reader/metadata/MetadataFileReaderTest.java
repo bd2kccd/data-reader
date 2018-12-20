@@ -18,7 +18,6 @@
  */
 package edu.pitt.dbmi.data.reader.metadata;
 
-import edu.pitt.dbmi.data.reader.metadata.interventional.InterventionalDataColumn;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,7 +33,7 @@ import org.junit.Test;
  */
 public class MetadataFileReaderTest {
 
-    private final Path metadataFile = Paths.get(getClass().getResource("/data/metadata/metadata.json").getFile());
+    private final Path metadataFile = Paths.get(getClass().getResource("/data/metadata/sim_mixed_intervention_metadata.json").getFile());
 
     public MetadataFileReaderTest() {
     }
@@ -47,17 +46,17 @@ public class MetadataFileReaderTest {
     @Test
     public void testRead() throws IOException {
         MetadataReader metadataReader = new MetadataFileReader(metadataFile);
-        DataColumnMetadata columnMetadata = metadataReader.read();
+        Metadata metadata = metadataReader.read();
 
-        List<InterventionalDataColumn> interventions = columnMetadata.getInterventionalDataColumns();
-        List<DomainDataColumn> domains = columnMetadata.getDomainDataColumns();
+        List<ColumnMetadata> domainCols = metadata.getDomainColumnns();
+        List<InterventionalColumn> intervCols = metadata.getInterventionalColumns();
 
         long expected = 2;
-        long actual = interventions.size();
+        long actual = domainCols.size();
         Assert.assertEquals(expected, actual);
 
         expected = 2;
-        actual = domains.size();
+        actual = intervCols.size();
         Assert.assertEquals(expected, actual);
     }
 
