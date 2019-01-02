@@ -60,7 +60,7 @@ public final class DataColumns {
                 int columnNumber = ++numOfCols;
 
                 column.setStatusColumn(new ColumnMetadata(name, columnNumber, discrete));
-                additionalColumns.add(new TabularDataColumn(name, columnNumber, discrete));
+                additionalColumns.add(new TabularDataColumn(name, columnNumber, true, discrete));
             }
         }
 

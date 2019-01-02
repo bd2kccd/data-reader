@@ -104,7 +104,7 @@ public final class TabularColumnFileReader extends AbstractTabularColumnFileRead
             if (index < sortedColsToExclude.length && col == sortedColsToExclude[index]) {
                 index++;
             } else {
-                columns.add(new TabularDataColumn(prefix + col, col, isDiscrete));
+                columns.add(new TabularDataColumn(prefix + col, col, false, isDiscrete));
             }
         }
 
@@ -155,7 +155,7 @@ public final class TabularColumnFileReader extends AbstractTabularColumnFileRead
                                     LOGGER.error(errMsg);
                                     throw new DataReaderException(errMsg);
                                 } else {
-                                    columns.add(new TabularDataColumn(value, colNum, isDiscrete));
+                                    columns.add(new TabularDataColumn(value, colNum, false, isDiscrete));
                                 }
                             }
                         } else {
@@ -221,7 +221,7 @@ public final class TabularColumnFileReader extends AbstractTabularColumnFileRead
                                             LOGGER.error(errMsg);
                                             throw new DataReaderException(errMsg);
                                         } else {
-                                            columns.add(new TabularDataColumn(value, colNum, isDiscrete));
+                                            columns.add(new TabularDataColumn(value, colNum, false, isDiscrete));
                                         }
                                     }
 
@@ -248,7 +248,7 @@ public final class TabularColumnFileReader extends AbstractTabularColumnFileRead
                         LOGGER.error(errMsg);
                         throw new DataReaderException(errMsg);
                     } else {
-                        columns.add(new TabularDataColumn(value, colNum, isDiscrete));
+                        columns.add(new TabularDataColumn(value, colNum, false, isDiscrete));
                     }
                 }
             }

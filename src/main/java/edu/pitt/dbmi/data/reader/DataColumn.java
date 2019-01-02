@@ -26,12 +26,39 @@ package edu.pitt.dbmi.data.reader;
  */
 public interface DataColumn {
 
+    /**
+     * Get the column's name.
+     *
+     * @return
+     */
     public String getName();
 
+    /**
+     * Get the column's number.
+     *
+     * @return
+     */
     public int getColumnNumber();
 
+    /**
+     * True if this column was not read in from source such as file.
+     *
+     * @return
+     */
+    public boolean isGenerated();
+
+    /**
+     * True if the datatype is discrete.
+     *
+     * @return
+     */
     public boolean isDiscrete();
 
+    /**
+     * Set true for discrete datatype.
+     *
+     * @param discrete
+     */
     public void setDiscrete(boolean discrete);
 
 }

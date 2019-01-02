@@ -30,22 +30,25 @@ public class TabularDataColumn implements DataColumn {
 
     private final String name;
     private final int columnNumber;
+    private final boolean generated;
     private boolean discrete;
 
-    public TabularDataColumn(String name, int columnNumber) {
+    public TabularDataColumn(String name, int columnNumber, boolean generated) {
         this.name = name;
         this.columnNumber = columnNumber;
+        this.generated = generated;
     }
 
-    public TabularDataColumn(String name, int columnNumber, boolean discrete) {
+    public TabularDataColumn(String name, int columnNumber, boolean generated, boolean discrete) {
         this.name = name;
         this.columnNumber = columnNumber;
+        this.generated = generated;
         this.discrete = discrete;
     }
 
     @Override
     public String toString() {
-        return "TabularDataColumn{" + "name=" + name + ", columnNumber=" + columnNumber + ", discrete=" + discrete + '}';
+        return "TabularDataColumn{" + "name=" + name + ", columnNumber=" + columnNumber + ", generated=" + generated + ", discrete=" + discrete + '}';
     }
 
     @Override
@@ -56,6 +59,11 @@ public class TabularDataColumn implements DataColumn {
     @Override
     public int getColumnNumber() {
         return columnNumber;
+    }
+
+    @Override
+    public boolean isGenerated() {
+        return generated;
     }
 
     @Override
