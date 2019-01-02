@@ -16,35 +16,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.metadata;
+package edu.pitt.dbmi.data.reader.tabular;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import edu.pitt.dbmi.data.reader.DataColumn;
 
 /**
  *
- * Dec 18, 2018 11:21:23 AM
+ * Dec 29, 2018 12:44:43 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ColumnMetadata {
+public class TabularDataColumn implements DataColumn {
 
-    private String name;
-
+    private final String name;
+    private final int columnNumber;
     private boolean discrete;
 
-    @JsonIgnore
-    private int columnNumber;
-
-    public ColumnMetadata() {
-        this.discrete = true;
-    }
-
-    public ColumnMetadata(String name, boolean discrete) {
+    public TabularDataColumn(String name, int columnNumber) {
         this.name = name;
-        this.discrete = discrete;
+        this.columnNumber = columnNumber;
     }
 
-    public ColumnMetadata(String name, int columnNumber, boolean discrete) {
+    public TabularDataColumn(String name, int columnNumber, boolean discrete) {
         this.name = name;
         this.columnNumber = columnNumber;
         this.discrete = discrete;
@@ -52,31 +45,27 @@ public class ColumnMetadata {
 
     @Override
     public String toString() {
-        return "ColumnMetadata{" + "name=" + name + ", discrete=" + discrete + ", columnNumber=" + columnNumber + '}';
+        return "TabularDataColumn{" + "name=" + name + ", columnNumber=" + columnNumber + ", discrete=" + discrete + '}';
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public boolean isDiscrete() {
-        return discrete;
-    }
-
-    public void setDiscrete(boolean discrete) {
-        this.discrete = discrete;
-    }
-
+    @Override
     public int getColumnNumber() {
         return columnNumber;
     }
 
-    public void setColumnNumber(int columnNumber) {
-        this.columnNumber = columnNumber;
+    @Override
+    public boolean isDiscrete() {
+        return discrete;
+    }
+
+    @Override
+    public void setDiscrete(boolean discrete) {
+        this.discrete = discrete;
     }
 
 }

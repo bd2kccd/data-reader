@@ -1,24 +1,24 @@
 {
   "domains" : [ {
     "name" : "X3",
-    "continuous" : true
+    "discrete" : false
   }, {
     "name" : "X5",
-    "continuous" : true
+    "discrete" : true
   } ],
   "interventions" : [ {
     "value" : {
       "name" : "X9",
-      "continuous" : true
+      "discrete" : true
     },
     "status" : {
       "name" : "X10",
-      "continuous" : false
+      "discrete" : false
     }
   }, {
     "value" : {
       "name" : "X8",
-      "continuous" : false
+      "discrete" : false
     },
     "status" : null
   } ]

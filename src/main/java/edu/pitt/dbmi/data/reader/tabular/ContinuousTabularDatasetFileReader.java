@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,9 +18,9 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.pitt.dbmi.data.reader.AbstractDataFileReader;
 import edu.pitt.dbmi.data.reader.Data;
 import edu.pitt.dbmi.data.reader.DataColumn;
+import edu.pitt.dbmi.data.reader.DatasetFileReader;
 import edu.pitt.dbmi.data.reader.Delimiter;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,30 +29,35 @@ import java.util.Set;
 
 /**
  *
- * Dec 13, 2018 4:03:33 PM
+ * Jan 2, 2019 1:56:16 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataFileReader extends AbstractDataFileReader implements ContinuousTabularDataReader {
+public class ContinuousTabularDatasetFileReader extends DatasetFileReader implements ContinuousTabularDatasetReader {
 
     private boolean hasHeader;
     private char quoteChar;
 
-    public ContinuousTabularDataFileReader(Path dataFile, Delimiter delimiter) {
+    public ContinuousTabularDatasetFileReader(Path dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
         this.hasHeader = hasHeader = true;
         this.quoteChar = '"';
     }
 
     @Override
-    public Data readInData(Set<String> excludedColumns) throws IOException {
+    public Data readInData() throws IOException {
+        return readInData(Collections.EMPTY_SET);
+    }
+
+    @Override
+    public Data readInData(Set<String> namesOfColumnsToExclude) throws IOException {
         TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
         columnReader.setCommentMarker(commentMarker);
         columnReader.setQuoteCharacter(quoteChar);
 
         boolean isDiscrete = false;
         DataColumn[] dataColumns = hasHeader
-                ? columnReader.readInDataColumns(excludedColumns, isDiscrete)
+                ? columnReader.readInDataColumns(namesOfColumnsToExclude, isDiscrete)
                 : columnReader.generateColumns(new int[0], isDiscrete);
 
         TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
@@ -60,31 +65,26 @@ public class ContinuousTabularDataFileReader extends AbstractDataFileReader impl
         dataReader.setQuoteCharacter(quoteChar);
         dataReader.setMissingDataMarker(missingDataMarker);
 
-        return dataReader.readInData(dataColumns, hasHeader);
+        return dataReader.read(dataColumns, hasHeader);
     }
 
     @Override
-    public Data readInData(int[] excludedColumns) throws IOException {
+    public Data readInData(int[] columnsToExclude) throws IOException {
         TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
         columnReader.setCommentMarker(commentMarker);
         columnReader.setQuoteCharacter(quoteChar);
 
         boolean isDiscrete = false;
         DataColumn[] dataColumns = hasHeader
-                ? columnReader.readInDataColumns(excludedColumns, isDiscrete)
-                : columnReader.generateColumns(excludedColumns, isDiscrete);
+                ? columnReader.readInDataColumns(columnsToExclude, isDiscrete)
+                : columnReader.generateColumns(columnsToExclude, isDiscrete);
 
         TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
         dataReader.setCommentMarker(commentMarker);
         dataReader.setQuoteCharacter(quoteChar);
         dataReader.setMissingDataMarker(missingDataMarker);
 
-        return dataReader.readInData(dataColumns, hasHeader);
-    }
-
-    @Override
-    public Data readInData() throws IOException {
-        return readInData(Collections.EMPTY_SET);
+        return dataReader.read(dataColumns, hasHeader);
     }
 
     @Override

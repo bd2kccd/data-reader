@@ -18,29 +18,20 @@
  */
 package edu.pitt.dbmi.data.reader;
 
-import java.nio.file.Path;
-
 /**
  *
- * Dec 7, 2018 3:43:12 PM
+ * Dec 10, 2018 3:57:59 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractDataFileReader extends DatasetFileReader implements DataReader {
+public interface MixedData extends Data {
 
-    protected String missingDataMarker;
+    public int getNumOfRows();
 
-    public AbstractDataFileReader(Path dataFile, Delimiter delimiter) {
-        super(dataFile, delimiter);
+    public DiscreteDataColumn[] getDataColumns();
 
-        this.missingDataMarker = "";
-    }
+    public double[][] getContinuousData();
 
-    @Override
-    public void setMissingDataMarker(String missingDataMarker) {
-        this.missingDataMarker = (missingDataMarker == null)
-                ? ""
-                : missingDataMarker.trim();
-    }
+    public int[][] getDiscreteData();
 
 }

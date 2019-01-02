@@ -16,22 +16,35 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.tabular;
+
+import edu.pitt.dbmi.data.reader.ContinuousData;
+import edu.pitt.dbmi.data.reader.DataColumn;
 
 /**
  *
- * Dec 10, 2018 3:57:59 AM
+ * Dec 29, 2018 5:18:32 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface MixedTabularData extends Data {
+public class ContinuousTabularData implements ContinuousData {
 
-    public int getNumOfRows();
+    private final DataColumn[] dataColumns;
+    private final double[][] data;
 
-    public DiscreteDataColumn[] getDataColumns();
+    public ContinuousTabularData(DataColumn[] dataColumns, double[][] data) {
+        this.dataColumns = dataColumns;
+        this.data = data;
+    }
 
-    public double[][] getContinuousData();
+    @Override
+    public DataColumn[] getDataColumns() {
+        return dataColumns;
+    }
 
-    public int[][] getDiscreteData();
+    @Override
+    public double[][] getData() {
+        return data;
+    }
 
 }

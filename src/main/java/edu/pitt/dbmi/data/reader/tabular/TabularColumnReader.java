@@ -19,27 +19,24 @@
 package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.DataColumn;
-import edu.pitt.dbmi.data.reader.DatasetReader;
+import edu.pitt.dbmi.data.reader.DataReader;
 import java.io.IOException;
 import java.util.Set;
 
 /**
- * Reads in columns of tabular data.
  *
- * Dec 8, 2018 3:57:51 PM
+ * Dec 28, 2018 2:44:19 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularColumnReader extends DatasetReader {
+public interface TabularColumnReader extends DataReader {
 
     public DataColumn[] readInDataColumns(boolean isDiscrete) throws IOException;
 
-    public DataColumn[] readInDataColumns(int[] excludedColumns, boolean isDiscrete) throws IOException;
+    public DataColumn[] readInDataColumns(Set<String> namesOfColumnsToExclude, boolean isDiscrete) throws IOException;
 
-    public DataColumn[] readInDataColumns(Set<String> excludedColumns, boolean isDiscrete) throws IOException;
+    public DataColumn[] readInDataColumns(int[] columnsToExclude, boolean isDiscrete) throws IOException;
 
-    public DataColumn[] generateColumns(int[] excludedCols, boolean isDiscrete) throws IOException;
-
-    public int[] toColumnNumbers(Set<String> columnNames) throws IOException;
+    public DataColumn[] generateColumns(int[] columnsToExclude, boolean isDiscrete) throws IOException;
 
 }

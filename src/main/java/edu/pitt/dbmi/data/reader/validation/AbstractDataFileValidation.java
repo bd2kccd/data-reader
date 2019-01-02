@@ -16,32 +16,30 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.utils;
+package edu.pitt.dbmi.data.reader.validation;
+
+import edu.pitt.dbmi.data.reader.DataFileReader;
+import edu.pitt.dbmi.data.reader.Delimiter;
+import java.nio.file.Path;
 
 /**
  *
- * Dec 9, 2018 11:28:38 AM
+ * Dec 12, 2018 12:14:52 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public final class TabularFileUtils {
+public abstract class AbstractDataFileValidation extends DataFileReader implements Validation {
 
-    private TabularFileUtils() {
+    protected int maxNumOfMsg;
+
+    public AbstractDataFileValidation(Path dataFile, Delimiter delimiter) {
+        super(dataFile, delimiter);
+        this.maxNumOfMsg = Integer.MAX_VALUE;
     }
 
-    public static final String stripCharacter(String word, byte character) {
-        if (word == null || word.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder dataBuilder = new StringBuilder();
-        for (byte currChar : word.getBytes()) {
-            if (currChar != character) {
-                dataBuilder.append((char) currChar);
-            }
-        }
-
-        return dataBuilder.toString();
+    @Override
+    public void setMaximumNumberOfMessages(int maxNumOfMsg) {
+        this.maxNumOfMsg = maxNumOfMsg;
     }
 
 }

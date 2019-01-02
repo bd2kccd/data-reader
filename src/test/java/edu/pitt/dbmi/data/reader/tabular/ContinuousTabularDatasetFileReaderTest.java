@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,11 +33,11 @@ import org.junit.Test;
 
 /**
  *
- * Dec 13, 2018 5:40:46 PM
+ * Jan 2, 2019 2:19:53 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class ContinuousTabularDataReaderTest {
+public class ContinuousTabularDatasetFileReaderTest {
 
     private final Delimiter delimiter = Delimiter.COMMA;
     private final char quoteCharacter = '"';
@@ -52,7 +52,7 @@ public class ContinuousTabularDataReaderTest {
         Paths.get(getClass().getResource("/data/tabular/continuous/quotes_sim_test_data.csv").getFile())
     };
 
-    public ContinuousTabularDataReaderTest() {
+    public ContinuousTabularDatasetFileReaderTest() {
     }
 
     /**
@@ -61,19 +61,87 @@ public class ContinuousTabularDataReaderTest {
      * @throws IOException
      */
     @Test
-    public void testReadInDataWithNoHeaderWithExcludedColumns() throws IOException {
+    public void testReadInDataWithNoHeaderExcludingVariableByColumnNumbers() throws IOException {
         Path dataFile = Paths.get(getClass().getResource("/data/tabular/continuous/no_header_sim_test_data.csv").getFile());
-        ContinuousTabularDataReader dataReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
+        ContinuousTabularDatasetReader dataReader = new ContinuousTabularDatasetFileReader(dataFile, delimiter);
         dataReader.setCommentMarker(commentMarker);
         dataReader.setQuoteCharacter(quoteCharacter);
         dataReader.setMissingDataMarker(missingValueMarker);
         dataReader.setHasHeader(false);
 
-        int[] excludedColumns = {5, 3, 1, 8, 10, 11};
-        Data data = dataReader.readInData(excludedColumns);
+        int[] columnsToExclude = {5, 3, 1, 8, 10, 11};
+        Data data = dataReader.readInData(columnsToExclude);
         Assert.assertTrue(data instanceof ContinuousData);
 
-        if (data instanceof ContinuousData) {
+        ContinuousData continuousData = (ContinuousData) data;
+        DataColumn[] dataColumns = continuousData.getDataColumns();
+        double[][] contData = continuousData.getData();
+
+        long expected = 5;
+        long actual = dataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        expected = 5;
+        actual = contData[0].length;
+        Assert.assertEquals(expected, actual);
+
+        expected = 18;
+        actual = contData.length;
+        Assert.assertEquals(expected, actual);
+    }
+
+    /**
+     * Test of readInData method, of class ContinuousTabularDataReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataWithNoHeader() throws IOException {
+        Path dataFile = Paths.get(getClass().getResource("/data/tabular/continuous/no_header_sim_test_data.csv").getFile());
+        ContinuousTabularDatasetReader dataReader = new ContinuousTabularDatasetFileReader(dataFile, delimiter);
+        dataReader.setCommentMarker(commentMarker);
+        dataReader.setQuoteCharacter(quoteCharacter);
+        dataReader.setMissingDataMarker(missingValueMarker);
+        dataReader.setHasHeader(false);
+
+        Data data = dataReader.readInData();
+        Assert.assertTrue(data instanceof ContinuousData);
+
+        ContinuousData continuousData = (ContinuousData) data;
+        DataColumn[] dataColumns = continuousData.getDataColumns();
+        double[][] contData = continuousData.getData();
+
+        long expected = 10;
+        long actual = dataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        expected = 10;
+        actual = contData[0].length;
+        Assert.assertEquals(expected, actual);
+
+        expected = 18;
+        actual = contData.length;
+        Assert.assertEquals(expected, actual);
+    }
+
+    /**
+     * Test of readInData method, of class ContinuousTabularDataReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataExcludingVariableByColumnNumbers() throws IOException {
+        int[] columnsToExclude = {5, 3, 1, 8, 10, 11};
+        for (Path dataFile : dataFiles) {
+            ContinuousTabularDatasetReader dataReader = new ContinuousTabularDatasetFileReader(dataFile, delimiter);
+            dataReader.setCommentMarker(commentMarker);
+            dataReader.setQuoteCharacter(quoteCharacter);
+            dataReader.setMissingDataMarker(missingValueMarker);
+            dataReader.setHasHeader(hasHeader);
+
+            Data data = dataReader.readInData(columnsToExclude);
+            Assert.assertTrue(data instanceof ContinuousData);
+
             ContinuousData continuousData = (ContinuousData) data;
             DataColumn[] dataColumns = continuousData.getDataColumns();
             double[][] contData = continuousData.getData();
@@ -98,27 +166,27 @@ public class ContinuousTabularDataReaderTest {
      * @throws IOException
      */
     @Test
-    public void testReadInDataWithNoHeader() throws IOException {
-        Path dataFile = Paths.get(getClass().getResource("/data/tabular/continuous/no_header_sim_test_data.csv").getFile());
-        ContinuousTabularDataReader dataReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
-        dataReader.setCommentMarker(commentMarker);
-        dataReader.setQuoteCharacter(quoteCharacter);
-        dataReader.setMissingDataMarker(missingValueMarker);
-        dataReader.setHasHeader(false);
+    public void testReadInDataExcludingVariableByNames() throws IOException {
+        Set<String> namesOfColumnsToExclude = new HashSet<>(Arrays.asList("X1", "X3", "X4", "X6", "X8", "X10"));
+        for (Path dataFile : dataFiles) {
+            ContinuousTabularDatasetReader dataReader = new ContinuousTabularDatasetFileReader(dataFile, delimiter);
+            dataReader.setCommentMarker(commentMarker);
+            dataReader.setQuoteCharacter(quoteCharacter);
+            dataReader.setMissingDataMarker(missingValueMarker);
+            dataReader.setHasHeader(hasHeader);
 
-        Data data = dataReader.readInData();
-        Assert.assertTrue(data instanceof ContinuousData);
+            Data data = dataReader.readInData(namesOfColumnsToExclude);
+            Assert.assertTrue(data instanceof ContinuousData);
 
-        if (data instanceof ContinuousData) {
             ContinuousData continuousData = (ContinuousData) data;
             DataColumn[] dataColumns = continuousData.getDataColumns();
             double[][] contData = continuousData.getData();
 
-            long expected = 10;
+            long expected = 4;
             long actual = dataColumns.length;
             Assert.assertEquals(expected, actual);
 
-            expected = 10;
+            expected = 4;
             actual = contData[0].length;
             Assert.assertEquals(expected, actual);
 
@@ -134,47 +202,9 @@ public class ContinuousTabularDataReaderTest {
      * @throws IOException
      */
     @Test
-    public void testReadInDataWithExcludedColumns() throws IOException {
-        Set<String> excludedColumns = new HashSet<>(Arrays.asList("X1", "X3", "X4", "X6", "X8", "X10"));
-        for (Path dataFile : dataFiles) {
-            ContinuousTabularDataReader dataReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
-            dataReader.setCommentMarker(commentMarker);
-            dataReader.setQuoteCharacter(quoteCharacter);
-            dataReader.setMissingDataMarker(missingValueMarker);
-            dataReader.setHasHeader(hasHeader);
-
-            Data data = dataReader.readInData(excludedColumns);
-            Assert.assertTrue(data instanceof ContinuousData);
-
-            if (data instanceof ContinuousData) {
-                ContinuousData continuousData = (ContinuousData) data;
-                DataColumn[] dataColumns = continuousData.getDataColumns();
-                double[][] contData = continuousData.getData();
-
-                long expected = 4;
-                long actual = dataColumns.length;
-                Assert.assertEquals(expected, actual);
-
-                expected = 4;
-                actual = contData[0].length;
-                Assert.assertEquals(expected, actual);
-
-                expected = 18;
-                actual = contData.length;
-                Assert.assertEquals(expected, actual);
-            }
-        }
-    }
-
-    /**
-     * Test of readInData method, of class ContinuousTabularDataReader.
-     *
-     * @throws IOException
-     */
-    @Test
     public void testReadInData() throws IOException {
         for (Path dataFile : dataFiles) {
-            ContinuousTabularDataReader dataReader = new ContinuousTabularDataFileReader(dataFile, delimiter);
+            ContinuousTabularDatasetReader dataReader = new ContinuousTabularDatasetFileReader(dataFile, delimiter);
             dataReader.setCommentMarker(commentMarker);
             dataReader.setQuoteCharacter(quoteCharacter);
             dataReader.setMissingDataMarker(missingValueMarker);
@@ -183,23 +213,21 @@ public class ContinuousTabularDataReaderTest {
             Data data = dataReader.readInData();
             Assert.assertTrue(data instanceof ContinuousData);
 
-            if (data instanceof ContinuousData) {
-                ContinuousData continuousData = (ContinuousData) data;
-                DataColumn[] dataColumns = continuousData.getDataColumns();
-                double[][] contData = continuousData.getData();
+            ContinuousData continuousData = (ContinuousData) data;
+            DataColumn[] dataColumns = continuousData.getDataColumns();
+            double[][] contData = continuousData.getData();
 
-                long expected = 10;
-                long actual = dataColumns.length;
-                Assert.assertEquals(expected, actual);
+            long expected = 10;
+            long actual = dataColumns.length;
+            Assert.assertEquals(expected, actual);
 
-                expected = 10;
-                actual = contData[0].length;
-                Assert.assertEquals(expected, actual);
+            expected = 10;
+            actual = contData[0].length;
+            Assert.assertEquals(expected, actual);
 
-                expected = 18;
-                actual = contData.length;
-                Assert.assertEquals(expected, actual);
-            }
+            expected = 18;
+            actual = contData.length;
+            Assert.assertEquals(expected, actual);
         }
     }
 

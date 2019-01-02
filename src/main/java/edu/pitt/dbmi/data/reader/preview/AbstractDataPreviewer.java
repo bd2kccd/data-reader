@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.preview;
 
-import java.io.File;
+import java.nio.file.Path;
 
 /**
  *
@@ -33,9 +33,9 @@ public abstract class AbstractDataPreviewer {
 
     protected static final String ELLIPSIS = "...";
 
-    protected final File dataFile;
+    protected final Path dataFile;
 
-    public AbstractDataPreviewer(File dataFile) {
+    public AbstractDataPreviewer(Path dataFile) {
         this.dataFile = dataFile;
     }
 

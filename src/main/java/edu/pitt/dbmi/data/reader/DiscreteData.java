@@ -16,14 +16,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.tabular;
+package edu.pitt.dbmi.data.reader;
 
 /**
  *
- * Dec 14, 2018 1:54:43 PM
+ * Dec 10, 2018 3:50:45 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface MixedTabularDataReader extends TabularDatasetReader {
+public interface DiscreteData extends Data {
+
+    public DiscreteDataColumn[] getDataColumns();
+
+    public int[][] getData();
 
 }

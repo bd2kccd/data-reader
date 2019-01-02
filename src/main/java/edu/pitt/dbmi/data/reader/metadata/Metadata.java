@@ -19,6 +19,7 @@
 package edu.pitt.dbmi.data.reader.metadata;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -30,17 +31,21 @@ import java.util.List;
 public class Metadata {
 
     @JsonProperty("domains")
-    private List<ColumnMetadata> domainColumnns;
+    private List<ColumnMetadata> domainColumnns = new LinkedList<>();
 
     @JsonProperty("interventions")
-    private List<InterventionalColumn> interventionalColumns;
+    private List<InterventionalColumn> interventionalColumns = new LinkedList<>();
 
     public Metadata() {
     }
 
     public Metadata(List<ColumnMetadata> domainColumnns, List<InterventionalColumn> interventionalColumns) {
-        this.domainColumnns = domainColumnns;
-        this.interventionalColumns = interventionalColumns;
+        if (domainColumnns != null) {
+            this.domainColumnns.addAll(domainColumnns);
+        }
+        if (interventionalColumns != null) {
+            this.interventionalColumns.addAll(interventionalColumns);
+        }
     }
 
     @Override

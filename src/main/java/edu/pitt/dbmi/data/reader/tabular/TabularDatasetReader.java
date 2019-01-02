@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
 package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.Data;
-import edu.pitt.dbmi.data.reader.DataReader;
+import edu.pitt.dbmi.data.reader.DatasetReader;
 import java.io.IOException;
 import java.util.Set;
 
@@ -29,21 +29,13 @@ import java.util.Set;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularDatasetReader extends DataReader {
-
-    /**
-     *
-     * Read in dataset. Excludes any variables from the given set.
-     *
-     * @param excludedColumns set of variable names to exclude
-     * @return
-     * @throws IOException whenever unable to read file
-     */
-    public Data readInData(Set<String> excludedColumns) throws IOException;
-
-    public Data readInData(int[] excludedColumns) throws IOException;
+public interface TabularDatasetReader extends DatasetReader {
 
     public Data readInData() throws IOException;
+
+    public Data readInData(Set<String> namesOfColumnsToExclude) throws IOException;
+
+    public Data readInData(int[] columnsToExclude) throws IOException;
 
     public void setHasHeader(boolean hasHeader);
 

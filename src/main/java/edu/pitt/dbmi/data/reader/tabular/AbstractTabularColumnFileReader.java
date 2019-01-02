@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.pitt.dbmi.data.reader.DatasetFileReader;
+import edu.pitt.dbmi.data.reader.DataFileReader;
 import edu.pitt.dbmi.data.reader.Delimiter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,22 +31,19 @@ import java.util.Set;
 
 /**
  *
- * Dec 11, 2018 2:41:02 PM
+ * Feb 25, 2017 1:36:46 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractTabularColumnReader extends DatasetFileReader {
+public abstract class AbstractTabularColumnFileReader extends DataFileReader {
 
-    public AbstractTabularColumnReader(Path dataFile, Delimiter delimiter) {
+    public AbstractTabularColumnFileReader(Path dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);
     }
 
-    public int[] toColumnNumbers(Set<String> columnNames) throws IOException {
-        if (columnNames == null || columnNames.isEmpty()) {
-            return new int[0];
-        }
-
+    protected int[] toColumnNumbers(Set<String> columnNames) throws IOException {
         List<Integer> colNums = new LinkedList<>();
+
         try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skip = false;
             boolean hasSeenNonblankChar = false;
@@ -160,6 +157,17 @@ public abstract class AbstractTabularColumnReader extends DatasetFileReader {
         }
 
         return colNums.stream().mapToInt(e -> e).toArray();
+    }
+
+    protected String stripCharacter(String word, byte character) {
+        StringBuilder dataBuilder = new StringBuilder();
+        for (byte currChar : word.getBytes()) {
+            if (currChar != character) {
+                dataBuilder.append((char) currChar);
+            }
+        }
+
+        return dataBuilder.toString();
     }
 
 }

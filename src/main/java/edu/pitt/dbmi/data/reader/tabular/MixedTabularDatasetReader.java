@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,30 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.validation;
-
-import edu.pitt.dbmi.data.reader.DatasetFileReader;
-import edu.pitt.dbmi.data.reader.Delimiter;
-import java.nio.file.Path;
+package edu.pitt.dbmi.data.reader.tabular;
 
 /**
  *
- * Dec 12, 2018 12:14:52 PM
+ * Jan 2, 2019 3:45:19 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public abstract class AbstractDatasetFileValidation extends DatasetFileReader implements Validation {
-
-    protected int maxNumOfMsg;
-
-    public AbstractDatasetFileValidation(Path dataFile, Delimiter delimiter) {
-        super(dataFile, delimiter);
-        this.maxNumOfMsg = Integer.MAX_VALUE;
-    }
-
-    @Override
-    public void setMaximumNumberOfMessages(int maxNumOfMsg) {
-        this.maxNumOfMsg = maxNumOfMsg;
-    }
+public interface MixedTabularDatasetReader extends TabularDatasetReader {
 
 }

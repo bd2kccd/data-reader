@@ -20,7 +20,7 @@ package edu.pitt.dbmi.data.reader.tabular;
 
 import edu.pitt.dbmi.data.reader.Data;
 import edu.pitt.dbmi.data.reader.DataColumn;
-import edu.pitt.dbmi.data.reader.DataReader;
+import edu.pitt.dbmi.data.reader.DatasetReader;
 import java.io.IOException;
 
 /**
@@ -29,9 +29,7 @@ import java.io.IOException;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularDataReader extends DataReader {
-
-    public Data readInData(DataColumn[] dataColumns, boolean hasHeader) throws IOException;
+public interface TabularDataReader extends DatasetReader {
 
     /**
      * Analyze the column data to determine if it contains discrete data based
@@ -41,10 +39,13 @@ public interface TabularDataReader extends DataReader {
      * continuous data.
      *
      * @param dataColumns
-     * @param numberOfCategories maximum number of categories to be consider
+     * @param numberOfCategories maximum number of categories to be considered
+     * discrete
      * @param hasHeader
      * @throws IOException
      */
     public void determineDiscreteDataColumns(DataColumn[] dataColumns, int numberOfCategories, boolean hasHeader) throws IOException;
+
+    public Data read(DataColumn[] dataColumns, boolean hasHeader) throws IOException;
 
 }

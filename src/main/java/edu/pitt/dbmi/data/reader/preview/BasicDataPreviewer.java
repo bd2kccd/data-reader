@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,12 +18,13 @@
  */
 package edu.pitt.dbmi.data.reader.preview;
 
-import java.io.File;
+import static edu.pitt.dbmi.data.reader.preview.AbstractDataPreviewer.CARRIAGE_RETURN;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -40,7 +41,7 @@ public class BasicDataPreviewer extends AbstractDataPreviewer implements DataPre
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BasicDataPreviewer.class);
 
-    public BasicDataPreviewer(File dataFile) {
+    public BasicDataPreviewer(Path dataFile) {
         super(dataFile);
     }
 
@@ -64,7 +65,7 @@ public class BasicDataPreviewer extends AbstractDataPreviewer implements DataPre
     }
 
     protected void getPreviews(int fromLine, int toLine, int numOfCharacters, List<String> list) throws IOException {
-        try (FileChannel fc = new RandomAccessFile(dataFile, "r").getChannel()) {
+        try (FileChannel fc = new RandomAccessFile(dataFile.toFile(), "r").getChannel()) {
             long fileSize = fc.size();
             long position = 0;
             long size = (fileSize > Integer.MAX_VALUE) ? Integer.MAX_VALUE : fileSize;

@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.utils;
+package edu.pitt.dbmi.data.reader.util;
 
 import java.util.Arrays;
 
@@ -52,11 +52,13 @@ public final class Columns {
      * @return
      */
     public static final int[] extractValidColumnNumbers(int numberOfColumns, int[] columns) {
-        return Arrays.stream(columns)
-                .filter(e -> e > 0 && e <= numberOfColumns)
-                .sorted()
-                .distinct()
-                .toArray();
+        return (columns == null || columns.length == 0)
+                ? new int[0]
+                : Arrays.stream(columns)
+                        .filter(e -> e > 0 && e <= numberOfColumns)
+                        .sorted()
+                        .distinct()
+                        .toArray();
     }
 
 }

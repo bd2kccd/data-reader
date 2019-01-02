@@ -48,7 +48,7 @@ public class MetadataFileWriterTest {
     @Test
     public void testWriteAsString() throws JsonProcessingException, IOException {
         List<ColumnMetadata> domainCols = new LinkedList<>();
-        domainCols.add(new ColumnMetadata("X3", true));
+        domainCols.add(new ColumnMetadata("X3", false));
         domainCols.add(new ColumnMetadata("X5", true));
 
         List<InterventionalColumn> intervCols = new LinkedList<>();

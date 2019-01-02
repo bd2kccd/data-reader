@@ -24,6 +24,6 @@ package edu.pitt.dbmi.data.reader.tabular;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface ContinuousTabularDataReader extends TabularDatasetReader {
+public interface ContinuousTabularDataReader extends TabularDataReader {
 
 }

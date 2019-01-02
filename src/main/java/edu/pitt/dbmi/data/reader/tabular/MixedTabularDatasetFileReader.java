@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,23 +18,18 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.pitt.dbmi.data.reader.AbstractDataFileReader;
 import edu.pitt.dbmi.data.reader.ContinuousData;
 import edu.pitt.dbmi.data.reader.Data;
 import edu.pitt.dbmi.data.reader.DataColumn;
+import edu.pitt.dbmi.data.reader.DatasetFileReader;
 import edu.pitt.dbmi.data.reader.Delimiter;
+import edu.pitt.dbmi.data.reader.DiscreteData;
 import edu.pitt.dbmi.data.reader.DiscreteDataColumn;
-import edu.pitt.dbmi.data.reader.MixedTabularData;
-import edu.pitt.dbmi.data.reader.VerticalDiscreteData;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 /**
  *
@@ -42,28 +37,33 @@ import java.util.TreeMap;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class MixedTabularDataFileReader extends AbstractDataFileReader implements MixedTabularDataReader {
+public class MixedTabularDatasetFileReader extends DatasetFileReader implements MixedTabularDatasetReader {
 
     private final int numberOfDiscreteCategories;
     private boolean hasHeader;
     private char quoteChar;
 
-    public MixedTabularDataFileReader(int numberOfDiscreteCategories, Path dataFile, Delimiter delimiter) {
+    public MixedTabularDatasetFileReader(Path dataFile, Delimiter delimiter, int numberOfDiscreteCategories) {
         super(dataFile, delimiter);
-        this.numberOfDiscreteCategories = 4;
-        this.hasHeader = hasHeader = true;
+        this.numberOfDiscreteCategories = numberOfDiscreteCategories;
+        this.hasHeader = true;
         this.quoteChar = '"';
     }
 
     @Override
-    public Data readInData(Set<String> excludedColumns) throws IOException {
+    public Data readInData() throws IOException {
+        return readInData(Collections.EMPTY_SET);
+    }
+
+    @Override
+    public Data readInData(Set<String> namesOfColumnsToExclude) throws IOException {
         TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
         columnReader.setCommentMarker(commentMarker);
         columnReader.setQuoteCharacter(quoteChar);
 
         boolean isDiscrete = false;
         DataColumn[] dataColumns = hasHeader
-                ? columnReader.readInDataColumns(excludedColumns, isDiscrete)
+                ? columnReader.readInDataColumns(namesOfColumnsToExclude, isDiscrete)
                 : columnReader.generateColumns(new int[0], isDiscrete);
 
         TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
@@ -73,19 +73,19 @@ public class MixedTabularDataFileReader extends AbstractDataFileReader implement
 
         dataReader.determineDiscreteDataColumns(dataColumns, numberOfDiscreteCategories, hasHeader);
 
-        return toMixedData(dataReader.readInData(dataColumns, hasHeader));
+        return toMixedData(dataReader.read(dataColumns, hasHeader));
     }
 
     @Override
-    public Data readInData(int[] excludedColumns) throws IOException {
+    public Data readInData(int[] columnsToExclude) throws IOException {
         TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
         columnReader.setCommentMarker(commentMarker);
         columnReader.setQuoteCharacter(quoteChar);
 
         boolean isDiscrete = false;
         DataColumn[] dataColumns = hasHeader
-                ? columnReader.readInDataColumns(excludedColumns, isDiscrete)
-                : columnReader.generateColumns(excludedColumns, isDiscrete);
+                ? columnReader.readInDataColumns(columnsToExclude, isDiscrete)
+                : columnReader.generateColumns(columnsToExclude, isDiscrete);
 
         TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
         dataReader.setCommentMarker(commentMarker);
@@ -94,7 +94,7 @@ public class MixedTabularDataFileReader extends AbstractDataFileReader implement
 
         dataReader.determineDiscreteDataColumns(dataColumns, numberOfDiscreteCategories, hasHeader);
 
-        return toMixedData(dataReader.readInData(dataColumns, hasHeader));
+        return toMixedData(dataReader.read(dataColumns, hasHeader));
     }
 
     private Data toMixedData(Data data) {
@@ -106,7 +106,7 @@ public class MixedTabularDataFileReader extends AbstractDataFileReader implement
 
             // convert to mixed variables
             DiscreteDataColumn[] columns = Arrays.stream(continuousData.getDataColumns())
-                    .map(MixedTabularFileDataColumn::new)
+                    .map(MixedTabularDataColumn::new)
                     .toArray(DiscreteDataColumn[]::new);
 
             // transpose the data
@@ -117,23 +117,23 @@ public class MixedTabularDataFileReader extends AbstractDataFileReader implement
                 }
             }
 
-            return new MixedTabularFileData(numOfRows, columns, vertContData, new int[0][0]);
-        } else if (data instanceof VerticalDiscreteData) {
-            VerticalDiscreteData verticalDiscreteData = (VerticalDiscreteData) data;
+            return new MixedTabularData(numOfRows, columns, vertContData, new int[0][0]);
+        } else if (data instanceof DiscreteData) {
+            DiscreteData verticalDiscreteData = (DiscreteData) data;
             int[][] discreteData = verticalDiscreteData.getData();
             int numOfRows = discreteData[0].length;
 
             // convert to mixed variables
             DiscreteDataColumn[] columns = Arrays.stream(verticalDiscreteData.getDataColumns())
                     .map(e -> {
-                        DiscreteDataColumn column = new MixedTabularFileDataColumn(e.getDataColumn());
+                        DiscreteDataColumn column = new MixedTabularDataColumn(e.getDataColumn());
                         e.getCategories().forEach(v -> column.setValue(v));
                         e.recategorize();
 
                         return column;
                     }).toArray(DiscreteDataColumn[]::new);
 
-            return new MixedTabularFileData(numOfRows, columns, new double[0][0], discreteData);
+            return new MixedTabularData(numOfRows, columns, new double[0][0], discreteData);
         } else if (data instanceof MixedTabularData) {
             MixedTabularData mixedTabularData = (MixedTabularData) data;
             DiscreteDataColumn[] columns = mixedTabularData.getDataColumns();
@@ -141,15 +141,10 @@ public class MixedTabularDataFileReader extends AbstractDataFileReader implement
             int[][] discreteData = mixedTabularData.getDiscreteData();
             int numOfRows = mixedTabularData.getNumOfRows();
 
-            return new MixedTabularFileData(numOfRows, columns, continuousData, discreteData);
+            return new MixedTabularData(numOfRows, columns, continuousData, discreteData);
         } else {
             return null;
         }
-    }
-
-    @Override
-    public Data readInData() throws IOException {
-        return readInData(Collections.EMPTY_SET);
     }
 
     @Override
@@ -160,97 +155,6 @@ public class MixedTabularDataFileReader extends AbstractDataFileReader implement
     @Override
     public void setQuoteCharacter(char quoteCharacter) {
         this.quoteChar = quoteCharacter;
-    }
-
-    private final class MixedTabularFileDataColumn implements DiscreteDataColumn {
-
-        private final DataColumn dataColumn;
-        private final Map<String, Integer> values;
-        private List<String> categories;
-
-        public MixedTabularFileDataColumn(DataColumn dataColumn) {
-            this.dataColumn = dataColumn;
-            this.values = dataColumn.isDiscrete() ? new TreeMap<>() : null;
-        }
-
-        @Override
-        public String toString() {
-            return "MixedTabularFileDataColumn{" + "dataColumn=" + dataColumn + ", values=" + values + ", categories=" + categories + '}';
-        }
-
-        @Override
-        public Integer getEncodeValue(String value) {
-            return (values == null)
-                    ? DISCRETE_MISSING_VALUE
-                    : values.get(value);
-        }
-
-        @Override
-        public void recategorize() {
-            if (values != null) {
-                Set<String> keyset = values.keySet();
-                categories = new ArrayList<>(keyset.size());
-                int count = 0;
-                for (String key : keyset) {
-                    values.put(key, count++);
-                    categories.add(key);
-                }
-            }
-        }
-
-        @Override
-        public List<String> getCategories() {
-            return (categories == null) ? Collections.EMPTY_LIST : categories;
-        }
-
-        @Override
-        public DataColumn getDataColumn() {
-            return dataColumn;
-        }
-
-        @Override
-        public void setValue(String value) {
-            if (this.values != null) {
-                this.values.put(value, null);
-            }
-        }
-
-    }
-
-    private final class MixedTabularFileData implements MixedTabularData {
-
-        private final int numOfRows;
-        private final DiscreteDataColumn[] dataColumns;
-        private final double[][] continuousData;
-        private final int[][] discreteData;
-
-        public MixedTabularFileData(int numOfRows, DiscreteDataColumn[] dataColumns, double[][] continuousData, int[][] discreteData) {
-            this.numOfRows = numOfRows;
-            this.dataColumns = dataColumns;
-            this.continuousData = continuousData;
-            this.discreteData = discreteData;
-        }
-
-        @Override
-        public int getNumOfRows() {
-            return numOfRows;
-        }
-
-        @Override
-        public DiscreteDataColumn[] getDataColumns() {
-            return dataColumns;
-        }
-
-        @Override
-        public double[][] getContinuousData() {
-            return continuousData;
-        }
-
-        @Override
-        public int[][] getDiscreteData() {
-            return discreteData;
-        }
-
     }
 
 }

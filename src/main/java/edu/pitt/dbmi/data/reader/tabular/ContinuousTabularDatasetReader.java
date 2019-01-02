@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,26 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader.validation.tabular;
-
-import edu.pitt.dbmi.data.reader.DataReader;
-import edu.pitt.dbmi.data.reader.validation.Validation;
-import edu.pitt.dbmi.data.reader.validation.ValidationResult;
-import java.util.List;
-import java.util.Set;
+package edu.pitt.dbmi.data.reader.tabular;
 
 /**
  *
- * Dec 12, 2018 2:34:56 PM
+ * Dec 13, 2018 4:11:33 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularColumnValidation extends Validation, DataReader {
-
-    public List<ValidationResult> validate();
-
-    public List<ValidationResult> validate(int[] excludedColumns);
-
-    public List<ValidationResult> validate(Set<String> excludedColumns);
+public interface ContinuousTabularDatasetReader extends TabularDatasetReader {
 
 }

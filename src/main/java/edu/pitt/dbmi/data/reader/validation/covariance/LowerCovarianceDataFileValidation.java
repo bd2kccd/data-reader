@@ -19,7 +19,7 @@
 package edu.pitt.dbmi.data.reader.validation.covariance;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
-import edu.pitt.dbmi.data.reader.validation.AbstractDatasetFileValidation;
+import edu.pitt.dbmi.data.reader.validation.AbstractDataFileValidation;
 import edu.pitt.dbmi.data.reader.validation.MessageType;
 import edu.pitt.dbmi.data.reader.validation.ValidationAttribute;
 import edu.pitt.dbmi.data.reader.validation.ValidationCode;
@@ -38,7 +38,7 @@ import java.util.List;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class LowerCovarianceDataFileValidation extends AbstractDatasetFileValidation implements CovarianceValidation {
+public class LowerCovarianceDataFileValidation extends AbstractDataFileValidation implements CovarianceValidation {
 
     public LowerCovarianceDataFileValidation(Path dataFile, Delimiter delimiter) {
         super(dataFile, delimiter);

@@ -18,12 +18,33 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
+import edu.pitt.dbmi.data.reader.DiscreteDataColumn;
+import edu.pitt.dbmi.data.reader.DiscreteData;
+
 /**
  *
- * Dec 14, 2018 10:53:02 AM
+ * Dec 29, 2018 5:17:39 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface VerticalDiscreteTabularDataReader extends TabularDatasetReader {
+public class VerticalDiscreteTabularData implements DiscreteData {
+
+    private final DiscreteDataColumn[] dataColumns;
+    private final int[][] data;
+
+    public VerticalDiscreteTabularData(DiscreteDataColumn[] dataColumns, int[][] data) {
+        this.dataColumns = dataColumns;
+        this.data = data;
+    }
+
+    @Override
+    public DiscreteDataColumn[] getDataColumns() {
+        return dataColumns;
+    }
+
+    @Override
+    public int[][] getData() {
+        return data;
+    }
 
 }

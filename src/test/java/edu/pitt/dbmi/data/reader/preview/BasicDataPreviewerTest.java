@@ -19,16 +19,42 @@
 package edu.pitt.dbmi.data.reader.preview;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  *
- * Feb 20, 2017 2:07:27 PM
+ * Mar 6, 2017 8:41:16 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataPreviewer {
+public class BasicDataPreviewerTest {
 
-    public List<String> getPreviews(int fromLine, int toLine, int numOfCharacters) throws IOException;
+    public BasicDataPreviewerTest() {
+    }
+
+    /**
+     * Test of getPreviews method, of class BasicDataPreviewer.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testGetPreviews() throws IOException {
+        Path dataFile = Paths.get(getClass().getResource("/data/tabular/continuous/sim_test_data.csv").getFile());
+
+        DataPreviewer dataPreviewer = new BasicDataPreviewer(dataFile);
+
+        int fromLine = 3;
+        int toLine = 5;
+        int numOfCharacters = 25;
+
+        List<String> linePreviews = dataPreviewer.getPreviews(fromLine, toLine, numOfCharacters);
+        long expected = 3;
+        long actual = linePreviews.size();
+        Assert.assertEquals(expected, actual);
+    }
 
 }

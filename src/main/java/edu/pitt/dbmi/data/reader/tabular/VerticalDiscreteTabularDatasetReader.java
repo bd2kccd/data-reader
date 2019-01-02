@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,18 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.tabular;
 
 /**
  *
- * Dec 10, 2018 3:50:45 AM
+ * Jan 2, 2019 2:39:21 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface VerticalDiscreteData extends Data {
-
-    public DiscreteDataColumn[] getDataColumns();
-
-    public int[][] getData();
+public interface VerticalDiscreteTabularDatasetReader extends TabularDatasetReader {
 
 }

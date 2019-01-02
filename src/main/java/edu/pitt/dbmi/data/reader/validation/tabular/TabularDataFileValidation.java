@@ -18,8 +18,8 @@
  */
 package edu.pitt.dbmi.data.reader.validation.tabular;
 
-import edu.pitt.dbmi.data.reader.AbstractDataFileReader;
 import edu.pitt.dbmi.data.reader.DataColumn;
+import edu.pitt.dbmi.data.reader.DatasetFileReader;
 import edu.pitt.dbmi.data.reader.Delimiter;
 import edu.pitt.dbmi.data.reader.validation.MessageType;
 import edu.pitt.dbmi.data.reader.validation.ValidationAttribute;
@@ -39,7 +39,7 @@ import java.util.List;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class TabularDataFileValidation extends AbstractDataFileReader implements TabularDataValidation {
+public class TabularDataFileValidation extends DatasetFileReader implements TabularDataValidation {
 
     private int maxNumOfMsg;
 

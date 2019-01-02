@@ -19,9 +19,8 @@
 package edu.pitt.dbmi.data.reader.validation.tabular;
 
 import edu.pitt.dbmi.data.reader.Delimiter;
-import edu.pitt.dbmi.data.reader.tabular.AbstractTabularColumnReader;
-import edu.pitt.dbmi.data.reader.utils.Columns;
-import edu.pitt.dbmi.data.reader.utils.TabularFileUtils;
+import edu.pitt.dbmi.data.reader.tabular.AbstractTabularColumnFileReader;
+import edu.pitt.dbmi.data.reader.util.Columns;
 import edu.pitt.dbmi.data.reader.validation.MessageType;
 import edu.pitt.dbmi.data.reader.validation.ValidationAttribute;
 import edu.pitt.dbmi.data.reader.validation.ValidationCode;
@@ -43,7 +42,7 @@ import java.util.Set;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class TabularColumnFileValidation extends AbstractTabularColumnReader implements TabularColumnValidation {
+public class TabularColumnFileValidation extends AbstractTabularColumnFileReader implements TabularColumnValidation {
 
     private int maxNumOfMsg;
 
@@ -92,7 +91,7 @@ public class TabularColumnFileValidation extends AbstractTabularColumnReader imp
                     excludedColumns.stream()
                             .map(e -> e.trim())
                             .filter(e -> !e.isEmpty())
-                            .forEach(e -> modifiedExcludedCols.add(TabularFileUtils.stripCharacter(e, quoteCharacter)));
+                            .forEach(e -> modifiedExcludedCols.add(stripCharacter(e, quoteCharacter)));
                 } else {
                     excludedColumns.stream()
                             .map(e -> e.trim())

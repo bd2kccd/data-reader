@@ -20,21 +20,24 @@ package edu.pitt.dbmi.data.reader;
 
 /**
  *
- * Dec 3, 2018 2:24:32 PM
+ * Dec 12, 2018 11:16:53 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader extends DatasetReader {
-
-    public static final double CONTINUOUS_MISSING_VALUE = Double.NaN;
-
-    public static final int DISCRETE_MISSING_VALUE = -99;
+public interface DataReader {
 
     /**
-     * Set the value to indicate missing data.
+     * Set the character that is used to group multiple words as one.
      *
-     * @param missingDataMarker
+     * @param quoteCharacter
      */
-    public void setMissingDataMarker(String missingDataMarker);
+    public void setQuoteCharacter(char quoteCharacter);
+
+    /**
+     * Set the value to indicate a line is a comment to be ignored.
+     *
+     * @param commentMarker
+     */
+    public void setCommentMarker(String commentMarker);
 
 }

@@ -18,7 +18,7 @@
  */
 package edu.pitt.dbmi.data.reader.covariance;
 
-import edu.pitt.dbmi.data.reader.DatasetFileReader;
+import edu.pitt.dbmi.data.reader.DataFileReader;
 import edu.pitt.dbmi.data.reader.DataReaderException;
 import edu.pitt.dbmi.data.reader.Delimiter;
 import java.io.IOException;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class LowerCovarianceDataFileReader extends DatasetFileReader implements CovarianceDataReader {
+public class LowerCovarianceDataFileReader extends DataFileReader implements CovarianceDataReader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LowerCovarianceDataFileReader.class);
 
