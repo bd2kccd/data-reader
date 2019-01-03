@@ -21,9 +21,13 @@ package edu.pitt.dbmi.data.reader.tabular;
 import edu.pitt.dbmi.data.reader.ContinuousData;
 import edu.pitt.dbmi.data.reader.Data;
 import edu.pitt.dbmi.data.reader.DataColumn;
+import edu.pitt.dbmi.data.reader.DataColumns;
 import edu.pitt.dbmi.data.reader.Delimiter;
 import edu.pitt.dbmi.data.reader.DiscreteData;
 import edu.pitt.dbmi.data.reader.DiscreteDataColumn;
+import edu.pitt.dbmi.data.reader.metadata.Metadata;
+import edu.pitt.dbmi.data.reader.metadata.MetadataFileReader;
+import edu.pitt.dbmi.data.reader.metadata.MetadataReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -69,6 +73,78 @@ public class TabularDataFileReaderTest {
     };
 
     public TabularDataFileReaderTest() {
+    }
+
+    /**
+     * Test of readInData method, of class TabularDataFileReader.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testReadInDataMixedWitMetadata() throws IOException {
+        Path dataFile = Paths.get(getClass().getResource("/data/metadata/sim_mixed_intervention.txt").getFile());
+        Path metadataFile = Paths.get(getClass().getResource("/data/metadata/sim_mixed_intervention_metadata.json").getFile());
+
+        TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, Delimiter.TAB);
+        DataColumn[] dataColumns = columnReader.readInDataColumns(true);
+
+        long expected = 10;
+        long actual = dataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        TabularDataReader dataReader = new TabularDataFileReader(dataFile, Delimiter.TAB);
+        dataReader.setCommentMarker(commentMarker);
+        dataReader.setQuoteCharacter(quoteCharacter);
+        dataReader.setMissingDataMarker(missingValueMarker);
+
+        int numberOfCategories = 4;
+        dataReader.determineDiscreteDataColumns(dataColumns, numberOfCategories, hasHeader);
+
+        MetadataReader metadataReader = new MetadataFileReader(metadataFile);
+        Metadata metadata = metadataReader.read();
+        dataColumns = DataColumns.update(dataColumns, metadata);
+
+        expected = 11;
+        actual = dataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        Data data = dataReader.read(dataColumns, hasHeader, metadata);
+        Assert.assertTrue(data instanceof MixedTabularData);
+
+        MixedTabularData mixedTabularData = (MixedTabularData) data;
+
+        int numOfRows = mixedTabularData.getNumOfRows();
+        int numOfCols = dataColumns.length;
+        DiscreteDataColumn[] discreteDataColumns = mixedTabularData.getDataColumns();
+        double[][] continuousData = mixedTabularData.getContinuousData();
+        int[][] discreteData = mixedTabularData.getDiscreteData();
+
+        expected = 20;
+        actual = numOfRows;
+        Assert.assertEquals(expected, actual);
+
+        expected = 11;
+        actual = discreteDataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        int numOfContinuous = 0;
+        int numOfDiscrete = 0;
+        for (int i = 0; i < numOfCols; i++) {
+            if (continuousData[i] != null) {
+                numOfContinuous++;
+            }
+            if (discreteData[i] != null) {
+                numOfDiscrete++;
+            }
+        }
+
+        expected = 5;
+        actual = numOfContinuous;
+        Assert.assertEquals(expected, actual);
+
+        expected = 6;
+        actual = numOfDiscrete;
+        Assert.assertEquals(expected, actual);
     }
 
     /**

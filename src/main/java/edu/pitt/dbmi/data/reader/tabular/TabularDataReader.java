@@ -21,6 +21,7 @@ package edu.pitt.dbmi.data.reader.tabular;
 import edu.pitt.dbmi.data.reader.Data;
 import edu.pitt.dbmi.data.reader.DataColumn;
 import edu.pitt.dbmi.data.reader.DatasetReader;
+import edu.pitt.dbmi.data.reader.metadata.Metadata;
 import java.io.IOException;
 
 /**
@@ -47,5 +48,7 @@ public interface TabularDataReader extends DatasetReader {
     public void determineDiscreteDataColumns(DataColumn[] dataColumns, int numberOfCategories, boolean hasHeader) throws IOException;
 
     public Data read(DataColumn[] dataColumns, boolean hasHeader) throws IOException;
+
+    public Data read(DataColumn[] dataColumns, boolean hasHeader, Metadata metadata) throws IOException;
 
 }
