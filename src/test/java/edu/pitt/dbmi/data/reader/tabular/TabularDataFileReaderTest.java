@@ -75,13 +75,93 @@ public class TabularDataFileReaderTest {
     public TabularDataFileReaderTest() {
     }
 
+    @Test
+    public void testReadInContinuousDataWitMetadata() throws IOException {
+        Path dataFile = Paths.get(getClass().getResource("/data/metadata/sim_continuous_intervention.txt").getFile());
+        Path metadataFile = Paths.get(getClass().getResource("/data/metadata/sim_continuous_intervention_metadata.json").getFile());
+
+        TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, Delimiter.TAB);
+        DataColumn[] dataColumns = columnReader.readInDataColumns(false);
+
+        long expected = 10;
+        long actual = dataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        MetadataReader metadataReader = new MetadataFileReader(metadataFile);
+        Metadata metadata = metadataReader.read();
+        dataColumns = DataColumns.update(dataColumns, metadata);
+
+        expected = 10;
+        actual = dataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        TabularDataReader dataReader = new TabularDataFileReader(dataFile, Delimiter.TAB);
+        dataReader.setCommentMarker(commentMarker);
+        dataReader.setQuoteCharacter(quoteCharacter);
+        dataReader.setMissingDataMarker(missingValueMarker);
+
+        Data data = dataReader.read(dataColumns, hasHeader, metadata);
+        Assert.assertTrue(data instanceof ContinuousData);
+
+        ContinuousData continuousData = (ContinuousData) data;
+        double[][] contData = continuousData.getData();
+
+        expected = 18;
+        actual = contData.length;
+        Assert.assertEquals(expected, actual);
+
+        expected = 10;
+        actual = contData[0].length;
+        Assert.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testReadInDiscreteDataWitMetadata() throws IOException {
+        Path dataFile = Paths.get(getClass().getResource("/data/metadata/sim_discrete_intervention.txt").getFile());
+        Path metadataFile = Paths.get(getClass().getResource("/data/metadata/sim_discrete_intervention_metadata.json").getFile());
+
+        TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, Delimiter.TAB);
+        DataColumn[] dataColumns = columnReader.readInDataColumns(true);
+
+        long expected = 10;
+        long actual = dataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        MetadataReader metadataReader = new MetadataFileReader(metadataFile);
+        Metadata metadata = metadataReader.read();
+        dataColumns = DataColumns.update(dataColumns, metadata);
+
+        expected = 12;
+        actual = dataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        TabularDataReader dataReader = new TabularDataFileReader(dataFile, Delimiter.TAB);
+        dataReader.setCommentMarker(commentMarker);
+        dataReader.setQuoteCharacter(quoteCharacter);
+        dataReader.setMissingDataMarker(missingValueMarker);
+
+        Data data = dataReader.read(dataColumns, hasHeader, metadata);
+        Assert.assertTrue(data instanceof DiscreteData);
+
+        DiscreteData verticalDiscreteData = (DiscreteData) data;
+        int[][] discreteData = verticalDiscreteData.getData();
+
+        expected = 12;
+        actual = discreteData.length;
+        Assert.assertEquals(expected, actual);
+
+        expected = 19;
+        actual = discreteData[0].length;
+        Assert.assertEquals(expected, actual);
+    }
+
     /**
      * Test of readInData method, of class TabularDataFileReader.
      *
      * @throws IOException
      */
     @Test
-    public void testReadInDataMixedWitMetadata() throws IOException {
+    public void testReadInMixedDataWitMetadata() throws IOException {
         Path dataFile = Paths.get(getClass().getResource("/data/metadata/sim_mixed_intervention.txt").getFile());
         Path metadataFile = Paths.get(getClass().getResource("/data/metadata/sim_mixed_intervention_metadata.json").getFile());
 
