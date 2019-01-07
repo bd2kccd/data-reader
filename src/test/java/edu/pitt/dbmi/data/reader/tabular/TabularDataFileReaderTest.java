@@ -155,6 +155,73 @@ public class TabularDataFileReaderTest {
         Assert.assertEquals(expected, actual);
     }
 
+    @Test
+    public void testReadInSampleMixedDataWitMetadata() throws IOException {
+        Path dataFile = Paths.get(getClass().getResource("/data/metadata/sample_dataset.txt").getFile());
+        Path metadataFile = Paths.get(getClass().getResource("/data/metadata/sample_metadata.json").getFile());
+
+        TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, Delimiter.TAB);
+        DataColumn[] dataColumns = columnReader.readInDataColumns(true);
+
+        long expected = 8;
+        long actual = dataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        TabularDataReader dataReader = new TabularDataFileReader(dataFile, Delimiter.TAB);
+        dataReader.setCommentMarker(commentMarker);
+        dataReader.setQuoteCharacter(quoteCharacter);
+        dataReader.setMissingDataMarker(missingValueMarker);
+
+        int numberOfCategories = 4;
+        dataReader.determineDiscreteDataColumns(dataColumns, numberOfCategories, hasHeader);
+
+        MetadataReader metadataReader = new MetadataFileReader(metadataFile);
+        Metadata metadata = metadataReader.read();
+        dataColumns = DataColumns.update(dataColumns, metadata);
+
+        expected = 9;
+        actual = dataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        Data data = dataReader.read(dataColumns, hasHeader, metadata);
+        Assert.assertTrue(data instanceof MixedTabularData);
+
+        MixedTabularData mixedTabularData = (MixedTabularData) data;
+
+        int numOfRows = mixedTabularData.getNumOfRows();
+        int numOfCols = dataColumns.length;
+        DiscreteDataColumn[] discreteDataColumns = mixedTabularData.getDataColumns();
+        double[][] continuousData = mixedTabularData.getContinuousData();
+        int[][] discreteData = mixedTabularData.getDiscreteData();
+
+        expected = 5;
+        actual = numOfRows;
+        Assert.assertEquals(expected, actual);
+
+        expected = 9;
+        actual = discreteDataColumns.length;
+        Assert.assertEquals(expected, actual);
+
+        int numOfContinuous = 0;
+        int numOfDiscrete = 0;
+        for (int i = 0; i < numOfCols; i++) {
+            if (continuousData[i] != null) {
+                numOfContinuous++;
+            }
+            if (discreteData[i] != null) {
+                numOfDiscrete++;
+            }
+        }
+
+        expected = 6;
+        actual = numOfContinuous;
+        Assert.assertEquals(expected, actual);
+
+        expected = 3;
+        actual = numOfDiscrete;
+        Assert.assertEquals(expected, actual);
+    }
+
     /**
      * Test of readInData method, of class TabularDataFileReader.
      *
