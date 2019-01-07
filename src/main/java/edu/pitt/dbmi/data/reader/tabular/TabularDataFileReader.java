@@ -55,12 +55,15 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
 
     @Override
     public void determineDiscreteDataColumns(DataColumn[] dataColumns, int numberOfCategories, boolean hasHeader) throws IOException {
-        int numOfDomainCols = (int) Arrays.stream(dataColumns)
-                .filter(e -> !e.isGenerated())
-                .count();
+        int numOfColsInDataFile = 0;
+        for (DataColumn dataColumn : dataColumns) {
+            if (!dataColumn.isGenerated()) {
+                numOfColsInDataFile++;
+            }
+        }
 
-        Set<String>[] columnCategories = new Set[numOfDomainCols];
-        for (int i = 0; i < numOfDomainCols; i++) {
+        Set<String>[] columnCategories = new Set[numOfColsInDataFile];
+        for (int i = 0; i < numOfColsInDataFile; i++) {
             columnCategories[i] = new HashSet<>();
         }
 
@@ -169,8 +172,8 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                             }
 
                             // ensure we have enough data
-                            if (columnIndex < numOfDomainCols) {
-                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfDomainCols);
+                            if (columnIndex < numOfColsInDataFile) {
+                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfColsInDataFile);
                                 LOGGER.error(errMsg);
                                 throw new DataReaderException(errMsg);
                             }
@@ -241,7 +244,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                                         }
 
                                         columnIndex++;
-                                        if (columnIndex == numOfDomainCols) {
+                                        if (columnIndex == numOfColsInDataFile) {
                                             skip = true;
                                         }
                                     }
@@ -276,15 +279,15 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                 }
 
                 // ensure we have enough data
-                if (columnIndex < numOfDomainCols) {
-                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfDomainCols);
+                if (columnIndex < numOfColsInDataFile) {
+                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfColsInDataFile);
                     LOGGER.error(errMsg);
                     throw new DataReaderException(errMsg);
                 }
             }
         }
 
-        for (int i = 0; i < numOfDomainCols; i++) {
+        for (int i = 0; i < numOfColsInDataFile; i++) {
             dataColumns[i].setDiscrete(columnCategories[i].size() <= numberOfCategories);
         }
     }
@@ -295,7 +298,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
             return null;
         }
 
-        int numOfDomainCols = 0;
+        int numOfColsInDataFile = 0;
         boolean isDiscrete = false;
         boolean isContinuous = false;
         for (DataColumn dataColumn : dataColumns) {
@@ -306,16 +309,16 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
             }
 
             if (!dataColumn.isGenerated()) {
-                numOfDomainCols++;
+                numOfColsInDataFile++;
             }
         }
 
         if (isDiscrete && isContinuous) {
-            return readInMixedData(dataColumns, hasHeader, numOfDomainCols);
+            return readInMixedData(dataColumns, hasHeader, numOfColsInDataFile);
         } else if (isContinuous) {
-            return readInContinuousData(dataColumns, hasHeader, numOfDomainCols);
+            return readInContinuousData(dataColumns, hasHeader, numOfColsInDataFile);
         } else if (isDiscrete) {
-            return readInDiscreteData(dataColumns, hasHeader, numOfDomainCols);
+            return readInDiscreteData(dataColumns, hasHeader, numOfColsInDataFile);
         } else {
             return null;
         }
@@ -427,7 +430,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
         return data;
     }
 
-    private Data readInMixedData(DataColumn[] dataColumns, boolean hasHeader, int numOfDomainCols) throws IOException {
+    private Data readInMixedData(DataColumn[] dataColumns, boolean hasHeader, int numOfColsInDataFile) throws IOException {
         int numOfCols = dataColumns.length;
         int numOfRows = hasHeader ? countNumberOfLines() - 1 : countNumberOfLines();
 
@@ -448,13 +451,13 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
             discreteDataColumns[i] = new MixedTabularDataColumn(dataColumn);
         }
 
-        readInDiscreteCategorizes(discreteDataColumns, hasHeader, numOfDomainCols);
-        readInMixedData(discreteDataColumns, hasHeader, continuousData, discreteData, numOfDomainCols);
+        readInDiscreteCategorizes(discreteDataColumns, hasHeader, numOfColsInDataFile);
+        readInMixedData(discreteDataColumns, hasHeader, continuousData, discreteData, numOfColsInDataFile);
 
         return new MixedTabularData(numOfRows, discreteDataColumns, continuousData, discreteData);
     }
 
-    private void readInMixedData(DiscreteDataColumn[] dataColumns, boolean hasHeader, double[][] continuousData, int[][] discreteData, int numOfDomainCols) throws IOException {
+    private void readInMixedData(DiscreteDataColumn[] dataColumns, boolean hasHeader, double[][] continuousData, int[][] discreteData, int numOfColsInDataFile) throws IOException {
         int numOfCols = dataColumns.length;
         try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
@@ -576,8 +579,8 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                             }
 
                             // ensure we have enough data
-                            if (columnIndex < numOfDomainCols) {
-                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfDomainCols);
+                            if (columnIndex < numOfColsInDataFile) {
+                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfColsInDataFile);
                                 LOGGER.error(errMsg);
                                 throw new DataReaderException(errMsg);
                             }
@@ -715,8 +718,8 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                 }
 
                 // ensure we have enough data
-                if (columnIndex < numOfDomainCols) {
-                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfDomainCols);
+                if (columnIndex < numOfColsInDataFile) {
+                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfColsInDataFile);
                     LOGGER.error(errMsg);
                     throw new DataReaderException(errMsg);
                 }
@@ -724,7 +727,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
         }
     }
 
-    private Data readInContinuousData(DataColumn[] dataColumns, boolean hasHeader, int numOfDomainCols) throws IOException {
+    private Data readInContinuousData(DataColumn[] dataColumns, boolean hasHeader, int numOfColsInDataFile) throws IOException {
         int numOfCols = dataColumns.length;
         int numOfRows = hasHeader ? countNumberOfLines() - 1 : countNumberOfLines();
         double[][] data = new double[numOfRows][numOfCols];
@@ -840,8 +843,8 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                             }
 
                             // ensure we have enough data
-                            if (columnIndex < numOfDomainCols) {
-                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfDomainCols);
+                            if (columnIndex < numOfColsInDataFile) {
+                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfColsInDataFile);
                                 LOGGER.error(errMsg);
                                 throw new DataReaderException(errMsg);
                             }
@@ -961,8 +964,8 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                 }
 
                 // ensure we have enough data
-                if (columnIndex < numOfDomainCols) {
-                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfDomainCols);
+                if (columnIndex < numOfColsInDataFile) {
+                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfColsInDataFile);
                     LOGGER.error(errMsg);
                     throw new DataReaderException(errMsg);
                 }
@@ -972,18 +975,18 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
         return new ContinuousTabularData(dataColumns, data);
     }
 
-    private Data readInDiscreteData(DataColumn[] dataColumns, boolean hasHeader, int numOfDomainCols) throws IOException {
+    private Data readInDiscreteData(DataColumn[] dataColumns, boolean hasHeader, int numOfColsInDataFile) throws IOException {
         DiscreteDataColumn[] discreteDataColumns = Arrays.stream(dataColumns)
                 .map(DiscreteTabularDataColumn::new)
                 .toArray(DiscreteDataColumn[]::new);
-        readInDiscreteCategorizes(discreteDataColumns, hasHeader, numOfDomainCols);
+        readInDiscreteCategorizes(discreteDataColumns, hasHeader, numOfColsInDataFile);
 
-        int[][] data = readInDiscreteData(discreteDataColumns, hasHeader, numOfDomainCols);
+        int[][] data = readInDiscreteData(discreteDataColumns, hasHeader, numOfColsInDataFile);
 
         return new VerticalDiscreteTabularData(discreteDataColumns, data);
     }
 
-    private int[][] readInDiscreteData(DiscreteDataColumn[] dataColumns, boolean hasHeader, int numOfDomainCols) throws IOException {
+    private int[][] readInDiscreteData(DiscreteDataColumn[] dataColumns, boolean hasHeader, int numOfColsInDataFile) throws IOException {
         int numOfCols = dataColumns.length;
         int numOfRows = hasHeader ? countNumberOfLines() - 1 : countNumberOfLines();
         int[][] data = new int[numOfCols][numOfRows];
@@ -1094,8 +1097,8 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                             }
 
                             // ensure we have enough data
-                            if (columnIndex < numOfDomainCols) {
-                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfDomainCols);
+                            if (columnIndex < numOfColsInDataFile) {
+                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfColsInDataFile);
                                 LOGGER.error(errMsg);
                                 throw new DataReaderException(errMsg);
                             }
@@ -1205,8 +1208,8 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                 }
 
                 // ensure we have enough data
-                if (columnIndex < numOfDomainCols) {
-                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfDomainCols);
+                if (columnIndex < numOfColsInDataFile) {
+                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfColsInDataFile);
                     LOGGER.error(errMsg);
                     throw new DataReaderException(errMsg);
                 }
@@ -1216,7 +1219,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
         return data;
     }
 
-    private void readInDiscreteCategorizes(DiscreteDataColumn[] dataColumns, boolean hasHeader, int numOfDomainCols) throws IOException {
+    private void readInDiscreteCategorizes(DiscreteDataColumn[] dataColumns, boolean hasHeader, int numOfColsInDataFile) throws IOException {
         int numOfCols = dataColumns.length;
         try (InputStream in = Files.newInputStream(dataFile, StandardOpenOption.READ)) {
             boolean skipHeader = hasHeader;
@@ -1321,8 +1324,8 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                             }
 
                             // ensure we have enough data
-                            if (columnIndex < numOfDomainCols) {
-                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfDomainCols);
+                            if (columnIndex < numOfColsInDataFile) {
+                                String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfColsInDataFile);
                                 LOGGER.error(errMsg);
                                 throw new DataReaderException(errMsg);
                             }
@@ -1428,8 +1431,8 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                 }
 
                 // ensure we have enough data
-                if (columnIndex < numOfDomainCols) {
-                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfDomainCols);
+                if (columnIndex < numOfColsInDataFile) {
+                    String errMsg = String.format("Insufficient data on line %d.  Extracted %d value(s) but expected %d.", lineNum, columnIndex, numOfColsInDataFile);
                     LOGGER.error(errMsg);
                     throw new DataReaderException(errMsg);
                 }
@@ -1438,6 +1441,11 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
 
         // recategorize values
         for (DiscreteDataColumn discreteDataColumn : dataColumns) {
+            if (discreteDataColumn.getDataColumn().isGenerated()) {
+                discreteDataColumn.setValue("0");
+                discreteDataColumn.setValue("1");
+            }
+
             discreteDataColumn.recategorize();
         }
     }
