@@ -340,7 +340,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                         if (Double.isNaN(val[i])) {
                             val[i] = 0.0;
                             stat[i] = 0.0;
-                        } else {
+                        } else if (dataColumns[statColNum].isGenerated()) {
                             stat[i] = 1.0;
                         }
                     }
@@ -359,7 +359,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                         if (val[i] == DISCRETE_MISSING_VALUE) {
                             val[i] = 0;
                             stat[i] = 0;
-                        } else {
+                        } else if (dataColumns[statColNum].isGenerated()) {
                             stat[i] = 1;
                         }
                     }
@@ -381,7 +381,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                                 if (val[i] == DISCRETE_MISSING_VALUE) {
                                     val[i] = 0;
                                     stat[i] = 0;
-                                } else {
+                                } else if (dataColumns[statColNum].isGenerated()) {
                                     stat[i] = 1;
                                 }
                             }
@@ -391,7 +391,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                                 if (val[i] == DISCRETE_MISSING_VALUE) {
                                     val[i] = 0;
                                     stat[i] = 0.0;
-                                } else {
+                                } else if (dataColumns[statColNum].isGenerated()) {
                                     stat[i] = 1.0;
                                 }
                             }
@@ -404,7 +404,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                                 if (Double.isNaN(val[i])) {
                                     val[i] = 0.0;
                                     stat[i] = 0;
-                                } else {
+                                } else if (dataColumns[statColNum].isGenerated()) {
                                     stat[i] = 1;
                                 }
                             }
@@ -414,7 +414,7 @@ public final class TabularDataFileReader extends DatasetFileReader implements Ta
                                 if (Double.isNaN(val[i])) {
                                     val[i] = 0.0;
                                     stat[i] = 0.0;
-                                } else {
+                                } else if (dataColumns[statColNum].isGenerated()) {
                                     stat[i] = 1.0;
                                 }
                             }
