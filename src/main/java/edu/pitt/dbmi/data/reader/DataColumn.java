@@ -20,41 +20,45 @@ package edu.pitt.dbmi.data.reader;
 
 /**
  *
- * Nov 6, 2018 2:26:59 PM
+ * Dec 8, 2018 4:14:30 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public class DataReaderException extends RuntimeException {
-
-    private static final long serialVersionUID = 1123054334542973950L;
+public interface DataColumn {
 
     /**
-     * Creates a new instance of <code>DataReaderException</code> without detail
-     * message.
-     */
-    public DataReaderException() {
-    }
-
-    /**
-     * Constructs an instance of <code>DataReaderException</code> with the
-     * specified detail message.
+     * Get the column's name.
      *
-     * @param message the detail message.
+     * @return
      */
-    public DataReaderException(String message) {
-        super(message);
-    }
+    public String getName();
 
     /**
-     * Constructs an instance of <code>DataReaderException</code> with the
-     * specified detail message and cause.
+     * Get the column's number.
      *
-     * @param message the detail message.
-     * @param cause the cause (which is saved for later retrieval by the
-     * {@link #getCause()} method).
+     * @return
      */
-    public DataReaderException(String message, Throwable cause) {
-        super(message, cause);
-    }
+    public int getColumnNumber();
+
+    /**
+     * True if this column was not read in from source such as file.
+     *
+     * @return
+     */
+    public boolean isGenerated();
+
+    /**
+     * True if the datatype is discrete.
+     *
+     * @return
+     */
+    public boolean isDiscrete();
+
+    /**
+     * Set true for discrete datatype.
+     *
+     * @param discrete
+     */
+    public void setDiscrete(boolean discrete);
 
 }

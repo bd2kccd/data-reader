@@ -18,26 +18,29 @@
  */
 package edu.pitt.dbmi.data.reader;
 
+import java.nio.file.Path;
+
 /**
  *
- * Dec 12, 2018 11:16:53 AM
+ * Dec 7, 2018 3:43:12 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader {
+public abstract class DatasetFileReader extends DataFileReader implements DatasetReader {
 
-    /**
-     * Set the character that is used to group multiple words as one.
-     *
-     * @param quoteCharacter
-     */
-    public void setQuoteCharacter(char quoteCharacter);
+    protected String missingDataMarker;
 
-    /**
-     * Set the value to indicate a line is a comment to be ignored.
-     *
-     * @param commentMarker
-     */
-    public void setCommentMarker(String commentMarker);
+    public DatasetFileReader(Path dataFile, Delimiter delimiter) {
+        super(dataFile, delimiter);
+
+        this.missingDataMarker = "";
+    }
+
+    @Override
+    public void setMissingDataMarker(String missingDataMarker) {
+        this.missingDataMarker = (missingDataMarker == null)
+                ? ""
+                : missingDataMarker.trim();
+    }
 
 }

@@ -16,28 +16,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.validation;
 
 /**
  *
- * Dec 12, 2018 11:16:53 AM
+ * Feb 16, 2017 1:47:01 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader {
+public enum ValidationCode {
 
-    /**
-     * Set the character that is used to group multiple words as one.
-     *
-     * @param quoteCharacter
-     */
-    public void setQuoteCharacter(char quoteCharacter);
-
-    /**
-     * Set the value to indicate a line is a comment to be ignored.
-     *
-     * @param commentMarker
-     */
-    public void setCommentMarker(String commentMarker);
+    INFO,
+    WARNING,
+    ERROR
 
 }

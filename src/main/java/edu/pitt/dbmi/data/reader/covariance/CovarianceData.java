@@ -16,28 +16,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.covariance;
+
+import edu.pitt.dbmi.data.reader.Data;
+import java.util.List;
 
 /**
  *
- * Dec 12, 2018 11:16:53 AM
+ * Nov 19, 2018 2:20:52 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader {
+public interface CovarianceData extends Data {
 
-    /**
-     * Set the character that is used to group multiple words as one.
-     *
-     * @param quoteCharacter
-     */
-    public void setQuoteCharacter(char quoteCharacter);
+    public int getNumberOfCases();
 
-    /**
-     * Set the value to indicate a line is a comment to be ignored.
-     *
-     * @param commentMarker
-     */
-    public void setCommentMarker(String commentMarker);
+    public List<String> getVariables();
+
+    public double[][] getData();
 
 }

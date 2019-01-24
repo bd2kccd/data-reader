@@ -20,24 +20,40 @@ package edu.pitt.dbmi.data.reader;
 
 /**
  *
- * Dec 12, 2018 11:16:53 AM
+ * Nov 5, 2018 2:27:47 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader {
+public enum Delimiter {
 
-    /**
-     * Set the character that is used to group multiple words as one.
-     *
-     * @param quoteCharacter
-     */
-    public void setQuoteCharacter(char quoteCharacter);
+    TAB("tab", '\t'),
+    SPACE("space", ' '),
+    WHITESPACE("whitespace", ' '),
+    COMMA("comma", ','),
+    COLON("colon", ':'),
+    SEMICOLON("semicolon", ';'),
+    PIPE("pipe", '|');
 
-    /**
-     * Set the value to indicate a line is a comment to be ignored.
-     *
-     * @param commentMarker
-     */
-    public void setCommentMarker(String commentMarker);
+    private final String name;
+    private final char value;
+    private final byte byteValue;
+
+    private Delimiter(String name, char value) {
+        this.name = name;
+        this.value = value;
+        this.byteValue = (byte) value;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public char getValue() {
+        return value;
+    }
+
+    public byte getByteValue() {
+        return byteValue;
+    }
 
 }

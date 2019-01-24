@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 University of Pittsburgh.
+ * Copyright (C) 2019 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,28 +16,27 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.tabular;
+
+import edu.pitt.dbmi.data.reader.Data;
+import edu.pitt.dbmi.data.reader.DatasetReader;
+import java.io.IOException;
+import java.util.Set;
 
 /**
  *
- * Dec 12, 2018 11:16:53 AM
+ * Dec 14, 2018 10:58:01 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader {
+public interface TabularDatasetReader extends DatasetReader {
 
-    /**
-     * Set the character that is used to group multiple words as one.
-     *
-     * @param quoteCharacter
-     */
-    public void setQuoteCharacter(char quoteCharacter);
+    public Data readInData() throws IOException;
 
-    /**
-     * Set the value to indicate a line is a comment to be ignored.
-     *
-     * @param commentMarker
-     */
-    public void setCommentMarker(String commentMarker);
+    public Data readInData(Set<String> namesOfColumnsToExclude) throws IOException;
+
+    public Data readInData(int[] columnsToExclude) throws IOException;
+
+    public void setHasHeader(boolean hasHeader);
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 University of Pittsburgh.
+ * Copyright (C) 2018 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,6 +19,7 @@
 package edu.pitt.dbmi.data.reader.covariance;
 
 import edu.pitt.dbmi.data.reader.DataReader;
+import java.io.IOException;
 
 /**
  *
@@ -27,5 +28,7 @@ import edu.pitt.dbmi.data.reader.DataReader;
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
 public interface CovarianceDataReader extends DataReader {
+
+    public CovarianceData readInData() throws IOException;
 
 }
