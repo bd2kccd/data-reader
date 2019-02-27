@@ -4,15 +4,67 @@
 
 This data reader was created to handle large size data files for efficient data validation and loading. It reads data from a file as bytes using native file I/O instead of using the Java file handling API.
 
+In this new release, we also added metadata handling for dataset that contains interventional variables. The metadata must be a JSON file.
+
+Below is a sample dataset, in which `raf`, `mek`, `pip2`, `erk`, `atk` are the 5 domain variables, and `cd3_s` and `cd3_v` are an interventional pair (status and value variable respectively). `icam` in another intervention variable, but it's a combined variable that doesn't have status.
+
+````
+raf mek pip2    erk akt cd3_s   cd3_v   icam
+3.5946  3.1442  3.3429  2.81    3.2958  0   1.2223  *
+3.8265  3.2771  3.2884  3.3534  3.7495  0   2.3344  *
+4.2399  3.9908  3.0057  3.2149  3.7495  1   0   3.4423
+4.4188  4.5304  3.157   2.7619  3.0819  1   3.4533  1.0067
+3.7773  3.3945  2.9821  3.4372  4.0271  0   4.0976  *
+````
+
+And the sample metadata JSON file looks like this: 
+
+````
+{
+  "interventions": [
+    {
+      "status": {
+        "name": "cd3_s",
+        "discrete": true
+      },
+      "value": {
+        "name": "cd3_v",
+        "discrete": false
+      }
+    },
+    {
+      "status": null,
+      "value": {
+        "name": "icam",
+        "discrete": false
+      }
+    }
+  ],
+  "domains": [
+    {
+      "name": "raf",
+      "discrete": false
+    },
+    {
+      "name": "mek",
+      "discrete": false
+    }
+  ]
+}
+````
+
+Each intervention consists of a status variable and value variable. There are cases that you may have a combined interventional variable that doesn't have the status variable. In this case, just use `null`. The data type of each variable can either be discrete or continuous. We use a boolean flag to indicate the data type. From the above example, we only specified two domain variables in the metadata JSON, any variables not specifed in the metadata will be treated as domain variables.
+
 In order to use this data reader as a dependency in your project, you'll first need to build the data reader with `mvn clean install` and then add the following config to your `pom.xml` file:
 
 ````xml
 <dependency>
     <groupId>edu.pitt.dbmi</groupId>
     <artifactId>data-reader</artifactId>
-    <version>0.2.2</version>
+    <version>1.1.0</version>
 </dependency>
 ````
+
 Currently, CMU's [Tetrad](https://github.com/cmu-phil/tetrad) project uses this data reader to handle the data validation and loading in their GUI application. Our [causal-cmd](https://github.com/bd2kccd/causal-cmd) command line tool also uses it.
 
 ## Data Validation
@@ -26,19 +78,35 @@ Depending on whether the data is continuous or discrete, the validation may vary
 To validate continuous tabular data:
 
 ````java
-TabularDataValidation validation = new ContinuousTabularDataFileValidation(file, Delimiter.COMMA);
+TabularColumnReader columnReader = new TabularColumnFileReader(continuousDataFile, delimiter);
+    columnReader.setCommentMarker(commentMarker);
+    columnReader.setQuoteCharacter(quoteCharacter);
 
-// Header (variable names) in first row or not
-validation.setHasHeader(true);
+    int[] excludedColumns = {6, 10, 1};
+    boolean isDiscrete = false;
+    DataColumn[] dataColumns = columnReader.readInDataColumns(excludedColumns, isDiscrete);
 
-// Set comment marker string
-validation.setCommentMarker("#");
+    TabularDataValidation validation = new TabularDataFileValidation(continuousDataFile, delimiter);
+    validation.setCommentMarker(commentMarker);
+    validation.setQuoteCharacter(quoteCharacter);
+    validation.setMissingDataMarker(missingValueMarker);
 
-// Set missing value marker string
-validation.setMissingValueMarker("*");
-
-// Set the quote character
-validation.setQuoteCharacter('"');
+    List<ValidationResult> results = validation.validate(dataColumns, hasHeader);
+    List<ValidationResult> infos = new LinkedList<>();
+    List<ValidationResult> warnings = new LinkedList<>();
+    List<ValidationResult> errors = new LinkedList<>();
+    for (ValidationResult result : results) {
+        switch (result.getCode()) {
+            case INFO:
+                infos.add(result);
+                break;
+            case WARNING:
+                warnings.add(result);
+                break;
+            default:
+                errors.add(result);
+        }
+    }
 ````
 
 Note: currently we support the following delimiters:
@@ -53,41 +121,48 @@ Note: currently we support the following delimiters:
 | Semicolon | ';' | Delimiter.SEMICOLON |
 | Pipe | '|' | Delimiter.PIPE |
 
-And depending on if you want to eclude certain columns/variables, you can pass either column index or actual variable names when calling `validate()`:
+And depending on if you want to eclude certain columns/variables, you can pass either column index or actual variable names when calling `readInDataColumns()`:
 
 ````java
 // No column exclusion
-validation.validate();
+columnReader.readInDataColumns(isDiscrete);
 ````
 
 ````java
 // Exclude the first 3 columns
-validation.validate(new int[]{1, 2, 3});
+columnReader.readInDataColumns(new int[]{1, 2, 3}, isDiscrete);
 ````
 
 ````java
 // Exclude certain labeled variables
-validation.validate(new HashSet<>(Arrays.asList(new String[]{"var1", "var2", "var3"})));
-````
-
-Similiarly, for discrete tabular data, just create an instance of `VerticalDiscreteTabularDataFileValidation` by providing the file and delimiter.
-
-````java
-TabularDataValidation validation = new VerticalDiscreteTabularDataFileValidation(file, Delimiter.WHITESPACE);
+columnReader.readInDataColumns(new HashSet<>(Arrays.asList(new String[]{"var1", "var2", "var3"})), isDiscrete);
 ````
 
 ### Covariance Data Validation
 
-And for Covariance data, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns. Otherwise,its usage is very similar to the tabular data.
+And for Covariance data, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns. Otherwise, its usage is very similar to the tabular data.
 
 ````java
-DataFileValidation validation = new CovarianceDataFileValidation(file, delimiter);
+CovarianceValidation validation = new LowerCovarianceDataFileValidation(dataFile, delimiter);
+    validation.setCommentMarker(commentMarker);
+    validation.setQuoteCharacter(quoteCharacter);
 
-// Set comment marker string
-validation.setCommentMarker("#");
-
-// Set the quote character
-validation.setQuoteCharacter('"');
+    List<ValidationResult> results = validation.validate();
+    List<ValidationResult> infos = new LinkedList<>();
+    List<ValidationResult> warnings = new LinkedList<>();
+    List<ValidationResult> errors = new LinkedList<>();
+    for (ValidationResult result : results) {
+        switch (result.getCode()) {
+            case INFO:
+                infos.add(result);
+                break;
+            case WARNING:
+                warnings.add(result);
+                break;
+            default:
+                errors.add(result);
+        }
+    }
 ````
 
 ### Validation Results
@@ -124,42 +199,55 @@ The usage of data reader is very similar to data validation corresponding to eac
 For example, read/load a continuous tabular data file:
 
 ````java
-TabularDataReader reader = new ContinuousTabularDataFileReader(file, Delimiter.COMMA);
-
-// Header (variable names) in first row or not
-reader.setHasHeader(true);
-
-// Set comment marker string
-validation.setCommentMarker("#");
-
-// Set missing value marker string
-reader.setMissingValueMarker("*");
-
-// Set the quote character
-reader.setQuoteCharacter('"');
+ContinuousTabularDatasetReader dataReader = new ContinuousTabularDatasetFileReader(dataFile, delimiter);
+dataReader.setCommentMarker(commentMarker);
+dataReader.setQuoteCharacter(quoteCharacter);
+dataReader.setMissingDataMarker(missingValueMarker);
+dataReader.setHasHeader(false);
 ````
-We use `Dataset` as the returned type:
+We use `Data` as the returned type:
 
 ````java
-Dataset dataset;
+Data data;
 ````
 
 And depending on if you want to exclude certain columns/variables, you can pass either column index or actual variable names when calling `readInData()`:
 
 ````java
 // No column exclusion
-dataset = reader.readInData();
+Data data = dataReader.readInData();
 ````
 
 ````java
-// Exclude the first 3 columns
-dataset reader.readInData(new int[]{1, 2, 3});
+// Exclude the columns by index
+int[] columnsToExclude = {5, 3, 1, 8, 10, 11};
+Data data = dataReader.readInData(columnsToExclude);
 ````
 
 ````java
 // Exclude certain labled variables
-dataset reader.readInData(new HashSet<>(Arrays.asList(new String[]{"var1", "var2", "var3"})));
+Set<String> namesOfColumnsToExclude = new HashSet<>(Arrays.asList("X1", "X3", "X4", "X6", "X8", "X10"));
+Data data = dataReader.readInData(namesOfColumnsToExclude);
 ````
+
+
+## Metadata Reading
+
+````
+MetadataReader metadataReader = new MetadataFileReader(metadataFile);
+Metadata metadata = metadataReader.read();
+
+List<ColumnMetadata> domainCols = metadata.getDomainColumnns();
+List<InterventionalColumn> intervCols = metadata.getInterventionalColumns();
+````
+
+After reading the metadata JSON, we can get a list of domain columns and interventional columns. In addition, we'll also use the metadata to update the `dataColumns` created during the data reading part.
+
+````
+dataColumns = DataColumns.update(dataColumns, metadata);
+````
+
+This gives the users flexibility to overwrite the data type. For example, `var1` in the origional dataset is a continuous column, but the user wants to run a search and treat this variable as a discrete variable. Then the user can overwrite the data type of this variable in the metadata file to achieve this.
 
 ## Additional Features
 
