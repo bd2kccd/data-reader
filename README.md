@@ -154,21 +154,6 @@ validation.setQuoteCharacter(quoteCharacter);
 validation.setMissingDataMarker(missingValueMarker);
 
 List<ValidationResult> results = validation.validate(dataColumns, hasHeader);
-List<ValidationResult> infos = new LinkedList<>();
-List<ValidationResult> warnings = new LinkedList<>();
-List<ValidationResult> errors = new LinkedList<>();
-for (ValidationResult result : results) {
-    switch (result.getCode()) {
-        case INFO:
-            infos.add(result);
-            break;
-        case WARNING:
-            warnings.add(result);
-            break;
-        default:
-            errors.add(result);
-    }
-}
 ````
 
 As we mentioned earlier, for covariance data, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns. Otherwise, its usage is very similar to the tabular data.
@@ -179,21 +164,6 @@ validation.setCommentMarker(commentMarker);
 validation.setQuoteCharacter(quoteCharacter);
 
 List<ValidationResult> results = validation.validate();
-List<ValidationResult> infos = new LinkedList<>();
-List<ValidationResult> warnings = new LinkedList<>();
-List<ValidationResult> errors = new LinkedList<>();
-for (ValidationResult result : results) {
-    switch (result.getCode()) {
-        case INFO:
-            infos.add(result);
-            break;
-        case WARNING:
-            warnings.add(result);
-            break;
-        default:
-            errors.add(result);
-    }
-}
 ````
 
 The results of validation can be handled as `INFO`, `WARNING`, or `ERROR` messages:
