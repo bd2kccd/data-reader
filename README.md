@@ -4,7 +4,7 @@
 
 This data reader was created to handle large size data files for efficient data loading. It reads data from a file as bytes using native file I/O instead of using the Java file handling API. In addition, it also packaged with data validation and other useful utilities.
 
-In this new release, we also added metadata file handling for dataset that contains interventional variables, and we'll describe it later.
+In this new release, we also added metadata file handling and we'll describe it later.
 
 In order to use this data reader as a dependency in your project, you'll first need to build the data reader with `mvn clean install` and then add the following config to your `pom.xml` file:
 
@@ -18,11 +18,11 @@ In order to use this data reader as a dependency in your project, you'll first n
 
 Currently, CMU's [Tetrad](https://github.com/cmu-phil/tetrad) project uses this data reader to handle the data validation and loading in their GUI application. Our [causal-cmd](https://github.com/bd2kccd/causal-cmd) command line tool also uses it.
 
-## General Data Reading/Loading
+## General Tabular Data Reading
 
-The usage of data reader is based on the target file type: Tabular or Covariance. For tabular data, you should choose the right class based on the data type: continuous, discrete, or mixed. For covariance data, the data type can only be continuous.
+The usage of data reader is based on the target file type: Tabular or Covariance. For tabular data, you should choose the right class based on the data type: continuous, discrete, or mixed. 
 
-For example, let's read/load a continuous tabular data file. The first thing is to read the data columns using the `TabularColumnReader`.
+For example, let's read a continuous tabular data file. The first thing is to read the data columns using the `TabularColumnReader`.
 
 ````java
 Set<String> columnNames = new HashSet<>(Arrays.asList("X1", "\"X3\"", "X5", " ", "X7", "X9", "", "X10", "X11"));
@@ -85,7 +85,7 @@ Data data = dataReader.read(dataColumns, hasHeader);
 
 We use `Data` as the returned type. And depending on if you want to exclude certain columns/variables during the reading, you can pass either column index or actual variable names when calling `readInData()`, similar to the column reading exclusion.
 
-## Metadata Reading
+### Metadata Reading
 
 Metadata is optional in general data handling. But it can be very helpful if you want to overwrite the data type of a given variable column. And the metadata MUST be a JSON file. For example:
 
@@ -121,6 +121,18 @@ dataReader.setQuoteCharacter(quoteCharacter);
 dataReader.setMissingDataMarker(missingValueMarker);
 
 Data data = dataReader.read(dataColumns, hasHeader, metadata);
+````
+
+## Covariance Data Reading
+
+For covariance data, the data type can only be continuous, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns. Otherwise, the usage is very similar to the tabular data.
+
+````java
+CovarianceDataReader dataFileReader = new LowerCovarianceDataFileReader(dataFile, delimiter);
+dataFileReader.setCommentMarker(commentMarker);
+dataFileReader.setQuoteCharacter(quoteCharacter);
+
+CovarianceData covarianceData = dataFileReader.readInData();
 ````
 
 ## Data Validation
@@ -159,29 +171,29 @@ for (ValidationResult result : results) {
 }
 ````
 
-Note: for covariance data, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns. Otherwise, its usage is very similar to the tabular data.
+As we mentioned earlier, for covariance data, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns. Otherwise, its usage is very similar to the tabular data.
 
 ````java
 CovarianceValidation validation = new LowerCovarianceDataFileValidation(dataFile, delimiter);
-    validation.setCommentMarker(commentMarker);
-    validation.setQuoteCharacter(quoteCharacter);
+validation.setCommentMarker(commentMarker);
+validation.setQuoteCharacter(quoteCharacter);
 
-    List<ValidationResult> results = validation.validate();
-    List<ValidationResult> infos = new LinkedList<>();
-    List<ValidationResult> warnings = new LinkedList<>();
-    List<ValidationResult> errors = new LinkedList<>();
-    for (ValidationResult result : results) {
-        switch (result.getCode()) {
-            case INFO:
-                infos.add(result);
-                break;
-            case WARNING:
-                warnings.add(result);
-                break;
-            default:
-                errors.add(result);
-        }
+List<ValidationResult> results = validation.validate();
+List<ValidationResult> infos = new LinkedList<>();
+List<ValidationResult> warnings = new LinkedList<>();
+List<ValidationResult> errors = new LinkedList<>();
+for (ValidationResult result : results) {
+    switch (result.getCode()) {
+        case INFO:
+            infos.add(result);
+            break;
+        case WARNING:
+            warnings.add(result);
+            break;
+        default:
+            errors.add(result);
     }
+}
 ````
 
 The results of validation can be handled as `INFO`, `WARNING`, or `ERROR` messages:
@@ -209,7 +221,7 @@ for (ValidationResult result : results) {
 
 And this data structure allows developers to handle the results based on their application's specific needs.
 
-## Handling Interventional Data
+## Handling Tabular Data With Interventions
 
 This is advanced topic for dataset that contians interventional variables. Below is a sample dataset, in which `raf`, `mek`, `pip2`, `erk`, `atk` are the 5 domain variables, and `cd3_s` and `cd3_v` are an interventional pair (status and value variable respectively). `icam` in another intervention variable, but it's a combined variable that doesn't have status.
 
