@@ -25,13 +25,12 @@ The usage of data reader is based on the target file type: Tabular or Covariance
 For example, let's read a continuous tabular data file. The first thing is to read the data columns using the `TabularColumnReader`.
 
 ````java
-Set<String> columnNames = new HashSet<>(Arrays.asList("X1", "\"X3\"", "X5", " ", "X7", "X9", "", "X10", "X11"));
 TabularColumnReader columnReader = new TabularColumnFileReader(dataFile, delimiter);
 columnReader.setCommentMarker(commentMarker);
 columnReader.setQuoteCharacter(quoteCharacter);
 
 boolean isDiscrete = false;
-DataColumn[] dataColumns = columnReader.readInDataColumns(columnNames, isDiscrete);
+DataColumn[] dataColumns = columnReader.readInDataColumns(isDiscrete);
 ````
 
 Currently we support the following delimiters:
