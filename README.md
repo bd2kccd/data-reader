@@ -87,7 +87,7 @@ We use `Data` as the returned type. And depending on if you want to exclude cert
 
 ### Metadata Reading
 
-Metadata is optional in general data handling. But it can be very helpful if you want to overwrite the data type of a given variable column. And the metadata MUST be a JSON file. For example:
+Metadata is optional in general data handling. But it can be very helpful if you want to overwrite the data type of a given variable column. And the metadata MUST be a JSON file like the following example.
 
 ````
 {
@@ -98,7 +98,7 @@ Metadata is optional in general data handling. But it can be very helpful if you
     },
     {
       "name": "mek",
-      "discrete": false
+      "discrete": true
     }
   ]
 }
@@ -112,7 +112,7 @@ Metadata metadata = metadataReader.read();
 dataColumns = DataColumns.update(dataColumns, metadata);
 ````
 
-After reading the metadata JSON, we'll use the metadata to update the `dataColumns` created during the data column reading part. This gives the users flexibility to overwrite the data type. For example, `var1` in the origional dataset is a continuous column, but the user wants to run a search and treat this variable as a discrete variable. Then the user can overwrite the data type of this variable in the metadata file to achieve this.
+After reading the metadata JSON, we'll use the metadata to update the `dataColumns` created during the data column reading step. This gives the users flexibility to overwrite the data type. For example, `var1` in the origional dataset is a continuous column, but the user wants to run a search and treat this variable as a discrete variable. Then the user can overwrite the data type of this variable in the metadata file to achieve this.
 
 ````java
 TabularDataReader dataReader = new TabularDataFileReader(dataFile, delimiter);
@@ -125,7 +125,7 @@ Data data = dataReader.read(dataColumns, hasHeader, metadata);
 
 ## Covariance Data Reading
 
-For covariance data, the data type can only be continuous, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns. Otherwise, the usage is very similar to the tabular data.
+For covariance data, the data type can only be continuous, the header is always required in first row, and there's no missing value marker used. You also don't need to exclude certain columns. Due to these differences, the covariance data reading doesn't involve column reading nor metadata reading. It's very simple as below:
 
 ````java
 CovarianceDataReader dataFileReader = new LowerCovarianceDataFileReader(dataFile, delimiter);
