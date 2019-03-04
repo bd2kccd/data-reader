@@ -20,24 +20,14 @@ package edu.pitt.dbmi.data.reader;
 
 /**
  *
- * Dec 12, 2018 11:16:53 AM
+ * Dec 10, 2018 3:50:45 AM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader {
+public interface DiscreteData extends Data {
 
-    /**
-     * Set the character that is used to group multiple words as one.
-     *
-     * @param quoteCharacter
-     */
-    public void setQuoteCharacter(char quoteCharacter);
+    public DiscreteDataColumn[] getDataColumns();
 
-    /**
-     * Set the value to indicate a line is a comment to be ignored.
-     *
-     * @param commentMarker
-     */
-    public void setCommentMarker(String commentMarker);
+    public int[][] getData();
 
 }

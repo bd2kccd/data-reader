@@ -16,28 +16,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.validation.tabular;
+
+import edu.pitt.dbmi.data.reader.DataColumn;
+import edu.pitt.dbmi.data.reader.DatasetReader;
+import edu.pitt.dbmi.data.reader.validation.Validation;
+import edu.pitt.dbmi.data.reader.validation.ValidationResult;
+import java.util.List;
 
 /**
  *
- * Dec 12, 2018 11:16:53 AM
+ * Dec 12, 2018 10:57:09 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader {
+public interface TabularDataValidation extends Validation, DatasetReader {
 
-    /**
-     * Set the character that is used to group multiple words as one.
-     *
-     * @param quoteCharacter
-     */
-    public void setQuoteCharacter(char quoteCharacter);
-
-    /**
-     * Set the value to indicate a line is a comment to be ignored.
-     *
-     * @param commentMarker
-     */
-    public void setCommentMarker(String commentMarker);
+    public List<ValidationResult> validate(DataColumn[] dataColumns, boolean hasHeader);
 
 }

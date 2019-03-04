@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 University of Pittsburgh.
+ * Copyright (C) 2018 University of Pittsburgh.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,32 +18,37 @@
  */
 package edu.pitt.dbmi.data.reader.tabular;
 
-import edu.pitt.dbmi.data.Dataset;
-import edu.pitt.dbmi.data.reader.DataReader;
+import edu.pitt.dbmi.data.reader.Data;
+import edu.pitt.dbmi.data.reader.DataColumn;
+import edu.pitt.dbmi.data.reader.DatasetReader;
+import edu.pitt.dbmi.data.reader.metadata.Metadata;
 import java.io.IOException;
-import java.util.Set;
 
 /**
- * Interface for reading in data.
  *
- * Jan 24, 2017 5:14:40 PM
+ * Nov 5, 2018 2:51:35 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface TabularDataReader extends DataReader {
+public interface TabularDataReader extends DatasetReader {
 
     /**
+     * Analyze the column data to determine if it contains discrete data based
+     * on the number of categories. If the number of categories of a column is
+     * equal to or less than the given number of categories, it will be
+     * considered to have discrete data. Else, it is considered to have
+     * continuous data.
      *
-     * Read in dataset. Excludes any variables from the given set.
-     *
-     * @param excludedVariables set of variable names to exclude
-     * @return
-     * @throws IOException whenever unable to read file
+     * @param dataColumns
+     * @param numberOfCategories maximum number of categories to be considered
+     * discrete
+     * @param hasHeader
+     * @throws IOException
      */
-    public Dataset readInData(Set<String> excludedVariables) throws IOException;
+    public void determineDiscreteDataColumns(DataColumn[] dataColumns, int numberOfCategories, boolean hasHeader) throws IOException;
 
-    public Dataset readInData(int[] excludedColumns) throws IOException;
+    public Data read(DataColumn[] dataColumns, boolean hasHeader) throws IOException;
 
-    public void setHasHeader(boolean hasHeader);
+    public Data read(DataColumn[] dataColumns, boolean hasHeader, Metadata metadata) throws IOException;
 
 }

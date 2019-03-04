@@ -16,28 +16,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.validation.covariance;
+
+import edu.pitt.dbmi.data.reader.DataReader;
+import edu.pitt.dbmi.data.reader.validation.Validation;
+import edu.pitt.dbmi.data.reader.validation.ValidationResult;
+import java.util.List;
 
 /**
  *
- * Dec 12, 2018 11:16:53 AM
+ * Dec 12, 2018 2:43:10 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader {
+public interface CovarianceValidation extends Validation, DataReader {
 
-    /**
-     * Set the character that is used to group multiple words as one.
-     *
-     * @param quoteCharacter
-     */
-    public void setQuoteCharacter(char quoteCharacter);
-
-    /**
-     * Set the value to indicate a line is a comment to be ignored.
-     *
-     * @param commentMarker
-     */
-    public void setCommentMarker(String commentMarker);
+    public List<ValidationResult> validate();
 
 }

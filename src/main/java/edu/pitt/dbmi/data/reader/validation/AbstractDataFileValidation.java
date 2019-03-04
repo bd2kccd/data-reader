@@ -16,28 +16,30 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301  USA
  */
-package edu.pitt.dbmi.data.reader;
+package edu.pitt.dbmi.data.reader.validation;
+
+import edu.pitt.dbmi.data.reader.DataFileReader;
+import edu.pitt.dbmi.data.reader.Delimiter;
+import java.nio.file.Path;
 
 /**
  *
- * Dec 12, 2018 11:16:53 AM
+ * Dec 12, 2018 12:14:52 PM
  *
  * @author Kevin V. Bui (kvb2@pitt.edu)
  */
-public interface DataReader {
+public abstract class AbstractDataFileValidation extends DataFileReader implements Validation {
 
-    /**
-     * Set the character that is used to group multiple words as one.
-     *
-     * @param quoteCharacter
-     */
-    public void setQuoteCharacter(char quoteCharacter);
+    protected int maxNumOfMsg;
 
-    /**
-     * Set the value to indicate a line is a comment to be ignored.
-     *
-     * @param commentMarker
-     */
-    public void setCommentMarker(String commentMarker);
+    public AbstractDataFileValidation(Path dataFile, Delimiter delimiter) {
+        super(dataFile, delimiter);
+        this.maxNumOfMsg = Integer.MAX_VALUE;
+    }
+
+    @Override
+    public void setMaximumNumberOfMessages(int maxNumOfMsg) {
+        this.maxNumOfMsg = maxNumOfMsg;
+    }
 
 }
