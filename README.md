@@ -1,4 +1,7 @@
-# Data Reader v1.1.0
+# Data Reader
+
+## The Data Reader Will No Longer Be Maintained Here
+The data reader is now part of the [Tetrad project](https://github.com/cmu-phil/tetrad).  No futher development or bug fixes will be done here.  Please report all issues to the [Tetrad project issue](https://github.com/cmu-phil/tetrad/issues).
 
 ## Introduction
 
